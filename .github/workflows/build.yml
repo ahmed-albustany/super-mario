@@ -1,0 +1,108 @@
+name: Build & Test
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ===========================================================================
+  # Native builds — Windows, Linux, macOS
+  # ===========================================================================
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: Linux
+            artifact: MarioGame-linux
+          - os: windows-latest
+            name: Windows
+            artifact: MarioGame-windows
+          - os: macos-latest
+            name: macOS
+            artifact: MarioGame-macos
+
+    runs-on: ${{ matrix.os }}
+    name: Build (${{ matrix.name }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install SFML dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libsfml-dev \
+            libgl1-mesa-dev \
+            libudev-dev \
+            libfreetype-dev \
+            libopenal-dev \
+            libvorbis-dev \
+            libflac-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxcursor-dev
+
+      - name: Install SFML (macOS)
+        if: runner.os == 'macOS'
+        run: brew install sfml
+
+      - name: Configure (Debug)
+        run: cmake --preset debug-native
+
+      - name: Build (Debug)
+        run: cmake --build --preset debug-native --parallel
+
+      - name: Run tests
+        run: ctest --preset debug-native
+
+      - name: Configure (Release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cmake --preset release-native
+
+      - name: Build (Release)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: cmake --build --preset release-native --parallel
+
+      - name: Package release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          mkdir -p release-pkg
+          cp -r build/release-native/MarioGame* release-pkg/ 2>/dev/null || true
+          cp -r assets release-pkg/
+          cd release-pkg && zip -r ../${{ matrix.artifact }}.zip .
+
+      - name: Upload release artifact
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}.zip
+
+  # ===========================================================================
+  # Tagged release — create GitHub Release with binaries
+  # ===========================================================================
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-native]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/**/*.zip

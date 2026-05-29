@@ -1,0 +1,273 @@
+/* ==========================================================================
+   Ruins of the Ancients — WASM Web Shell Styles
+   Responsive: desktop → tablet → phone. 16:9 aspect ratio preserved.
+   ========================================================================== */
+
+/* ---- Reset & base ---- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #0d0b14;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #b8b0c8;
+
+    /* Prevent selection, tap highlight, and text adjustments on mobile */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    touch-action: none;
+}
+
+/* ---- Loading screen ---- */
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0b14;
+    transition: opacity 0.5s ease;
+}
+
+#loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#loading-content {
+    text-align: center;
+    max-width: 400px;
+    padding: 24px;
+}
+
+#loading-title {
+    font-size: 28px;
+    color: #c8a0ff;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+#loading-subtitle {
+    font-size: 14px;
+    color: #7a6e90;
+    margin-bottom: 24px;
+}
+
+#progress-bar-outer {
+    width: 100%;
+    height: 8px;
+    background: #1e1a2e;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid #2e2840;
+}
+
+#progress-bar-inner {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #6a3fcf, #c8a0ff);
+    border-radius: 4px;
+    transition: width 0.15s ease;
+}
+
+#progress-text {
+    font-size: 12px;
+    color: #5a5070;
+    margin-top: 8px;
+}
+
+#error-text {
+    color: #ff5050;
+    font-size: 14px;
+    margin-top: 16px;
+    display: none;
+}
+
+#error-text.visible {
+    display: block;
+}
+
+/* ---- Canvas container ---- */
+#canvas-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d0b14;
+}
+
+#canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: calc(100vh * 16 / 9);
+    max-height: calc(100vw * 9 / 16);
+    object-fit: contain;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    outline: none;
+    background: #0a0810;
+}
+
+/* ---- Touch controls overlay ---- */
+#touch-controls {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    display: none;
+}
+
+/* Show on touch devices only */
+@media (pointer: coarse) {
+    #touch-controls {
+        display: block;
+    }
+}
+
+/* Also show on narrow screens (phones/tablets in portrait) regardless of pointer */
+@media (max-width: 1024px) and (hover: none) {
+    #touch-controls {
+        display: block;
+    }
+}
+
+/* ---- D-pad (bottom-left) ---- */
+#dpad {
+    position: fixed;
+    bottom: 24px;
+    left: 16px;
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+/* ---- Action buttons (bottom-right) ---- */
+#action-buttons {
+    position: fixed;
+    bottom: 24px;
+    right: 16px;
+    display: flex;
+    gap: 12px;
+    pointer-events: auto;
+}
+
+/* ---- Pause button (top-right corner) ---- */
+#btn-pause {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    pointer-events: auto;
+}
+
+/* ---- Touch button base ---- */
+.touch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    min-width: 64px;
+    min-height: 64px;
+    border: 2px solid rgba(180, 140, 220, 0.4);
+    border-radius: 16px;
+    background: rgba(30, 24, 50, 0.7);
+    color: rgba(200, 180, 240, 0.8);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    transition: background 0.1s ease, border-color 0.1s ease, transform 0.08s ease;
+}
+
+.touch-btn:active,
+.touch-btn.active {
+    background: rgba(80, 60, 140, 0.8);
+    border-color: rgba(200, 160, 255, 0.8);
+    transform: scale(0.92);
+    color: rgba(255, 220, 150, 1);
+}
+
+/* Action buttons (jump/dash) are slightly larger and circular */
+.action-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+}
+
+.action-btn span {
+    pointer-events: none;
+}
+
+/* ---- Responsive adjustments ---- */
+
+/* Tablets in landscape (iPad 1024x768) */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+    #dpad { bottom: 20px; left: 20px; }
+    #action-buttons { bottom: 20px; right: 20px; }
+    .touch-btn { width: 76px; height: 76px; }
+    .action-btn { width: 84px; height: 84px; }
+}
+
+/* Tablets in portrait (iPad 768x1024) */
+@media (max-width: 768px) and (orientation: portrait) {
+    #dpad { bottom: 32px; left: 12px; }
+    #action-buttons { bottom: 32px; right: 12px; }
+    .touch-btn { width: 68px; height: 68px; }
+    .action-btn { width: 76px; height: 76px; font-size: 12px; }
+}
+
+/* Small phones (iPhone SE 375x667, small Android 360x640) */
+@media (max-width: 414px) {
+    #dpad { bottom: 16px; left: 8px; gap: 8px; }
+    #action-buttons { bottom: 16px; right: 8px; gap: 8px; }
+    .touch-btn { width: 64px; height: 64px; border-radius: 14px; font-size: 11px; }
+    .action-btn { width: 70px; height: 70px; }
+    #btn-pause { top: 8px; right: 8px; width: 40px; height: 40px; }
+    #loading-title { font-size: 22px; }
+}
+
+/* Very small phones (< 360px width) */
+@media (max-width: 359px) {
+    .touch-btn { width: 56px; height: 56px; }
+    .action-btn { width: 64px; height: 64px; font-size: 10px; }
+    #dpad { bottom: 12px; left: 6px; gap: 6px; }
+    #action-buttons { bottom: 12px; right: 6px; gap: 6px; }
+}
+
+/* Landscape phones — buttons hugging edges tighter */
+@media (max-height: 450px) and (orientation: landscape) {
+    #dpad { bottom: 8px; left: 8px; gap: 6px; }
+    #action-buttons { bottom: 8px; right: 8px; gap: 6px; }
+    .touch-btn { width: 60px; height: 60px; }
+    .action-btn { width: 68px; height: 68px; font-size: 11px; }
+    #btn-pause { top: 6px; right: 6px; width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+}
+
+/* Desktop — hide touch controls, ensure canvas doesn't fill if huge */
+@media (pointer: fine) and (hover: hover) {
+    #touch-controls { display: none !important; }
+}

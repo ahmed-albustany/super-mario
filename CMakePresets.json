@@ -1,0 +1,93 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 20,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "installDir": "${sourceDir}/install/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "debug-native",
+      "displayName": "Debug (Native)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MARIO_BUILD_WASM": "OFF",
+        "MARIO_BUILD_TESTS": "ON",
+        "MARIO_ENABLE_SANITIZERS": "ON"
+      }
+    },
+    {
+      "name": "release-native",
+      "displayName": "Release (Native)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MARIO_BUILD_WASM": "OFF",
+        "MARIO_BUILD_TESTS": "OFF",
+        "MARIO_ENABLE_SANITIZERS": "OFF"
+      }
+    },
+    {
+      "name": "debug-wasm",
+      "displayName": "Debug (WebAssembly)",
+      "inherits": "base",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MARIO_BUILD_WASM": "ON",
+        "MARIO_BUILD_TESTS": "OFF",
+        "MARIO_ENABLE_SANITIZERS": "OFF"
+      }
+    },
+    {
+      "name": "release-wasm",
+      "displayName": "Release (WebAssembly)",
+      "inherits": "base",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MARIO_BUILD_WASM": "ON",
+        "MARIO_BUILD_TESTS": "OFF",
+        "MARIO_ENABLE_SANITIZERS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug-native",
+      "configurePreset": "debug-native"
+    },
+    {
+      "name": "release-native",
+      "configurePreset": "release-native"
+    },
+    {
+      "name": "debug-wasm",
+      "configurePreset": "debug-wasm"
+    },
+    {
+      "name": "release-wasm",
+      "configurePreset": "release-wasm"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug-native",
+      "configurePreset": "debug-native",
+      "output": {
+        "outputOnFailure": true,
+        "verbosity": "verbose"
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+    "textures": [
+        { "key": "player_idle",     "path": "textures/player_idle.png"     },
+        { "key": "player_run",      "path": "textures/player_run.png"      },
+        { "key": "player_jump",     "path": "textures/player_jump.png"     },
+        { "key": "player_fall",     "path": "textures/player_fall.png"     },
+        { "key": "player_dash",     "path": "textures/player_dash.png"     },
+        { "key": "player_wallslide","path": "textures/player_wallslide.png"},
+        { "key": "player_hurt",     "path": "textures/player_hurt.png"     },
+        { "key": "player_dead",     "path": "textures/player_dead.png"     },
+
+        { "key": "walker",          "path": "textures/enemy_walker.png"    },
+        { "key": "jumper",          "path": "textures/enemy_jumper.png"    },
+        { "key": "shooter",         "path": "textures/enemy_shooter.png"   },
+        { "key": "guardian",         "path": "textures/enemy_guardian.png"  },
+        { "key": "projectile",      "path": "textures/projectile.png"     },
+
+        { "key": "tileset_ruins",   "path": "textures/tileset_ruins.png"   },
+        { "key": "destructible",    "path": "textures/destructible.png"    },
+
+        { "key": "coin",            "path": "textures/coin.png"            },
+        { "key": "gem_shard",       "path": "textures/gem_shard.png"       },
+        { "key": "power_crystal",   "path": "textures/power_crystal.png"   },
+
+        { "key": "flagpole",        "path": "textures/flagpole.png"        },
+        { "key": "particle",        "path": "textures/particle.png"        },
+
+        { "key": "bg_ruins_far",    "path": "textures/bg_ruins_far.png"    },
+        { "key": "bg_ruins_mid",    "path": "textures/bg_ruins_mid.png"    },
+        { "key": "bg_ruins_near",   "path": "textures/bg_ruins_near.png"   }
+    ],
+    "sounds": [
+        { "key": "jump",            "path": "audio/jump.wav"               },
+        { "key": "double_jump",     "path": "audio/double_jump.wav"        },
+        { "key": "dash",            "path": "audio/dash.wav"               },
+        { "key": "wall_jump",       "path": "audio/wall_jump.wav"          },
+        { "key": "wall_slide",      "path": "audio/wall_slide.wav"         },
+        { "key": "land",            "path": "audio/land.wav"               },
+
+        { "key": "coin_pickup",     "path": "audio/coin_pickup.wav"        },
+        { "key": "gem_pickup",      "path": "audio/gem_pickup.wav"         },
+        { "key": "powerup_pickup",  "path": "audio/powerup_pickup.wav"     },
+        { "key": "powerup_expire",  "path": "audio/powerup_expire.wav"     },
+
+        { "key": "enemy_stomp",     "path": "audio/enemy_stomp.wav"        },
+        { "key": "enemy_shoot",     "path": "audio/enemy_shoot.wav"        },
+        { "key": "player_hurt",     "path": "audio/player_hurt.wav"        },
+        { "key": "player_death",    "path": "audio/player_death.wav"       },
+
+        { "key": "block_break",     "path": "audio/block_break.wav"        },
+        { "key": "level_complete",  "path": "audio/level_complete.wav"     },
+        { "key": "game_over",       "path": "audio/game_over.wav"          },
+
+        { "key": "menu_select",     "path": "audio/menu_select.wav"        },
+        { "key": "menu_confirm",    "path": "audio/menu_confirm.wav"       },
+        { "key": "pause",           "path": "audio/pause.wav"              }
+    ],
+    "music": [
+        { "key": "ruins_theme",     "path": "audio/ruins_theme.ogg"        },
+        { "key": "menu_theme",      "path": "audio/menu_theme.ogg"         },
+        { "key": "boss_theme",      "path": "audio/boss_theme.ogg"         }
+    ],
+    "fonts": [
+        { "key": "main",            "path": "fonts/main.ttf"               }
+    ]
+}

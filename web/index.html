@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0d0b14">
+    <title>Ruins of the Ancients</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ================================================================= -->
+    <!-- Loading screen                                                     -->
+    <!-- ================================================================= -->
+    <div id="loading-screen">
+        <div id="loading-content">
+            <h1 id="loading-title">Ruins of the Ancients</h1>
+            <p id="loading-subtitle">Loading&hellip;</p>
+            <div id="progress-bar-outer">
+                <div id="progress-bar-inner"></div>
+            </div>
+            <p id="progress-text">0%</p>
+            <p id="error-text"></p>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Game canvas                                                        -->
+    <!-- ================================================================= -->
+    <div id="canvas-container">
+        <canvas id="canvas"
+                tabindex="0"
+                oncontextmenu="event.preventDefault()"
+                width="1280" height="720">
+        </canvas>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Mobile touch controls overlay                                      -->
+    <!-- ================================================================= -->
+    <div id="touch-controls">
+
+        <!-- D-pad (bottom-left) -->
+        <div id="dpad">
+            <button class="touch-btn" id="btn-left" aria-label="Move Left">
+                <svg viewBox="0 0 64 64" width="64" height="64">
+                    <polygon points="48,8 16,32 48,56" fill="currentColor"/>
+                </svg>
+            </button>
+            <button class="touch-btn" id="btn-right" aria-label="Move Right">
+                <svg viewBox="0 0 64 64" width="64" height="64">
+                    <polygon points="16,8 48,32 16,56" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Action buttons (bottom-right) -->
+        <div id="action-buttons">
+            <button class="touch-btn action-btn" id="btn-jump" aria-label="Jump">
+                <span>JUMP</span>
+            </button>
+            <button class="touch-btn action-btn" id="btn-dash" aria-label="Dash">
+                <span>DASH</span>
+            </button>
+        </div>
+
+        <!-- Pause button (top-right) -->
+        <button class="touch-btn" id="btn-pause" aria-label="Pause">
+            <svg viewBox="0 0 32 32" width="32" height="32">
+                <rect x="8" y="6" width="5" height="20" fill="currentColor"/>
+                <rect x="19" y="6" width="5" height="20" fill="currentColor"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- Scripts                                                            -->
+    <!-- ================================================================= -->
+    <script src="loading.js"></script>
+    <script>
+        // ---- Action enum IDs (must match C++ Action enum order) ----
+        var ACTION_MOVE_LEFT  = 0;
+        var ACTION_MOVE_RIGHT = 1;
+        var ACTION_JUMP       = 2;
+        var ACTION_DASH       = 3;
+        var ACTION_PAUSE      = 4;
+
+        function sendTouch(actionId, pressed) {
+            if (typeof Module !== 'undefined' && Module.ccall) {
+                Module.ccall('setTouchInput', null,
+                    ['number', 'number'],
+                    [actionId, pressed ? 1 : 0]);
+            }
+        }
+
+        // ---- Bind touch events (handles multi-touch correctly) ----
+        function bindTouchButton(elementId, actionId) {
+            var el = document.getElementById(elementId);
+            if (!el) return;
+
+            el.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                sendTouch(actionId, true);
+                el.classList.add('active');
+            }, { passive: false });
+
+            el.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                sendTouch(actionId, false);
+                el.classList.remove('active');
+            }, { passive: false });
+
+            el.addEventListener('touchcancel', function(e) {
+                e.preventDefault();
+                sendTouch(actionId, false);
+                el.classList.remove('active');
+            }, { passive: false });
+
+            // Mouse fallback for testing on desktop
+            el.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                sendTouch(actionId, true);
+                el.classList.add('active');
+            });
+
+            el.addEventListener('mouseup', function(e) {
+                e.preventDefault();
+                sendTouch(actionId, false);
+                el.classList.remove('active');
+            });
+
+            el.addEventListener('mouseleave', function(e) {
+                sendTouch(actionId, false);
+                el.classList.remove('active');
+            });
+        }
+
+        // ---- Initialize touch controls once DOM is ready ----
+        document.addEventListener('DOMContentLoaded', function() {
+            bindTouchButton('btn-left',  ACTION_MOVE_LEFT);
+            bindTouchButton('btn-right', ACTION_MOVE_RIGHT);
+            bindTouchButton('btn-jump',  ACTION_JUMP);
+            bindTouchButton('btn-dash',  ACTION_DASH);
+            bindTouchButton('btn-pause', ACTION_PAUSE);
+
+            // Focus canvas for keyboard input
+            var canvas = document.getElementById('canvas');
+            if (canvas) canvas.focus();
+        });
+
+        // ---- Prevent double-tap zoom on iOS ----
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        var lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            var now = Date.now();
+            if (now - lastTouchEnd <= 300) e.preventDefault();
+            lastTouchEnd = now;
+        }, false);
+    </script>
+
+    <!-- Emscripten-generated JS (output name matches CMake: mario.js) -->
+    <script>
+        var Module = {
+            canvas: (function() {
+                return document.getElementById('canvas');
+            })(),
+            onRuntimeInitialized: function() {
+                onWASMReady();
+            },
+            setStatus: function(text) {
+                if (text) {
+                    // Parse "Downloading data... (X/Y)" format
+                    var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+                    if (m) {
+                        var loaded = parseFloat(m[2]);
+                        var total  = parseFloat(m[4]);
+                        updateProgress(loaded / total);
+                    }
+                }
+            },
+            print: function(text) {
+                console.log(text);
+            },
+            printErr: function(text) {
+                console.error(text);
+            }
+        };
+    </script>
+    <script async src="mario.js"></script>
+</body>
+</html>
