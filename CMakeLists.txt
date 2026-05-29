@@ -180,6 +180,11 @@ if(MARIO_BUILD_WASM)
     # SDL2 port header availability for compilation (single flag, no space)
     target_compile_options(MarioGameLib PRIVATE "-sUSE_SDL=2")
 
+    # Suppress third-party (EnTT) sign-conversion warnings in WASM builds
+    target_compile_options(MarioGameLib PRIVATE
+        -Wno-sign-conversion -Wno-conversion -Wno-implicit-int-float-conversion
+    )
+
     set_target_properties(MarioGame-web PROPERTIES
         OUTPUT_NAME "mario"
         SUFFIX ".html"
