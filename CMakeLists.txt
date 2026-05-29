@@ -176,18 +176,9 @@ if(MARIO_BUILD_WASM)
     endif()
 
     target_link_options(MarioGame-web PRIVATE ${MARIO_EM_FLAGS})
-    target_compile_options(MarioGame-web PRIVATE
-        "-s" "USE_SDL=2"
-        "-s" "USE_SDL_IMAGE=2"
-        "-s" "USE_SDL_TTF=2"
-        "-s" "USE_SDL_MIXER=2"
-    )
-    target_compile_options(MarioGameLib PRIVATE
-        "-s" "USE_SDL=2"
-        "-s" "USE_SDL_IMAGE=2"
-        "-s" "USE_SDL_TTF=2"
-        "-s" "USE_SDL_MIXER=2"
-    )
+
+    # SDL2 port header availability for compilation (single flag, no space)
+    target_compile_options(MarioGameLib PRIVATE "-sUSE_SDL=2")
 
     set_target_properties(MarioGame-web PROPERTIES
         OUTPUT_NAME "mario"
