@@ -89,7 +89,7 @@ void SFMLPlatform::pollEvents() {
 
     // Sample current key state from SFML's real-time input
     for (int i = 0; i < KEY_COUNT; ++i) {
-        const auto& binding = m_keyMap[i];
+        const auto& binding = m_keyMap[static_cast<std::size_t>(i)];
         bool pressed = false;
         if (binding.primary != sf::Keyboard::Unknown) {
             pressed = sf::Keyboard::isKeyPressed(binding.primary);

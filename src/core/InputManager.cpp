@@ -30,7 +30,7 @@ void InputManager::update() {
 
     // Read raw state from platform + merge touch
     for (int i = 0; i < ACTION_COUNT; ++i) {
-        KeyCode key = m_bindings[i];
+        KeyCode key = m_bindings[static_cast<std::size_t>(i)];
         bool fromKeyboard = m_platform->isKeyPressed(key);
         bool fromTouch = m_touchState[static_cast<size_t>(i)];
         m_currState[static_cast<size_t>(i)] = fromKeyboard || fromTouch;
@@ -65,11 +65,11 @@ void InputManager::setTouchButtonState(Action action, bool pressed) {
 }
 
 void InputManager::bind(Action action, KeyCode key) {
-    m_bindings[static_cast<int>(action)] = key;
+    m_bindings[static_cast<std::size_t>(action)] = key;
 }
 
 KeyCode InputManager::getBinding(Action action) const {
-    return m_bindings[static_cast<int>(action)];
+    return m_bindings[static_cast<std::size_t>(action)];
 }
 
 Vec2f InputManager::getPointerPosition() const {

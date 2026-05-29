@@ -124,14 +124,14 @@ void GameScene::spawnEntities() {
         Vec2f pos{esd.x, esd.y};
 
         if (esd.type == "jumper") {
-            EntityFactory::createJumper(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createJumper(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else if (esd.type == "shooter") {
-            EntityFactory::createShooter(m_registry, pos, esd.facing == -1);
+            (void)EntityFactory::createShooter(m_registry, pos, esd.facing == -1);
         } else if (esd.type == "guardian") {
-            EntityFactory::createGuardian(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createGuardian(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else {
             // Default: walker
-            EntityFactory::createWalker(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createWalker(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         }
     }
 
@@ -140,16 +140,16 @@ void GameScene::spawnEntities() {
         Vec2f pos{csd.x, csd.y};
 
         if (csd.type == "gem_shard") {
-            EntityFactory::createGemShard(m_registry, pos);
+            (void)EntityFactory::createGemShard(m_registry, pos);
         } else if (csd.type == "power_crystal") {
-            EntityFactory::createPowerCrystal(m_registry, pos);
+            (void)EntityFactory::createPowerCrystal(m_registry, pos);
         } else {
-            EntityFactory::createCoin(m_registry, pos);
+            (void)EntityFactory::createCoin(m_registry, pos);
         }
     }
 
     // ---- Goal ----
-    EntityFactory::createGoal(m_registry, m_levelData.goalPosition);
+    (void)EntityFactory::createGoal(m_registry, m_levelData.goalPosition);
 }
 
 // =============================================================================

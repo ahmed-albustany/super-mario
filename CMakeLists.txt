@@ -240,6 +240,12 @@ else()
         ${MARIO_WARNING_FLAGS}
         ${MARIO_SANITIZER_FLAGS}
     )
+    # Suppress conversion warnings from third-party headers (EnTT)
+    if(NOT MSVC)
+        target_compile_options(MarioGameLib PRIVATE
+            -Wno-sign-conversion -Wno-conversion -Wno-implicit-int-float-conversion
+        )
+    endif()
     target_link_options(MarioGameLib PUBLIC ${MARIO_SANITIZER_FLAGS})
 
     # ---- Main executable ----
