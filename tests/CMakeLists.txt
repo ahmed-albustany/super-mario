@@ -32,3 +32,15 @@ mario_add_test(test_physics       test_physics.cpp)
 mario_add_test(test_collision     test_collision.cpp)
 mario_add_test(test_statemachine  test_statemachine.cpp)
 mario_add_test(test_levelloader   test_levelloader.cpp)
+
+# Copy runtime DLLs (SFML, etc.) next to test executables on Windows
+if(WIN32)
+    foreach(test_target test_physics test_collision test_statemachine test_levelloader)
+        add_custom_command(TARGET ${test_target} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:${test_target}>
+                $<TARGET_FILE_DIR:${test_target}>
+            COMMAND_EXPAND_LISTS
+        )
+    endforeach()
+endif()

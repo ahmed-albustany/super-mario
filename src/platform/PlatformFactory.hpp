@@ -3,20 +3,23 @@
 #include <memory>
 #include "platform/IPlatform.hpp"
 
+// Forward declarations in global namespace — definitions live in
+// SFMLPlatform.cpp / SDLPlatform.cpp. Kept out of header to avoid
+// leaking SFML/SDL headers into game code.
+#ifdef MARIO_WASM
+std::unique_ptr<IPlatform> createSDLPlatform();
+#else
+std::unique_ptr<IPlatform> createSFMLPlatform();
+#endif
+
 /// @brief Compile-time platform selection.
 ///        Returns the correct IPlatform implementation based on MARIO_WASM.
 namespace Platform {
 
 inline std::unique_ptr<IPlatform> create() {
 #ifdef MARIO_WASM
-    // Forward declaration — include kept out of header to avoid
-    // leaking SDL headers into game code.
-    std::unique_ptr<IPlatform> createSDLPlatform();
     return createSDLPlatform();
 #else
-    // Forward declaration — include kept out of header to avoid
-    // leaking SFML headers into game code.
-    std::unique_ptr<IPlatform> createSFMLPlatform();
     return createSFMLPlatform();
 #endif
 }
