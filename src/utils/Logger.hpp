@@ -72,7 +72,13 @@ inline void log(Level level, const char* file, int line, const std::string& msg)
     }
 
     std::ostringstream oss;
-    auto tm = *std::localtime(&timeT);
+    std::tm tm_buf{};
+#ifdef _WIN32
+    localtime_s(&tm_buf, &timeT);
+#else
+    localtime_r(&timeT, &tm_buf);
+#endif
+    auto& tm = tm_buf;
     oss << std::put_time(&tm, "%H:%M:%S") << '.'
         << std::setfill('0') << std::setw(3) << ms.count()
         << " [" << levelStr(level) << "]"
