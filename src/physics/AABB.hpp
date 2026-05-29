@@ -86,6 +86,10 @@ struct SweptResult {
     constexpr float INF = std::numeric_limits<float>::infinity();
 
     if (velocity.x == 0.0f) {
+        // No movement on X — must already overlap on this axis
+        if (a.right() <= b.left() || a.left() >= b.right()) {
+            return result;
+        }
         xEntry = -INF;
         xExit  =  INF;
     } else {
@@ -94,6 +98,10 @@ struct SweptResult {
     }
 
     if (velocity.y == 0.0f) {
+        // No movement on Y — must already overlap on this axis
+        if (a.bottom() <= b.top() || a.top() >= b.bottom()) {
+            return result;
+        }
         yEntry = -INF;
         yExit  =  INF;
     } else {
