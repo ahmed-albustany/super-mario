@@ -136,7 +136,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
 
         // Brief lockout after wall jump (0.12s before air control resumes)
         if (player.state == PlayerState::WallJumping) {
-            static constexpr float WALL_JUMP_LOCKOUT = 0.12f;
+            [[maybe_unused]] static constexpr float WALL_JUMP_LOCKOUT = 0.12f;
             // Estimate time since wall jump: if vy has risen enough, unlock
             // Simple approach: transition to jump/fall state after velocity reverses
             if (vel.velocity.y > 0.0f) {

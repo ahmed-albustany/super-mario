@@ -178,7 +178,12 @@ if(MARIO_BUILD_WASM)
     target_link_options(MarioGame-web PRIVATE ${MARIO_EM_FLAGS})
 
     # SDL2 port header availability for compilation (single flag, no space)
-    target_compile_options(MarioGameLib PRIVATE "-sUSE_SDL=2")
+    target_compile_options(MarioGameLib PRIVATE
+        "-sUSE_SDL=2"
+        "-sUSE_SDL_IMAGE=2"
+        "-sUSE_SDL_TTF=2"
+        "-sUSE_SDL_MIXER=2"
+    )
 
     # Suppress third-party (EnTT) sign-conversion warnings in WASM builds
     target_compile_options(MarioGameLib PRIVATE
