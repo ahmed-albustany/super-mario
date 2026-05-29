@@ -2,6 +2,7 @@
 
 #include "scenes/IScene.hpp"
 #include <string>
+#include <vector>
 
 class Game;
 

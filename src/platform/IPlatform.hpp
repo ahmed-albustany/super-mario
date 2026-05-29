@@ -17,8 +17,8 @@ struct Color {
     uint8_t a = 255;
 
     constexpr Color() = default;
-    constexpr Color(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255)
-        : r(r), g(g), b(b), a(a) {}
+    constexpr Color(uint8_t pr, uint8_t pg, uint8_t pb, uint8_t pa = 255)
+        : r(pr), g(pg), b(pb), a(pa) {}
 
     static constexpr Color White()       { return {255, 255, 255, 255}; }
     static constexpr Color Black()       { return {0,   0,   0,   255}; }

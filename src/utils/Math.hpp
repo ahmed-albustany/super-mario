@@ -11,7 +11,7 @@ struct Vec2f {
     float y = 0.0f;
 
     constexpr Vec2f() = default;
-    constexpr Vec2f(float x, float y) : x(x), y(y) {}
+    constexpr Vec2f(float px, float py) : x(px), y(py) {}
 
     constexpr Vec2f operator+(const Vec2f& o) const { return {x + o.x, y + o.y}; }
     constexpr Vec2f operator-(const Vec2f& o) const { return {x - o.x, y - o.y}; }
@@ -50,7 +50,7 @@ struct Vec2i {
     int y = 0;
 
     constexpr Vec2i() = default;
-    constexpr Vec2i(int x, int y) : x(x), y(y) {}
+    constexpr Vec2i(int px, int py) : x(px), y(py) {}
 
     constexpr Vec2i operator+(const Vec2i& o) const { return {x + o.x, y + o.y}; }
     constexpr Vec2i operator-(const Vec2i& o) const { return {x - o.x, y - o.y}; }
@@ -79,7 +79,7 @@ struct Rect {
     float h = 0.0f;
 
     constexpr Rect() = default;
-    constexpr Rect(float x, float y, float w, float h) : x(x), y(y), w(w), h(h) {}
+    constexpr Rect(float px, float py, float pw, float ph) : x(px), y(py), w(pw), h(ph) {}
 
     [[nodiscard]] constexpr float left()   const { return x; }
     [[nodiscard]] constexpr float right()  const { return x + w; }
