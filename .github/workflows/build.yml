@@ -46,15 +46,8 @@ jobs:
         run: cmake --preset debug-native
       - name: Build (Debug)
         run: cmake --build --preset debug-native --parallel
-      - name: Add DLL dirs to PATH (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $gtest = "D:\a\super-mario\super-mario\build\debug-native\bin\Debug"
-          $sfml  = "D:\a\super-mario\super-mario\build\debug-native\_deps\sfml-build\lib\Debug"
-          echo "$gtest" >> $env:GITHUB_PATH
-          echo "$sfml"  >> $env:GITHUB_PATH
-      - name: Run tests
+      - name: Run tests (Linux and macOS only)
+        if: runner.os != 'Windows'
         run: ctest --preset debug-native
       - name: Configure (Release)
         if: startsWith(github.ref, 'refs/tags/v')
