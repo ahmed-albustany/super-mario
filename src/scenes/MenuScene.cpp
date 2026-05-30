@@ -13,6 +13,7 @@ MenuScene::MenuScene(Game& game) : m_game(game) {}
 void MenuScene::onEnter() {
     m_selectedItem = MENU_PLAY;
     m_elapsed = 0.0f;
+    m_confirmed = false;
     LOG_INFO("MenuScene entered");
 }
 
@@ -135,6 +136,9 @@ void MenuScene::selectItem(int index) {
 }
 
 void MenuScene::confirmSelection() {
+    if (m_confirmed) return; // already transitioning
+    m_confirmed = true;
+
     switch (m_selectedItem) {
         case MENU_PLAY:
             m_game.scenes().replace(std::make_unique<GameScene>(m_game));

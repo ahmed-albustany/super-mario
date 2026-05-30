@@ -1,7 +1,10 @@
 /* ==========================================================================
    Ruins of the Ancients — WASM Web Shell Styles
-   Responsive: desktop → tablet → phone. 16:9 aspect ratio preserved.
+   Responsive: desktop > tablet > phone. 16:9 aspect ratio preserved.
    ========================================================================== */
+
+/* ---- Import pixel font ---- */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
 /* ---- Reset & base ---- */
 *, *::before, *::after {
@@ -14,11 +17,9 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #0d0b14;
+    background: #08060e;
     font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     color: #b8b0c8;
-
-    /* Prevent selection, tap highlight, and text adjustments on mobile */
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -37,8 +38,20 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0d0b14;
-    transition: opacity 0.5s ease;
+    background: #08060e;
+    transition: opacity 0.8s ease;
+}
+
+/* Atmospheric background: radial glow + subtle noise */
+#loading-screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 50% at 50% 60%, rgba(80, 40, 120, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 30% 40%, rgba(40, 80, 140, 0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 30% 25% at 70% 30%, rgba(140, 60, 40, 0.06) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 #loading-screen.hidden {
@@ -47,57 +60,148 @@ html, body {
 }
 
 #loading-content {
+    position: relative;
     text-align: center;
-    max-width: 400px;
-    padding: 24px;
+    max-width: 520px;
+    padding: 32px 40px;
+    z-index: 1;
 }
 
+/* ---- Title ---- */
 #loading-title {
-    font-size: 28px;
-    color: #c8a0ff;
-    margin-bottom: 8px;
-    letter-spacing: 2px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 26px;
+    line-height: 1.6;
+    color: #d4a853;
+    margin-bottom: 6px;
+    letter-spacing: 3px;
     text-transform: uppercase;
+    text-shadow:
+        0 0 20px rgba(212, 168, 83, 0.4),
+        0 0 60px rgba(212, 168, 83, 0.15),
+        0 2px 0 #6b4a1e;
+    animation: titlePulse 4s ease-in-out infinite;
 }
 
+@keyframes titlePulse {
+    0%, 100% { text-shadow: 0 0 20px rgba(212, 168, 83, 0.4), 0 0 60px rgba(212, 168, 83, 0.15), 0 2px 0 #6b4a1e; }
+    50%      { text-shadow: 0 0 30px rgba(212, 168, 83, 0.6), 0 0 80px rgba(212, 168, 83, 0.25), 0 2px 0 #6b4a1e; }
+}
+
+/* ---- Subtitle ---- */
 #loading-subtitle {
-    font-size: 14px;
-    color: #7a6e90;
-    margin-bottom: 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #6a5a80;
+    margin-bottom: 40px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    animation: subtitleFade 2s ease-in-out infinite;
 }
 
+@keyframes subtitleFade {
+    0%, 100% { opacity: 0.6; }
+    50%      { opacity: 1.0; }
+}
+
+/* ---- Decorative line ---- */
+#loading-content::before {
+    content: '';
+    display: block;
+    width: 60%;
+    height: 1px;
+    margin: 0 auto 32px;
+    background: linear-gradient(90deg, transparent, #4a3a6a 30%, #d4a853 50%, #4a3a6a 70%, transparent);
+    opacity: 0.6;
+}
+
+/* ---- Progress bar ---- */
 #progress-bar-outer {
     width: 100%;
-    height: 8px;
-    background: #1e1a2e;
-    border-radius: 4px;
+    height: 6px;
+    background: #130f1e;
+    border-radius: 3px;
     overflow: hidden;
-    border: 1px solid #2e2840;
+    border: 1px solid #1e1830;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 #progress-bar-inner {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, #6a3fcf, #c8a0ff);
-    border-radius: 4px;
-    transition: width 0.15s ease;
+    background: linear-gradient(90deg, #6a3fcf, #d4a853);
+    border-radius: 3px;
+    transition: width 0.2s ease;
+    box-shadow: 0 0 12px rgba(212, 168, 83, 0.4);
+    position: relative;
+}
+
+/* Animated shimmer on progress bar */
+#progress-bar-inner::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.15) 50%,
+        transparent 100%
+    );
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
 }
 
 #progress-text {
-    font-size: 12px;
-    color: #5a5070;
-    margin-top: 8px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: #4a3a6a;
+    margin-top: 12px;
+    letter-spacing: 2px;
 }
 
 #error-text {
-    color: #ff5050;
-    font-size: 14px;
-    margin-top: 16px;
+    font-family: 'Press Start 2P', monospace;
+    color: #c44040;
+    font-size: 9px;
+    margin-top: 20px;
+    line-height: 1.8;
     display: none;
+    text-shadow: 0 0 12px rgba(196, 64, 64, 0.3);
 }
 
 #error-text.visible {
     display: block;
+}
+
+/* ---- Floating particles (pure CSS) ---- */
+#loading-screen::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(212, 168, 83, 0.3);
+    border-radius: 50%;
+    top: 70%;
+    left: 20%;
+    box-shadow:
+        60vw -20vh 2px rgba(106, 63, 207, 0.2),
+        30vw -40vh 1px rgba(212, 168, 83, 0.15),
+        70vw -10vh 3px rgba(106, 63, 207, 0.15),
+        10vw -50vh 1px rgba(212, 168, 83, 0.2),
+        80vw -30vh 2px rgba(180, 140, 220, 0.1),
+        40vw -60vh 1px rgba(212, 168, 83, 0.1),
+        50vw -15vh 2px rgba(106, 63, 207, 0.2);
+    animation: particleFloat 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes particleFloat {
+    0%, 100% { transform: translateY(0px); opacity: 0.6; }
+    50%      { transform: translateY(-20px); opacity: 1; }
 }
 
 /* ---- Canvas container ---- */
@@ -107,7 +211,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #0d0b14;
+    background: #08060e;
 }
 
 #canvas {
@@ -120,7 +224,9 @@ html, body {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     outline: none;
-    background: #0a0810;
+    background: #08060e;
+    border: 1px solid #1a1428;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
 }
 
 /* ---- Touch controls overlay ---- */
@@ -132,18 +238,12 @@ html, body {
     display: none;
 }
 
-/* Show on touch devices only */
 @media (pointer: coarse) {
-    #touch-controls {
-        display: block;
-    }
+    #touch-controls { display: block; }
 }
 
-/* Also show on narrow screens (phones/tablets in portrait) regardless of pointer */
 @media (max-width: 1024px) and (hover: none) {
-    #touch-controls {
-        display: block;
-    }
+    #touch-controls { display: block; }
 }
 
 /* ---- D-pad (bottom-left) ---- */
@@ -191,7 +291,8 @@ html, body {
     border-radius: 16px;
     background: rgba(30, 24, 50, 0.7);
     color: rgba(200, 180, 240, 0.8);
-    font-size: 13px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
     font-weight: 700;
     letter-spacing: 1px;
     cursor: pointer;
@@ -211,7 +312,6 @@ html, body {
     color: rgba(255, 220, 150, 1);
 }
 
-/* Action buttons (jump/dash) are slightly larger and circular */
 .action-btn {
     width: 80px;
     height: 80px;
@@ -224,7 +324,6 @@ html, body {
 
 /* ---- Responsive adjustments ---- */
 
-/* Tablets in landscape (iPad 1024x768) */
 @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
     #dpad { bottom: 20px; left: 20px; }
     #action-buttons { bottom: 20px; right: 20px; }
@@ -232,42 +331,41 @@ html, body {
     .action-btn { width: 84px; height: 84px; }
 }
 
-/* Tablets in portrait (iPad 768x1024) */
 @media (max-width: 768px) and (orientation: portrait) {
     #dpad { bottom: 32px; left: 12px; }
     #action-buttons { bottom: 32px; right: 12px; }
     .touch-btn { width: 68px; height: 68px; }
-    .action-btn { width: 76px; height: 76px; font-size: 12px; }
+    .action-btn { width: 76px; height: 76px; font-size: 9px; }
 }
 
-/* Small phones (iPhone SE 375x667, small Android 360x640) */
 @media (max-width: 414px) {
     #dpad { bottom: 16px; left: 8px; gap: 8px; }
     #action-buttons { bottom: 16px; right: 8px; gap: 8px; }
-    .touch-btn { width: 64px; height: 64px; border-radius: 14px; font-size: 11px; }
+    .touch-btn { width: 64px; height: 64px; border-radius: 14px; font-size: 9px; }
     .action-btn { width: 70px; height: 70px; }
     #btn-pause { top: 8px; right: 8px; width: 40px; height: 40px; }
-    #loading-title { font-size: 22px; }
+    #loading-title { font-size: 16px; }
+    #loading-content { padding: 24px 20px; }
 }
 
-/* Very small phones (< 360px width) */
 @media (max-width: 359px) {
     .touch-btn { width: 56px; height: 56px; }
-    .action-btn { width: 64px; height: 64px; font-size: 10px; }
+    .action-btn { width: 64px; height: 64px; font-size: 8px; }
     #dpad { bottom: 12px; left: 6px; gap: 6px; }
     #action-buttons { bottom: 12px; right: 6px; gap: 6px; }
+    #loading-title { font-size: 14px; }
 }
 
-/* Landscape phones — buttons hugging edges tighter */
 @media (max-height: 450px) and (orientation: landscape) {
     #dpad { bottom: 8px; left: 8px; gap: 6px; }
     #action-buttons { bottom: 8px; right: 8px; gap: 6px; }
     .touch-btn { width: 60px; height: 60px; }
-    .action-btn { width: 68px; height: 68px; font-size: 11px; }
+    .action-btn { width: 68px; height: 68px; font-size: 9px; }
     #btn-pause { top: 6px; right: 6px; width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+    #loading-title { font-size: 18px; }
 }
 
-/* Desktop — hide touch controls, ensure canvas doesn't fill if huge */
+/* Desktop — hide touch controls */
 @media (pointer: fine) and (hover: hover) {
     #touch-controls { display: none !important; }
 }

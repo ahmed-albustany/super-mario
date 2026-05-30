@@ -2,7 +2,23 @@
   "permissions": {
     "allow": [
       "Bash(echo \"EXIT:$?\")",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(find /c/Users/Ahmed/project/super_mario/assets/textures -type f -name *.png)",
+      "Bash(bash rename_assets.sh)",
+      "Bash(find /c/Users/Ahmed/project/super_mario/assets/textures -type f -name player_* -o -name enemy_* -o -name tileset_* -o -name destructible* -o -name flagpole* -o -name projectile* -o -name particle* -o -name coin* -o -name gem_* -o -name power_* -o -name bg_*)",
+      "Bash(file:*)",
+      "Bash(ls -1 assets/audio/*.ogg)",
+      "Bash(cp lowDown.ogg powerup_expire.ogg)",
+      "Bash(cp pepSound1.ogg enemy_stomp.ogg)",
+      "Bash(cp laser1.ogg enemy_shoot.ogg)",
+      "Bash(cp phaserDown1.ogg player_hurt.ogg)",
+      "Bash(cp phaserDown3.ogg player_death.ogg)",
+      "Bash(cp assets/audio/lowDown.ogg assets/audio/powerup_expire.ogg)",
+      "Bash(cp assets/audio/pepSound1.ogg assets/audio/enemy_stomp.ogg)",
+      "Bash(cp assets/audio/laser1.ogg assets/audio/enemy_shoot.ogg)",
+      "Bash(cp assets/audio/phaserDown1.ogg assets/audio/player_hurt.ogg)",
+      "Bash(cp assets/audio/phaserDown3.ogg assets/audio/player_death.ogg)",
+      "Bash(curl -L -o /c/Users/Ahmed/project/super_mario/assets/fonts/main.ttf \"https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf\")"
     ]
   }
 }

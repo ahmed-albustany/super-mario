@@ -6,7 +6,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#0d0b14">
+    <meta name="theme-color" content="#08060e">
+    <meta name="description" content="Ruins of the Ancients — A pixel platformer adventure. Play in your browser.">
     <title>Ruins of the Ancients</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -17,7 +18,7 @@
     <!-- ================================================================= -->
     <div id="loading-screen">
         <div id="loading-content">
-            <h1 id="loading-title">Ruins of the Ancients</h1>
+            <h1 id="loading-title">Ruins of<br>the Ancients</h1>
             <p id="loading-subtitle">Loading&hellip;</p>
             <div id="progress-bar-outer">
                 <div id="progress-bar-inner"></div>
@@ -42,8 +43,6 @@
     <!-- Mobile touch controls overlay                                      -->
     <!-- ================================================================= -->
     <div id="touch-controls">
-
-        <!-- D-pad (bottom-left) -->
         <div id="dpad">
             <button class="touch-btn" id="btn-left" aria-label="Move Left">
                 <svg viewBox="0 0 64 64" width="64" height="64">
@@ -57,7 +56,6 @@
             </button>
         </div>
 
-        <!-- Action buttons (bottom-right) -->
         <div id="action-buttons">
             <button class="touch-btn action-btn" id="btn-jump" aria-label="Jump">
                 <span>JUMP</span>
@@ -67,7 +65,6 @@
             </button>
         </div>
 
-        <!-- Pause button (top-right) -->
         <button class="touch-btn" id="btn-pause" aria-label="Pause">
             <svg viewBox="0 0 32 32" width="32" height="32">
                 <rect x="8" y="6" width="5" height="20" fill="currentColor"/>
@@ -96,7 +93,6 @@
             }
         }
 
-        // ---- Bind touch events (handles multi-touch correctly) ----
         function bindTouchButton(elementId, actionId) {
             var el = document.getElementById(elementId);
             if (!el) return;
@@ -119,7 +115,6 @@
                 el.classList.remove('active');
             }, { passive: false });
 
-            // Mouse fallback for testing on desktop
             el.addEventListener('mousedown', function(e) {
                 e.preventDefault();
                 sendTouch(actionId, true);
@@ -138,7 +133,6 @@
             });
         }
 
-        // ---- Initialize touch controls once DOM is ready ----
         document.addEventListener('DOMContentLoaded', function() {
             bindTouchButton('btn-left',  ACTION_MOVE_LEFT);
             bindTouchButton('btn-right', ACTION_MOVE_RIGHT);
@@ -146,12 +140,11 @@
             bindTouchButton('btn-dash',  ACTION_DASH);
             bindTouchButton('btn-pause', ACTION_PAUSE);
 
-            // Focus canvas for keyboard input
             var canvas = document.getElementById('canvas');
             if (canvas) canvas.focus();
         });
 
-        // ---- Prevent double-tap zoom on iOS ----
+        // Prevent double-tap zoom on iOS
         document.addEventListener('touchstart', function(e) {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
@@ -175,7 +168,6 @@
             },
             setStatus: function(text) {
                 if (text) {
-                    // Parse "Downloading data... (X/Y)" format
                     var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
                     if (m) {
                         var loaded = parseFloat(m[2]);
