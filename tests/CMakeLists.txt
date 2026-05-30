@@ -25,7 +25,7 @@ function(mario_add_test TEST_NAME TEST_SOURCE)
         GTest::gtest_main
     )
     target_compile_options(${TEST_NAME} PRIVATE ${MARIO_WARNING_FLAGS})
-    gtest_discover_tests(${TEST_NAME})
+    gtest_discover_tests(${TEST_NAME} DISCOVERY_MODE PRE_TEST)
 endfunction()
 
 mario_add_test(test_physics       test_physics.cpp)
