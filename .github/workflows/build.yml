@@ -29,16 +29,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            libsfml-dev \
-            libgl1-mesa-dev \
-            libudev-dev \
-            libfreetype-dev \
-            libopenal-dev \
-            libvorbis-dev \
-            libflac-dev \
-            libx11-dev \
-            libxrandr-dev \
-            libxcursor-dev
+            libsfml-dev libgl1-mesa-dev libudev-dev libfreetype-dev \
+            libopenal-dev libvorbis-dev libflac-dev libx11-dev \
+            libxrandr-dev libxcursor-dev
       - name: Install SFML (macOS)
         if: runner.os == 'macOS'
         run: brew install sfml
@@ -55,8 +48,16 @@ jobs:
       - name: Build (Release)
         if: startsWith(github.ref, 'refs/tags/v')
         run: cmake --build --preset release-native --parallel
-      - name: Package release
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Package release (Windows)
+        if: startsWith(github.ref, 'refs/tags/v') && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-pkg
+          Copy-Item -Path build/release-native/MarioGame* -Destination release-pkg/ -ErrorAction SilentlyContinue
+          Copy-Item -Path assets -Destination release-pkg/ -Recurse
+          Compress-Archive -Path release-pkg/* -DestinationPath MarioGame-windows.zip
+      - name: Package release (Linux/macOS)
+        if: startsWith(github.ref, 'refs/tags/v') && runner.os != 'Windows'
         shell: bash
         run: |
           mkdir -p release-pkg
