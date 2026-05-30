@@ -42,8 +42,10 @@ SDLPlatform::SDLPlatform() {
         LOG_FATAL("SDL_CreateWindow failed: " << SDL_GetError());
     }
 
-    m_renderer = SDL_CreateRenderer(m_window, -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    // In WASM, vsync is handled by the browser via requestAnimationFrame
+    // (emscripten_set_main_loop with fps=0). SDL_RENDERER_PRESENTVSYNC would
+    // trigger an incompatible emscripten_set_main_loop_timing call.
+    m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED);
     if (!m_renderer) {
         LOG_FATAL("SDL_CreateRenderer failed: " << SDL_GetError());
     }

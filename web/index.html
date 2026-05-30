@@ -133,6 +133,29 @@
             });
         }
 
+        // ---- Canvas sizing: force integer pixel dimensions (16:9) ----
+        // CSS percentage-based sizing produces fractional widths/heights,
+        // which cause SDL2's fillMouseEventData to write floats into an
+        // integer heap — crashing with SAFE_HEAP enabled.
+        function resizeCanvas() {
+            var canvas = document.getElementById('canvas');
+            if (!canvas) return;
+            var container = canvas.parentElement;
+            var cw = container.clientWidth;
+            var ch = container.clientHeight;
+            // Fit 16:9 inside the container with integer dimensions
+            var w = Math.floor(Math.min(cw, ch * 16 / 9));
+            var h = Math.floor(w * 9 / 16);
+            if (h > ch) {
+                h = Math.floor(ch);
+                w = Math.floor(h * 16 / 9);
+            }
+            canvas.style.width  = w + 'px';
+            canvas.style.height = h + 'px';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
         document.addEventListener('DOMContentLoaded', function() {
             bindTouchButton('btn-left',  ACTION_MOVE_LEFT);
             bindTouchButton('btn-right', ACTION_MOVE_RIGHT);
@@ -141,7 +164,13 @@
             bindTouchButton('btn-pause', ACTION_PAUSE);
 
             var canvas = document.getElementById('canvas');
-            if (canvas) canvas.focus();
+            if (canvas) {
+                canvas.focus();
+                // Re-focus canvas when clicked (ensures keyboard input works)
+                canvas.addEventListener('click', function() { canvas.focus(); });
+            }
+
+            resizeCanvas();
         });
 
         // Prevent double-tap zoom on iOS
@@ -161,6 +190,10 @@
     <script>
         var Module = {
             canvas: (function() {
+                return document.getElementById('canvas');
+            })(),
+            // Route keyboard events to canvas element (required for WASM SDL2 input)
+            keyboardListeningElement: (function() {
                 return document.getElementById('canvas');
             })(),
             onRuntimeInitialized: function() {
