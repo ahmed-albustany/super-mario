@@ -18,7 +18,18 @@
       "Bash(cp assets/audio/laser1.ogg assets/audio/enemy_shoot.ogg)",
       "Bash(cp assets/audio/phaserDown1.ogg assets/audio/player_hurt.ogg)",
       "Bash(cp assets/audio/phaserDown3.ogg assets/audio/player_death.ogg)",
-      "Bash(curl -L -o /c/Users/Ahmed/project/super_mario/assets/fonts/main.ttf \"https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf\")"
+      "Bash(curl -L -o /c/Users/Ahmed/project/super_mario/assets/fonts/main.ttf \"https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf\")",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \":*)",
+      "Bash(find C:/Users/Ahmed/project/super_mario -name *.json -type f)",
+      "Bash(for file:*)",
+      "Bash(do test:*)",
+      "Bash(echo \"OK: $file\")",
+      "Bash(echo \"MISSING: $file\")",
+      "Bash(done)",
+      "Bash(grep -oE textures/[^\"\"]+ manifest.json)",
+      "Bash(grep -oE audio/[^\"\"]+ manifest.json)",
+      "Bash(grep:*)"
     ]
   }
 }

@@ -1,11 +1,14 @@
 #include "ecs/systems/EnemyAISystem.hpp"
 #include "ecs/Components.hpp"
+#include "core/EventBus.hpp"
+#include "core/Events.hpp"
 #include "core/GameConfig.hpp"
+#include "core/ResourceManager.hpp"
 #include "utils/Math.hpp"
 
 #include <cmath>
 
-void EnemyAISystem::update(entt::registry& reg, float dt) {
+void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
     // Find the player's position for sight-based AI
     Vec2f playerPos = {0.0f, 0.0f};
     bool  playerAlive = false;
@@ -151,8 +154,18 @@ void EnemyAISystem::update(entt::registry& reg, float dt) {
                                 250.0f,   // speed
                                 {projDir, 0.0f}
                             });
-                        reg.emplace<SpriteComponent>(projEntity); // placeholder sprite
+
+                        // Assign projectile texture
+                        SpriteComponent projSprite;
+                        auto projTex = ResourceManager::instance().getTexture("projectile");
+                        projSprite.texture = projTex.value_or(TextureHandle{0});
+                        projSprite.srcRect = {0.0f, 0.0f, 24.0f, 24.0f};
+                        projSprite.zOrder = 8;
+                        reg.emplace<SpriteComponent>(projEntity, projSprite);
+
                         reg.emplace<TagComponent>(projEntity, TagComponent{"projectile"});
+
+                        events.publish(EnemyShootEvent{spawnPos});
                     }
                 } else {
                     enemy.isAlerted = false;

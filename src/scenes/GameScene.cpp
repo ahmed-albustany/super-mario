@@ -6,6 +6,7 @@
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
 #include "core/ResourceManager.hpp"
+#include "audio/AudioManager.hpp"
 #include "entities/EntityFactory.hpp"
 #include "ecs/Components.hpp"
 #include "utils/Logger.hpp"
@@ -49,9 +50,15 @@ void GameScene::onEnter() {
     // Push HUD as overlay on top of us
     m_game.scenes().push(std::make_unique<HUDScene>(m_game, m_score, m_lives,
                                                       m_coins, m_gems, m_levelTimer));
+
+    // Start gameplay music
+    AudioManager::instance().playMusic("ruins_theme", true);
 }
 
 void GameScene::onExit() {
+    // Stop gameplay music
+    AudioManager::instance().stopMusic();
+
     // Unsubscribe from events
     auto& bus = m_game.events();
     bus.unsubscribe<PlayerDiedEvent>(m_subPlayerDied);
@@ -176,7 +183,7 @@ void GameScene::update(float dt) {
 
     // ---- System tick order ----
     m_playerSystem.update(m_registry, dt, m_game.input(), m_game.events());
-    m_enemyAISystem.update(m_registry, dt);
+    m_enemyAISystem.update(m_registry, dt, m_game.events());
     m_physicsSystem.update(m_registry, dt);
     m_movementSystem.update(m_registry, dt);
     m_collisionSystem.update(m_registry, dt, m_game.events());

@@ -4,6 +4,7 @@
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
 #include "core/ResourceManager.hpp"
+#include "audio/AudioManager.hpp"
 #include "utils/Logger.hpp"
 
 #include <cmath>
@@ -14,6 +15,7 @@ void MenuScene::onEnter() {
     m_selectedItem = MENU_PLAY;
     m_elapsed = 0.0f;
     m_confirmed = false;
+    AudioManager::instance().playMusic("menu_theme", true);
     LOG_INFO("MenuScene entered");
 }
 
@@ -132,12 +134,17 @@ void MenuScene::render(IPlatform& platform) {
 }
 
 void MenuScene::selectItem(int index) {
-    m_selectedItem = ((index % MENU_COUNT) + MENU_COUNT) % MENU_COUNT;
+    int newItem = ((index % MENU_COUNT) + MENU_COUNT) % MENU_COUNT;
+    if (newItem != m_selectedItem) {
+        m_selectedItem = newItem;
+        AudioManager::instance().playSound("menu_select");
+    }
 }
 
 void MenuScene::confirmSelection() {
     if (m_confirmed) return; // already transitioning
     m_confirmed = true;
+    AudioManager::instance().playSound("menu_confirm");
 
     switch (m_selectedItem) {
         case MENU_PLAY:

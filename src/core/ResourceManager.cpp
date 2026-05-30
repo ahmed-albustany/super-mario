@@ -22,38 +22,40 @@ int ResourceManager::preload(const std::string& manifestPath,
     try {
         auto json = nlohmann::json::parse(*content);
 
-        // Load textures
-        if (json.contains("textures") && json["textures"].is_object()) {
-            for (auto& [key, pathVal] : json["textures"].items()) {
-                std::string fullPath = assetsRoot + pathVal.get<std::string>();
-                if (!loadTexture(key, fullPath)) {
-                    LOG_ERROR("Failed to preload texture: " << key);
-                    ++failures;
-                }
-            }
-        }
+        // Helper lambda — handles both array [{key, path}] and object {key: path} formats
+        auto loadSection = [&](const std::string& section, auto loadFn) {
+            if (!json.contains(section)) return;
+            const auto& val = json[section];
 
-        // Load sounds
-        if (json.contains("sounds") && json["sounds"].is_object()) {
-            for (auto& [key, pathVal] : json["sounds"].items()) {
-                std::string fullPath = assetsRoot + pathVal.get<std::string>();
-                if (!loadSound(key, fullPath)) {
-                    LOG_ERROR("Failed to preload sound: " << key);
-                    ++failures;
+            if (val.is_array()) {
+                for (const auto& item : val) {
+                    if (item.is_object() &&
+                        item.contains("key") && item["key"].is_string() &&
+                        item.contains("path") && item["path"].is_string()) {
+                        std::string key = item["key"].get<std::string>();
+                        std::string fullPath = assetsRoot + item["path"].get<std::string>();
+                        if (!(this->*loadFn)(key, fullPath)) {
+                            LOG_ERROR("Failed to preload: " << key);
+                            ++failures;
+                        }
+                    }
+                }
+            } else if (val.is_object()) {
+                for (auto& [key, pathVal] : val.items()) {
+                    if (pathVal.is_string()) {
+                        std::string fullPath = assetsRoot + pathVal.get<std::string>();
+                        if (!(this->*loadFn)(key, fullPath)) {
+                            LOG_ERROR("Failed to preload: " << key);
+                            ++failures;
+                        }
+                    }
                 }
             }
-        }
+        };
 
-        // Load fonts
-        if (json.contains("fonts") && json["fonts"].is_object()) {
-            for (auto& [key, pathVal] : json["fonts"].items()) {
-                std::string fullPath = assetsRoot + pathVal.get<std::string>();
-                if (!loadFont(key, fullPath)) {
-                    LOG_ERROR("Failed to preload font: " << key);
-                    ++failures;
-                }
-            }
-        }
+        loadSection("textures", &ResourceManager::loadTexture);
+        loadSection("sounds",   &ResourceManager::loadSound);
+        loadSection("fonts",    &ResourceManager::loadFont);
 
     } catch (const nlohmann::json::exception& e) {
         LOG_ERROR("ResourceManager: JSON parse error in manifest: " << e.what());

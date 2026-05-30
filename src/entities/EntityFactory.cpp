@@ -1,5 +1,32 @@
 #include "entities/EntityFactory.hpp"
 #include "core/GameConfig.hpp"
+#include "core/ResourceManager.hpp"
+
+namespace {
+
+/// @brief Helper — look up a texture from ResourceManager, return handle (may be invalid).
+TextureHandle tex(const std::string& key) {
+    auto opt = ResourceManager::instance().getTexture(key);
+    return opt.value_or(TextureHandle{0});
+}
+
+/// @brief Build a single-frame animation clip.
+AnimationComponent::Clip makeClip(const std::string& name, const std::string& textureKey,
+                                   const Rect& frame, float fps = 10.0f, bool loop = true) {
+    AnimationComponent::Clip clip;
+    clip.name    = name;
+    clip.frames  = {frame};
+    clip.fps     = fps;
+    clip.loop    = loop;
+    clip.texture = tex(textureKey);
+    return clip;
+}
+
+// Standard source rects for whole-image sprites
+constexpr Rect CHAR_RECT  = {0.0f, 0.0f, 24.0f, 24.0f}; // 24x24 character sprites
+constexpr Rect ITEM_RECT  = {0.0f, 0.0f, 18.0f, 18.0f}; // 18x18 item sprites
+
+} // anonymous namespace
 
 // =============================================================================
 // Player
@@ -12,10 +39,33 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     registry.emplace<VelocityComponent>(entity);
     registry.emplace<GravityComponent>(entity);
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {4.0f, 0.0f}, {24.0f, 32.0f}, false, false
+        {0.0f, 0.0f}, {24.0f, 24.0f}, false, false
     });
-    registry.emplace<SpriteComponent>(entity);
-    registry.emplace<AnimationComponent>(entity);
+
+    // Sprite — start with idle texture
+    SpriteComponent sprite;
+    sprite.texture = tex("player_idle");
+    sprite.srcRect = CHAR_RECT;
+    sprite.zOrder  = 10; // player renders above most things
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    // Animation clips — one clip per player state, each referencing its own texture
+    AnimationComponent anim;
+    anim.clips = {
+        makeClip("idle",        "player_idle",      CHAR_RECT, 1.0f, true),
+        makeClip("run",         "player_run",       CHAR_RECT, 8.0f, true),
+        makeClip("jump",        "player_jump",      CHAR_RECT, 1.0f, false),
+        makeClip("double_jump", "player_jump",      CHAR_RECT, 1.0f, false),
+        makeClip("fall",        "player_fall",      CHAR_RECT, 1.0f, true),
+        makeClip("dash",        "player_dash",      CHAR_RECT, 1.0f, false),
+        makeClip("wall_slide",  "player_wallslide", CHAR_RECT, 1.0f, true),
+        makeClip("wall_jump",   "player_jump",      CHAR_RECT, 1.0f, false),
+        makeClip("hurt",        "player_hurt",      CHAR_RECT, 1.0f, false),
+        makeClip("dead",        "player_dead",      CHAR_RECT, 1.0f, false),
+    };
+    anim.currentClip = 0;
+    registry.emplace<AnimationComponent>(entity, anim);
+
     registry.emplace<PlayerComponent>(entity);
     registry.emplace<HealthComponent>(entity, HealthComponent{
         Config::PLAYER_MAX_HP, Config::PLAYER_MAX_HP, 0, false
@@ -37,10 +87,36 @@ void EntityFactory::attachEnemyBase(entt::registry& registry, entt::entity entit
     registry.emplace<VelocityComponent>(entity);
     registry.emplace<GravityComponent>(entity);
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {4.0f, 4.0f}, {24.0f, 28.0f}, false, false
+        {0.0f, 0.0f}, {24.0f, 24.0f}, false, false
     });
-    registry.emplace<SpriteComponent>(entity);
-    registry.emplace<AnimationComponent>(entity);
+
+    // Determine texture key based on enemy type
+    std::string texKey;
+    switch (type) {
+        case EnemyType::Walker:   texKey = "walker";   break;
+        case EnemyType::Jumper:   texKey = "jumper";   break;
+        case EnemyType::Shooter:  texKey = "shooter";  break;
+        case EnemyType::Guardian: texKey = "guardian";  break;
+    }
+
+    SpriteComponent sprite;
+    sprite.texture = tex(texKey);
+    sprite.srcRect = CHAR_RECT;
+    sprite.zOrder  = 5;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    // Simple animation — all states use the same single-frame texture
+    AnimationComponent anim;
+    anim.clips = {
+        makeClip("idle",   texKey, CHAR_RECT, 1.0f, true),
+        makeClip("walk",   texKey, CHAR_RECT, 6.0f, true),
+        makeClip("attack", texKey, CHAR_RECT, 1.0f, false),
+        makeClip("hurt",   texKey, CHAR_RECT, 1.0f, false),
+        makeClip("dead",   texKey, CHAR_RECT, 1.0f, false),
+    };
+    anim.currentClip = 0;
+    registry.emplace<AnimationComponent>(entity, anim);
+
     registry.emplace<HealthComponent>(entity, HealthComponent{hp, hp, 0, false});
 
     EnemyComponent ec{};
@@ -129,10 +205,19 @@ entt::entity EntityFactory::createCoin(entt::registry& registry, Vec2f pos) {
 
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {4.0f, 4.0f}, {24.0f, 24.0f}, true, false
+        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
     });
-    registry.emplace<SpriteComponent>(entity);
-    registry.emplace<AnimationComponent>(entity);
+
+    SpriteComponent sprite;
+    sprite.texture = tex("coin");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 3;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    AnimationComponent anim;
+    anim.clips = {makeClip("idle", "coin", ITEM_RECT, 1.0f, true)};
+    registry.emplace<AnimationComponent>(entity, anim);
+
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
         CollectibleType::Coin, Config::COIN_VALUE, false
     });
@@ -146,10 +231,19 @@ entt::entity EntityFactory::createGemShard(entt::registry& registry, Vec2f pos) 
 
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {4.0f, 4.0f}, {24.0f, 24.0f}, true, false
+        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
     });
-    registry.emplace<SpriteComponent>(entity);
-    registry.emplace<AnimationComponent>(entity);
+
+    SpriteComponent sprite;
+    sprite.texture = tex("gem_shard");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 3;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    AnimationComponent anim;
+    anim.clips = {makeClip("idle", "gem_shard", ITEM_RECT, 1.0f, true)};
+    registry.emplace<AnimationComponent>(entity, anim);
+
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
         CollectibleType::GemShard, Config::GEM_VALUE, false
     });
@@ -163,10 +257,19 @@ entt::entity EntityFactory::createPowerCrystal(entt::registry& registry, Vec2f p
 
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {4.0f, 4.0f}, {24.0f, 24.0f}, true, false
+        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
     });
-    registry.emplace<SpriteComponent>(entity);
-    registry.emplace<AnimationComponent>(entity);
+
+    SpriteComponent sprite;
+    sprite.texture = tex("power_crystal");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 3;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    AnimationComponent anim;
+    anim.clips = {makeClip("idle", "power_crystal", ITEM_RECT, 1.0f, true)};
+    registry.emplace<AnimationComponent>(entity, anim);
+
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
         CollectibleType::PowerCrystal, 0, false
     });
@@ -188,9 +291,15 @@ entt::entity EntityFactory::createProjectile(entt::registry& registry, Vec2f pos
         {direction.x * 300.0f, direction.y * 300.0f}
     });
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {2.0f, 2.0f}, {12.0f, 12.0f}, true, false
+        {3.0f, 3.0f}, {18.0f, 18.0f}, true, false
     });
-    registry.emplace<SpriteComponent>(entity);
+
+    SpriteComponent sprite;
+    sprite.texture = tex("projectile");
+    sprite.srcRect = CHAR_RECT;
+    sprite.zOrder  = 8;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
     registry.emplace<ProjectileComponent>(entity, ProjectileComponent{
         static_cast<uint32_t>(entt::to_integral(owner)),
         1,              // damage
@@ -261,9 +370,15 @@ entt::entity EntityFactory::createGoal(entt::registry& registry, Vec2f pos) {
 
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {32.0f, 64.0f}, true, false
+        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
     });
-    registry.emplace<SpriteComponent>(entity);
+
+    SpriteComponent sprite;
+    sprite.texture = tex("flagpole");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 2;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
     registry.emplace<GoalComponent>(entity);
     registry.emplace<TagComponent>(entity, TagComponent{"goal"});
 

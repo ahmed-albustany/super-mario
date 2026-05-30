@@ -48,6 +48,8 @@ void BootScene::onEnter() {
         parseSection("textures", "texture");
         parseSection("sounds", "sound");
         parseSection("fonts", "font");
+        // Note: music is loaded on-demand by AudioManager::playMusic() via
+        // IPlatform::playMusic(path), not through ResourceManager handles.
 
     } catch (const nlohmann::json::exception& e) {
         LOG_ERROR("BootScene: manifest parse error: " << e.what());

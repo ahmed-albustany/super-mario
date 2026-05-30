@@ -75,6 +75,9 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.facing = (moveX > 0.0f) ? 1 : -1;
         }
 
+        // Track previous grounded state for landing detection
+        bool wasGrounded = player.isGrounded;
+
         // ================================================================
         // DASHING — overrides everything else
         // ================================================================
@@ -99,6 +102,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.dashCooldownTimer = Config::PLAYER_DASH_COOLDOWN;
             vel.velocity.x = Config::PLAYER_DASH_SPEED * static_cast<float>(player.facing);
             vel.velocity.y = 0.0f;
+            events.publish(PlayerDashEvent{});
             continue;
         }
 
@@ -131,6 +135,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             vel.velocity.x = Config::WALL_JUMP_FORCE_X * static_cast<float>(-wallSide);
             vel.velocity.y = Config::WALL_JUMP_FORCE_Y;
             player.facing = -wallSide;
+            events.publish(PlayerWallJumpEvent{});
             continue; // skip horizontal input this frame
         }
 
@@ -159,6 +164,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.jumpCount = 1;
             player.jumpBufferTimer = 0.0f;
             player.coyoteTimer = 0.0f;
+            events.publish(PlayerJumpEvent{1});
         }
         else if (!canGroundJump && player.jumpCount < Config::MAX_JUMPS &&
                  player.jumpBufferTimer > 0.0f) {
@@ -167,6 +173,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             vel.velocity.y = Config::PLAYER_JUMP_FORCE;
             player.jumpCount = Config::MAX_JUMPS;
             player.jumpBufferTimer = 0.0f;
+            events.publish(PlayerJumpEvent{2});
         }
 
         // Variable jump height: release jump early → cut upward velocity
@@ -199,6 +206,12 @@ void PlayerSystem::update(entt::registry& reg, float dt,
 
             if (player.isGrounded) {
                 player.jumpCount = 0;
+
+                // Detect landing (was airborne, now grounded)
+                if (!wasGrounded) {
+                    events.publish(PlayerLandedEvent{});
+                }
+
                 if (std::abs(vel.velocity.x) > 1.0f) {
                     player.state = PlayerState::Running;
                 } else {
@@ -222,6 +235,4 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.jumpCount = 0;
         }
     }
-
-    (void)events; // events used by collision system for player death/hurt
 }

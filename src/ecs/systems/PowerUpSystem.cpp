@@ -62,6 +62,14 @@ void PowerUpSystem::update(entt::registry& reg, float dt, EventBus& events) {
                     break;
             }
 
+            // Notify audio system
+            std::string expiredType;
+            switch (powerUp.type) {
+                case PowerUpType::Invincibility: expiredType = "invincibility"; break;
+                case PowerUpType::SpeedBoost:    expiredType = "speed_boost";   break;
+            }
+            events.publish(PowerUpExpiredEvent{expiredType});
+
             LOG_DEBUG("Power-up expired on entity " << static_cast<uint32_t>(entity));
         }
     }

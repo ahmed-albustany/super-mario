@@ -70,6 +70,7 @@ struct AnimationComponent {
         std::vector<Rect> frames;   ///< Source rects for each frame
         float fps        = 10.0f;
         bool  loop       = true;
+        TextureHandle texture;       ///< If valid, sets sprite texture when this clip plays
     };
 
     std::vector<Clip> clips;         ///< All animation clips for this entity

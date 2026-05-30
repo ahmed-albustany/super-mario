@@ -4,6 +4,7 @@
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
 #include "core/ResourceManager.hpp"
+#include "audio/AudioManager.hpp"
 
 #include <cmath>
 
@@ -12,6 +13,7 @@ PauseScene::PauseScene(Game& game) : m_game(game) {}
 void PauseScene::onEnter() {
     m_selectedItem = PAUSE_RESUME;
     m_elapsed = 0.0f;
+    AudioManager::instance().playSound("pause");
 }
 
 void PauseScene::onExit() {}

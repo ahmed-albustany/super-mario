@@ -88,6 +88,7 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
 
             if (anim.finished && !clip.loop) {
                 // Non-looping clip has ended — stay on last frame
+                if (clip.texture.valid()) sprite.texture = clip.texture;
                 sprite.srcRect = clip.frames.back();
                 continue;
             }
@@ -108,6 +109,11 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
                         break;
                     }
                 }
+            }
+
+            // Swap texture if the clip specifies one
+            if (clip.texture.valid()) {
+                sprite.texture = clip.texture;
             }
 
             // Update sprite source rect to current animation frame (bounds-checked)

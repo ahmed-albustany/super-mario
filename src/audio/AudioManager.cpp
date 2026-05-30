@@ -52,6 +52,41 @@ void AudioManager::init(IPlatform& platform, EventBus& eventBus) {
             playSound("powerup_pickup");
         });
 
+    m_subPlayerJump = eventBus.subscribe<PlayerJumpEvent>(
+        [this](const PlayerJumpEvent& e) {
+            playSound(e.jumpNumber >= 2 ? "double_jump" : "jump");
+        });
+
+    m_subPlayerDash = eventBus.subscribe<PlayerDashEvent>(
+        [this](const PlayerDashEvent& /*e*/) {
+            playSound("dash");
+        });
+
+    m_subPlayerWallJump = eventBus.subscribe<PlayerWallJumpEvent>(
+        [this](const PlayerWallJumpEvent& /*e*/) {
+            playSound("wall_jump");
+        });
+
+    m_subPlayerLanded = eventBus.subscribe<PlayerLandedEvent>(
+        [this](const PlayerLandedEvent& /*e*/) {
+            playSound("land");
+        });
+
+    m_subPlayerHurt = eventBus.subscribe<PlayerHurtEvent>(
+        [this](const PlayerHurtEvent& /*e*/) {
+            playSound("player_hurt");
+        });
+
+    m_subEnemyShoot = eventBus.subscribe<EnemyShootEvent>(
+        [this](const EnemyShootEvent& /*e*/) {
+            playSound("enemy_shoot");
+        });
+
+    m_subPowerUpExpired = eventBus.subscribe<PowerUpExpiredEvent>(
+        [this](const PowerUpExpiredEvent& /*e*/) {
+            playSound("powerup_expire");
+        });
+
     LOG_INFO("AudioManager: initialized");
 }
 
@@ -61,6 +96,13 @@ void AudioManager::shutdown(EventBus& eventBus) {
     eventBus.unsubscribe<CoinCollectedEvent>(m_subCoinCollected);
     eventBus.unsubscribe<EnemyKilledEvent>(m_subEnemyKilled);
     eventBus.unsubscribe<PowerUpActivatedEvent>(m_subPowerUp);
+    eventBus.unsubscribe<PlayerJumpEvent>(m_subPlayerJump);
+    eventBus.unsubscribe<PlayerDashEvent>(m_subPlayerDash);
+    eventBus.unsubscribe<PlayerWallJumpEvent>(m_subPlayerWallJump);
+    eventBus.unsubscribe<PlayerLandedEvent>(m_subPlayerLanded);
+    eventBus.unsubscribe<PlayerHurtEvent>(m_subPlayerHurt);
+    eventBus.unsubscribe<EnemyShootEvent>(m_subEnemyShoot);
+    eventBus.unsubscribe<PowerUpExpiredEvent>(m_subPowerUpExpired);
 
     m_platform = nullptr;
     LOG_INFO("AudioManager: shut down");

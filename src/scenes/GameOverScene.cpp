@@ -5,6 +5,7 @@
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
 #include "core/ResourceManager.hpp"
+#include "audio/AudioManager.hpp"
 
 #include <cmath>
 #include <string>
@@ -18,6 +19,7 @@ GameOverScene::GameOverScene(Game& game, bool win, int score)
 void GameOverScene::onEnter() {
     m_selectedItem = GO_RETRY;
     m_elapsed = 0.0f;
+    AudioManager::instance().playSound(m_win ? "level_complete" : "game_over");
 }
 
 void GameOverScene::onExit() {}

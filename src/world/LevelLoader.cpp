@@ -105,20 +105,17 @@ std::optional<LevelData> LevelLoader::load(const std::string& relativePath) {
         // ================================================================
         const auto& spawns = root["spawn_points"];
 
-        // Player spawn
+        // Player spawn (tile coordinates → pixels)
         if (spawns.contains("player") && spawns["player"].is_object()) {
             const auto& ps = spawns["player"];
-            data.playerSpawn = {
-                safeGet<float>(ps, "x", 2.0f) * static_cast<float>(data.widthTiles > 0 ? 32 : 1),
-                safeGet<float>(ps, "y", 12.0f) * 32.0f
-            };
-            // If coordinates look like tile coords (small numbers), convert to pixels
             float rawX = safeGet<float>(ps, "x", 2.0f);
             float rawY = safeGet<float>(ps, "y", 12.0f);
+            // Convert tile coords to pixel coords
             if (rawX < static_cast<float>(data.widthTiles) &&
                 rawY < static_cast<float>(data.heightTiles)) {
                 data.playerSpawn = {rawX * 32.0f, rawY * 32.0f};
             } else {
+                // Already in pixel coordinates
                 data.playerSpawn = {rawX, rawY};
             }
         }
