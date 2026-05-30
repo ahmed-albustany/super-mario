@@ -155,22 +155,22 @@ if(MARIO_BUILD_WASM)
     target_compile_options(MarioGame-web PRIVATE ${MARIO_WARNING_FLAGS})
     target_compile_definitions(MarioGame-web PRIVATE MARIO_WASM=1)
 
-    # Emscripten link flags
+    # Emscripten link flags (use -sFLAG=VALUE format — no space after -s)
     set(MARIO_EM_FLAGS
-        "-s USE_SDL=2"
-        "-s USE_SDL_IMAGE=2"
-        "-s SDL2_IMAGE_FORMATS=[\"png\"]"
-        "-s USE_SDL_TTF=2"
-        "-s USE_SDL_MIXER=2"
-        "-s ALLOW_MEMORY_GROWTH=1"
-        "-s INITIAL_MEMORY=67108864"
-        "-s EXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
-        "-s EXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"
+        "-sUSE_SDL=2"
+        "-sUSE_SDL_IMAGE=2"
+        "-sSDL2_IMAGE_FORMATS=[\"png\"]"
+        "-sUSE_SDL_TTF=2"
+        "-sUSE_SDL_MIXER=2"
+        "-sALLOW_MEMORY_GROWTH=1"
+        "-sINITIAL_MEMORY=67108864"
+        "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
+        "-sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"
         "--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
     )
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        list(APPEND MARIO_EM_FLAGS "-s SAFE_HEAP=1" "-s ASSERTIONS=1")
+        list(APPEND MARIO_EM_FLAGS "-sSAFE_HEAP=1" "-sASSERTIONS=1")
     else()
         list(APPEND MARIO_EM_FLAGS "-O2" "--closure 1")
     endif()
