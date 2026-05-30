@@ -23,8 +23,21 @@ void BootScene::onEnter() {
         auto json = nlohmann::json::parse(*content);
 
         auto parseSection = [&](const std::string& section, const std::string& type) {
-            if (json.contains(section) && json[section].is_object()) {
-                for (auto& [key, val] : json[section].items()) {
+            if (!json.contains(section)) return;
+            const auto& arr = json[section];
+            if (arr.is_array()) {
+                for (const auto& item : arr) {
+                    if (item.is_object() &&
+                        item.contains("key") && item["key"].is_string() &&
+                        item.contains("path") && item["path"].is_string()) {
+                        m_assets.push_back({type,
+                                            item["key"].get<std::string>(),
+                                            item["path"].get<std::string>()});
+                    }
+                }
+            } else if (arr.is_object()) {
+                // Legacy format: { "key": "path", ... }
+                for (auto& [key, val] : arr.items()) {
                     if (val.is_string()) {
                         m_assets.push_back({type, key, val.get<std::string>()});
                     }

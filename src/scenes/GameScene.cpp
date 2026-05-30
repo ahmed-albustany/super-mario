@@ -86,7 +86,7 @@ void GameScene::loadLevel(const std::string& levelPath) {
     m_physicsWorld.loadFromLevel(m_levelData.gravity);
 
     // Tilemap
-    auto tileset = ResourceManager::instance().getTexture("tileset");
+    auto tileset = ResourceManager::instance().getTexture("tileset_ruins");
     TextureHandle tilesetHandle = tileset.value_or(TextureHandle{0});
     m_tileMap.load(m_levelData.tiles, m_levelData.widthTiles, m_levelData.heightTiles,
                    tilesetHandle, 16, m_registry);
@@ -97,9 +97,9 @@ void GameScene::loadLevel(const std::string& levelPath) {
     // Parallax backgrounds
     m_parallax.clear();
     auto& rm = ResourceManager::instance();
-    auto bgFar  = rm.getTexture("bg_far");
-    auto bgMid  = rm.getTexture("bg_mid");
-    auto bgNear = rm.getTexture("bg_near");
+    auto bgFar  = rm.getTexture("bg_ruins_far");
+    auto bgMid  = rm.getTexture("bg_ruins_mid");
+    auto bgNear = rm.getTexture("bg_ruins_near");
     if (bgFar && bgMid && bgNear) {
         m_parallax.addDefaultLayers(
             *bgFar,  1280.0f, 720.0f,

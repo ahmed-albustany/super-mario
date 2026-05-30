@@ -44,42 +44,47 @@ void SceneManager::render(IPlatform& platform) {
 }
 
 void SceneManager::applyPendingCommands() {
-    for (auto& cmd : m_pending) {
-        std::visit([this](auto& c) {
-            using T = std::decay_t<decltype(c)>;
+    // Swap to a local copy: onEnter()/onExit() may push new commands to
+    // m_pending, which would invalidate iterators if we iterated directly.
+    // Loop until no new commands are generated.
+    while (!m_pending.empty()) {
+        std::vector<Command> batch;
+        std::swap(batch, m_pending);
 
-            if constexpr (std::is_same_v<T, PushCmd>) {
-                LOG_DEBUG("SceneManager: push '" << c.scene->name() << "'");
-                c.scene->onEnter();
-                m_stack.push_back(std::move(c.scene));
-            }
-            else if constexpr (std::is_same_v<T, PopCmd>) {
-                if (!m_stack.empty()) {
-                    LOG_DEBUG("SceneManager: pop '" << m_stack.back()->name() << "'");
-                    m_stack.back()->onExit();
-                    m_stack.pop_back();
-                    // Notify newly revealed scene
+        for (auto& cmd : batch) {
+            std::visit([this](auto& c) {
+                using T = std::decay_t<decltype(c)>;
+
+                if constexpr (std::is_same_v<T, PushCmd>) {
+                    LOG_DEBUG("SceneManager: push '" << c.scene->name() << "'");
+                    c.scene->onEnter();
+                    m_stack.push_back(std::move(c.scene));
+                }
+                else if constexpr (std::is_same_v<T, PopCmd>) {
                     if (!m_stack.empty()) {
-                        m_stack.back()->onEnter();
+                        LOG_DEBUG("SceneManager: pop '" << m_stack.back()->name() << "'");
+                        m_stack.back()->onExit();
+                        m_stack.pop_back();
+                        if (!m_stack.empty()) {
+                            m_stack.back()->onEnter();
+                        }
+                    } else {
+                        LOG_WARN("SceneManager: pop on empty stack");
                     }
-                } else {
-                    LOG_WARN("SceneManager: pop on empty stack");
                 }
-            }
-            else if constexpr (std::is_same_v<T, ReplaceCmd>) {
-                if (!m_stack.empty()) {
-                    LOG_DEBUG("SceneManager: replace '" << m_stack.back()->name()
-                              << "' with '" << c.scene->name() << "'");
-                    m_stack.back()->onExit();
-                    m_stack.pop_back();
+                else if constexpr (std::is_same_v<T, ReplaceCmd>) {
+                    if (!m_stack.empty()) {
+                        LOG_DEBUG("SceneManager: replace '" << m_stack.back()->name()
+                                  << "' with '" << c.scene->name() << "'");
+                        m_stack.back()->onExit();
+                        m_stack.pop_back();
+                    }
+                    c.scene->onEnter();
+                    m_stack.push_back(std::move(c.scene));
                 }
-                c.scene->onEnter();
-                m_stack.push_back(std::move(c.scene));
-            }
-        }, cmd);
+            }, cmd);
+        }
     }
-
-    m_pending.clear();
 }
 
 bool SceneManager::isEmpty() const {

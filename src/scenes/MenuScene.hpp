@@ -23,6 +23,7 @@ private:
     int   m_selectedItem = 0;
     float m_titleBob     = 0.0f; // animated y offset for title
     float m_elapsed      = 0.0f;
+    bool  m_confirmed    = false; // prevent repeated confirmSelection
 
     static constexpr int MENU_PLAY = 0;
     static constexpr int MENU_QUIT = 1;
