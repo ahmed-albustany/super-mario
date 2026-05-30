@@ -8,11 +8,10 @@ FetchContent_Declare(
     GIT_TAG        v1.14.0
     GIT_SHALLOW    TRUE
 )
-# Prevent GoogleTest from overriding compiler/linker options on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
-# Helper: add a test executable linked to MarioGameLib + gtest
+
 function(mario_add_test TEST_NAME TEST_SOURCE)
     add_executable(${TEST_NAME} ${TEST_SOURCE})
     target_link_libraries(${TEST_NAME} PRIVATE
@@ -21,26 +20,22 @@ function(mario_add_test TEST_NAME TEST_SOURCE)
     )
     target_compile_options(${TEST_NAME} PRIVATE ${MARIO_WARNING_FLAGS})
     if(WIN32)
+        add_custom_command(TARGET ${TEST_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_RUNTIME_DLLS:${TEST_NAME}>
+                $<TARGET_FILE_DIR:${TEST_NAME}>
+            COMMAND_EXPAND_LISTS
+        )
         gtest_discover_tests(${TEST_NAME}
             DISCOVERY_TIMEOUT 30
-            PROPERTIES ENVIRONMENT "PATH=$<TARGET_FILE_DIR:${TEST_NAME}>;$ENV{PATH}"
+            DISCOVERY_MODE PRE_TEST
         )
     else()
         gtest_discover_tests(${TEST_NAME})
     endif()
 endfunction()
+
 mario_add_test(test_physics       test_physics.cpp)
 mario_add_test(test_collision     test_collision.cpp)
 mario_add_test(test_statemachine  test_statemachine.cpp)
 mario_add_test(test_levelloader   test_levelloader.cpp)
-# Copy runtime DLLs (SFML, gtest) next to test executables on Windows
-if(WIN32)
-    foreach(test_target test_physics test_collision test_statemachine test_levelloader)
-        add_custom_command(TARGET ${test_target} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${test_target}>
-                $<TARGET_FILE_DIR:${test_target}>
-            COMMAND_EXPAND_LISTS
-        )
-    endforeach()
-endif()
