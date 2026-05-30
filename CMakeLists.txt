@@ -166,7 +166,7 @@ if(MARIO_BUILD_WASM)
         "-sINITIAL_MEMORY=67108864"
         "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
         "-sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"
-        "--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
+        "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
     )
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
