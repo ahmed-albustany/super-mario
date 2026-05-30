@@ -19,20 +19,7 @@ function(mario_add_test TEST_NAME TEST_SOURCE)
         GTest::gtest_main
     )
     target_compile_options(${TEST_NAME} PRIVATE ${MARIO_WARNING_FLAGS})
-    if(WIN32)
-        add_custom_command(TARGET ${TEST_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_RUNTIME_DLLS:${TEST_NAME}>
-                $<TARGET_FILE_DIR:${TEST_NAME}>
-            COMMAND_EXPAND_LISTS
-        )
-        gtest_discover_tests(${TEST_NAME}
-            DISCOVERY_TIMEOUT 30
-            DISCOVERY_MODE PRE_TEST
-        )
-    else()
-        gtest_discover_tests(${TEST_NAME})
-    endif()
+    gtest_discover_tests(${TEST_NAME})
 endfunction()
 
 mario_add_test(test_physics       test_physics.cpp)
