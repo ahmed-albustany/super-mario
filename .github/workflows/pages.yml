@@ -1,67 +1,56 @@
 name: Deploy to GitHub Pages
-
 on:
   push:
     branches: [main]
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 concurrency:
   group: pages
   cancel-in-progress: true
-
 jobs:
   build-wasm:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Emscripten
         uses: mymindstorm/setup-emsdk@v14
         with:
           version: 3.1.51
-
       - name: Verify Emscripten
         run: emcc --version
-
       - name: Configure WASM (Release)
         run: |
           emcmake cmake -B build/release-wasm \
             -DCMAKE_BUILD_TYPE=Release \
             -DMARIO_BUILD_WASM=ON \
             -DMARIO_BUILD_TESTS=OFF
-
       - name: Build WASM
         run: cmake --build build/release-wasm --parallel
-
+      - name: List build output
+        run: ls -lh build/release-wasm/mario* || echo "No mario files found"
       - name: Prepare deploy directory
         run: |
           mkdir -p deploy
-          # Copy WASM build output
           cp build/release-wasm/mario.js deploy/
           cp build/release-wasm/mario.wasm deploy/
-          cp build/release-wasm/mario.data deploy/ 2>/dev/null || true
-          # Copy web shell files
+          cp build/release-wasm/mario.data deploy/
           cp web/index.html deploy/
           cp web/style.css deploy/
           cp web/loading.js deploy/
-
+          echo "Deploy directory contents:"
+          ls -lh deploy/
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: deploy
-
   deploy:
     needs: build-wasm
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
