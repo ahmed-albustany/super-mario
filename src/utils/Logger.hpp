@@ -29,7 +29,9 @@ namespace LoggerStripped {
 
 #include <iostream>
 #include <sstream>
+#ifndef MARIO_WASM
 #include <mutex>
+#endif
 #include <chrono>
 #include <cstdlib>
 #include <iomanip>
@@ -53,10 +55,12 @@ inline const char* levelStr(Level l) {
     return "?????";
 }
 
+#ifndef MARIO_WASM
 inline std::mutex& mutex() {
     static std::mutex m;
     return m;
 }
+#endif
 
 inline void log(Level level, const char* file, int line, const std::string& msg) {
     auto now = std::chrono::system_clock::now();
@@ -85,7 +89,9 @@ inline void log(Level level, const char* file, int line, const std::string& msg)
         << "[" << filename << ":" << line << "] "
         << msg;
 
+#ifndef MARIO_WASM
     std::lock_guard<std::mutex> lock(mutex());
+#endif
     if (level >= Level::Error) {
         std::cerr << oss.str() << std::endl;
     } else {

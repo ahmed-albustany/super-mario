@@ -121,7 +121,11 @@ void AudioManager::playMusic(const std::string& key, bool loop) {
     // Build the asset path from key
     // The platform's playMusic takes a file path, so we construct it
     // from the key using the standard audio directory convention
+#ifdef MARIO_WASM
+    std::string path = "/assets/audio/" + key + ".ogg";
+#else
     std::string path = "assets/audio/" + key + ".ogg";
+#endif
 
     applyMusicVolume();
     m_platform->playMusic(path, loop);

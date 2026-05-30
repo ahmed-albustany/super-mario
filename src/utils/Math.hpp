@@ -134,9 +134,14 @@ inline float approach(float current, float target, float delta) {
     return std::max(current - delta, target);
 }
 
-/// @brief Thread-local Mersenne Twister RNG engine.
+/// @brief Mersenne Twister RNG engine.
 inline std::mt19937& rng() {
+#ifdef MARIO_WASM
+    // WASM is single-threaded; avoid thread_local and std::random_device
+    static std::mt19937 gen(42);
+#else
     static thread_local std::mt19937 gen(std::random_device{}());
+#endif
     return gen;
 }
 

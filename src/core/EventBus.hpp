@@ -2,12 +2,15 @@
 
 #include <functional>
 #include <vector>
-#include <mutex>
 #include <typeindex>
 #include <unordered_map>
 #include <memory>
 #include <cstdint>
 #include <algorithm>
+
+#ifndef MARIO_WASM
+#include <mutex>
+#endif
 
 /// @brief Subscriber ID returned by subscribe(), used to unsubscribe later.
 using SubscriberID = uint32_t;
@@ -30,14 +33,18 @@ public:
     }
 
     SubscriberID subscribe(HandlerFn handler) {
+#ifndef MARIO_WASM
         std::lock_guard<std::mutex> lock(m_mutex);
+#endif
         SubscriberID id = m_nextId++;
         m_subscribers.push_back({id, std::move(handler)});
         return id;
     }
 
     void unsubscribe(SubscriberID id) {
+#ifndef MARIO_WASM
         std::lock_guard<std::mutex> lock(m_mutex);
+#endif
         m_subscribers.erase(
             std::remove_if(m_subscribers.begin(), m_subscribers.end(),
                 [id](const Subscriber& s) { return s.id == id; }),
@@ -46,9 +53,13 @@ public:
     }
 
     void publish(const EventType& event) {
+#ifndef MARIO_WASM
         std::lock_guard<std::mutex> lock(m_mutex);
+#endif
         for (const auto& sub : m_subscribers) {
-            sub.handler(event);
+            if (sub.handler) {
+                sub.handler(event);
+            }
         }
     }
 
@@ -60,7 +71,9 @@ private:
 
     std::vector<Subscriber> m_subscribers;
     SubscriberID m_nextId = 1;
+#ifndef MARIO_WASM
     std::mutex m_mutex;
+#endif
 };
 
 /// @brief Central event bus — supports any event type via templates.
@@ -69,7 +82,7 @@ class EventBus {
 public:
     EventBus() = default;
 
-    // Non-copyable, non-movable (owns mutex)
+    // Non-copyable, non-movable
     EventBus(const EventBus&) = delete;
     EventBus& operator=(const EventBus&) = delete;
 
@@ -91,7 +104,9 @@ public:
         EventChannel<T>* ch = nullptr;
         {
             auto key = std::type_index(typeid(T));
+#ifndef MARIO_WASM
             std::lock_guard<std::mutex> lock(m_mutex);
+#endif
             auto it = m_channels.find(key);
             if (it != m_channels.end()) {
                 ch = static_cast<EventChannel<T>*>(it->second.get());
@@ -107,7 +122,9 @@ private:
     template<typename T>
     EventChannel<T>& channel() {
         auto key = std::type_index(typeid(T));
+#ifndef MARIO_WASM
         std::lock_guard<std::mutex> lock(m_mutex);
+#endif
         auto it = m_channels.find(key);
         if (it == m_channels.end()) {
             auto ch = std::make_unique<EventChannel<T>>();
@@ -119,5 +136,7 @@ private:
     }
 
     std::unordered_map<std::type_index, std::unique_ptr<IEventChannel>> m_channels;
+#ifndef MARIO_WASM
     mutable std::mutex m_mutex;
+#endif
 };

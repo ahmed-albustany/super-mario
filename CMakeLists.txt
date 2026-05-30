@@ -170,7 +170,7 @@ if(MARIO_BUILD_WASM)
     )
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        list(APPEND MARIO_EM_FLAGS "-sSAFE_HEAP=1" "-sASSERTIONS=1")
+        list(APPEND MARIO_EM_FLAGS "-sASSERTIONS=2" "-sSAFE_HEAP=1" "-g3" "-gsource-map")
     else()
         list(APPEND MARIO_EM_FLAGS "-O2" "--closure 1")
     endif()

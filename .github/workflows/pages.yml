@@ -20,22 +20,23 @@ jobs:
           version: 3.1.51
       - name: Verify Emscripten
         run: emcc --version
-      - name: Configure WASM (Release)
+      - name: Configure WASM (Debug — temporary for crash debugging)
         run: |
-          emcmake cmake -B build/release-wasm \
-            -DCMAKE_BUILD_TYPE=Release \
+          emcmake cmake -B build/debug-wasm \
+            -DCMAKE_BUILD_TYPE=Debug \
             -DMARIO_BUILD_WASM=ON \
             -DMARIO_BUILD_TESTS=OFF
       - name: Build WASM
-        run: cmake --build build/release-wasm --parallel
+        run: cmake --build build/debug-wasm --parallel
       - name: List build output
-        run: ls -lh build/release-wasm/mario* || echo "No mario files found"
+        run: ls -lh build/debug-wasm/mario* || echo "No mario files found"
       - name: Prepare deploy directory
         run: |
           mkdir -p deploy
-          cp build/release-wasm/mario.js deploy/
-          cp build/release-wasm/mario.wasm deploy/
-          cp build/release-wasm/mario.data deploy/
+          cp build/debug-wasm/mario.js deploy/
+          cp build/debug-wasm/mario.wasm deploy/
+          cp build/debug-wasm/mario.data deploy/
+          cp build/debug-wasm/mario.wasm.map deploy/ 2>/dev/null || true
           cp web/index.html deploy/
           cp web/style.css deploy/
           cp web/loading.js deploy/

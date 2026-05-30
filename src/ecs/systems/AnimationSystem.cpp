@@ -79,6 +79,10 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
 
             if (anim.clips.empty()) continue;
 
+            // Bounds-check currentClip
+            if (anim.currentClip < 0 || anim.currentClip >= static_cast<int>(anim.clips.size())) {
+                anim.currentClip = 0;
+            }
             auto& clip = anim.clips[static_cast<size_t>(anim.currentClip)];
             if (clip.frames.empty()) continue;
 
@@ -106,8 +110,10 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
                 }
             }
 
-            // Update sprite source rect to current animation frame
-            sprite.srcRect = clip.frames[static_cast<size_t>(anim.currentFrame)];
+            // Update sprite source rect to current animation frame (bounds-checked)
+            size_t frameIdx = static_cast<size_t>(
+                std::max(0, std::min(anim.currentFrame, static_cast<int>(clip.frames.size()) - 1)));
+            sprite.srcRect = clip.frames[frameIdx];
         }
     }
 

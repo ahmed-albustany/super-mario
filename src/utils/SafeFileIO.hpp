@@ -2,10 +2,13 @@
 
 #include <string>
 #include <optional>
-#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include "utils/Logger.hpp"
+
+#ifndef MARIO_WASM
+#include <filesystem>
+#endif
 
 /// @brief Safe file I/O — all paths validated against a whitelist root.
 ///        No ../ traversal, no absolute paths from user input.
@@ -20,6 +23,14 @@ namespace detail {
 
 /// @brief Set the root assets directory (absolute path). Called once at startup.
 inline void setRoot(const std::string& absPath) {
+#ifdef MARIO_WASM
+    // In WASM, std::filesystem is unreliable. Use the path as-is.
+    detail::rootPath() = absPath;
+    // Ensure trailing slash
+    if (!detail::rootPath().empty() && detail::rootPath().back() != '/') {
+        detail::rootPath() += '/';
+    }
+#else
     namespace fs = std::filesystem;
     try {
         detail::rootPath() = fs::canonical(fs::path(absPath)).string();
@@ -27,13 +38,13 @@ inline void setRoot(const std::string& absPath) {
         // If canonical fails (path doesn't exist yet), use the absolute path
         detail::rootPath() = fs::absolute(fs::path(absPath)).string();
     }
+#endif
     LOG_INFO("SafeIO root set to: [REDACTED]");
 }
 
 /// @brief Validate and resolve a relative path within the root.
 ///        Returns std::nullopt if the path escapes root, contains .., or is absolute.
 [[nodiscard]] inline std::optional<std::string> safePath(const std::string& relativePath) {
-    namespace fs = std::filesystem;
     const auto& root = detail::rootPath();
 
     if (root.empty()) {
@@ -41,15 +52,26 @@ inline void setRoot(const std::string& absPath) {
         return std::nullopt;
     }
 
-    // Reject absolute paths
-    if (fs::path(relativePath).is_absolute()) {
-        LOG_ERROR("SafeIO: rejected absolute path");
-        return std::nullopt;
-    }
-
     // Reject explicit traversal
     if (relativePath.find("..") != std::string::npos) {
         LOG_ERROR("SafeIO: rejected path with '..'");
+        return std::nullopt;
+    }
+
+#ifdef MARIO_WASM
+    // In WASM, reject absolute paths manually
+    if (!relativePath.empty() && relativePath[0] == '/') {
+        LOG_ERROR("SafeIO: rejected absolute path");
+        return std::nullopt;
+    }
+    // Simple concatenation — root already has trailing slash
+    return root + relativePath;
+#else
+    namespace fs = std::filesystem;
+
+    // Reject absolute paths
+    if (fs::path(relativePath).is_absolute()) {
+        LOG_ERROR("SafeIO: rejected absolute path");
         return std::nullopt;
     }
 
@@ -85,6 +107,7 @@ inline void setRoot(const std::string& absPath) {
         LOG_ERROR("SafeIO: filesystem error during path resolution");
         return std::nullopt;
     }
+#endif
 }
 
 /// @brief Read entire file as string. Returns std::nullopt on any error.
@@ -108,6 +131,7 @@ inline void setRoot(const std::string& absPath) {
     auto resolved = safePath(relativePath);
     if (!resolved) return false;
 
+#ifndef MARIO_WASM
     namespace fs = std::filesystem;
 
     // Create parent directories if needed
@@ -120,6 +144,7 @@ inline void setRoot(const std::string& absPath) {
             return false;
         }
     }
+#endif
 
     std::ofstream file(*resolved, std::ios::out | std::ios::binary | std::ios::trunc);
     if (!file.is_open()) {
