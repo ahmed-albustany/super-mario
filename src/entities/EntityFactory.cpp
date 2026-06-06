@@ -502,3 +502,23 @@ entt::entity EntityFactory::createParticleEffect(entt::registry& registry, Vec2f
     registry.emplace<TagComponent>(entity, TagComponent{"particle"});
     return entity;
 }
+
+// =============================================================================
+// Floating score text
+// =============================================================================
+
+entt::entity EntityFactory::createFloatingText(entt::registry& registry, Vec2f pos,
+                                                const std::string& text, Color color) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+
+    FloatingTextComponent ft{};
+    ft.text     = text;
+    ft.color    = color;
+    ft.lifetime = 0.8f;
+    ft.elapsed  = 0.0f;
+    registry.emplace<FloatingTextComponent>(entity, ft);
+    registry.emplace<TagComponent>(entity, TagComponent{"floating_text"});
+
+    return entity;
+}

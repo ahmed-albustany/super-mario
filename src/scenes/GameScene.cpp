@@ -440,8 +440,19 @@ void GameScene::onBlockHit(const BlockHitEvent& event) {
 
 void GameScene::onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event) {
     int flagScore = static_cast<int>(event.grabHeight * static_cast<float>(Config::FLAGPOLE_BASE_SCORE));
+    int finalScore = std::max(100, flagScore);
     auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
-    ps.score = Math::safeAdd(ps.score, std::max(100, flagScore));
+    ps.score = Math::safeAdd(ps.score, finalScore);
+
+    // Floating score popup at flagpole
+    Player& player = (event.playerIndex == 0) ? m_player1 : m_player2;
+    if (player.isValid(m_registry)) {
+        Vec2f pos = m_registry.get<TransformComponent>(player.getEntity()).position;
+        EntityFactory::createFloatingText(m_registry,
+            {pos.x, pos.y - 20.0f},
+            "+" + std::to_string(finalScore),
+            Color{255, 220, 50, 255});
+    }
 }
 
 // =============================================================================
@@ -456,7 +467,8 @@ void GameScene::advanceLevel() {
         m_state->levelWon = false;
         m_state->levelTimer = 300.0f;
 
-        // Reload
+        // Clear old entities and reload
+        m_registry.clear();
         loadLevel(GameState::LEVEL_PATHS[m_state->currentLevel]);
         spawnEntities();
 

@@ -32,7 +32,8 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(bash scripts/rename_assets.sh)",
-      "Bash(cmake -B build -DMARIO_BUILD_TESTS=OFF -DMARIO_BUILD_WASM=OFF)"
+      "Bash(cmake -B build -DMARIO_BUILD_TESTS=OFF -DMARIO_BUILD_WASM=OFF)",
+      "Bash(git remote:*)"
     ]
   }
 }

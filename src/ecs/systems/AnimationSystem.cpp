@@ -175,4 +175,30 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
             }
         }
     }
+
+    // ---- Floating text lifetime + rise ----
+    {
+        auto view = reg.view<FloatingTextComponent, TransformComponent>();
+        for (auto entity : view) {
+            auto& ft  = view.get<FloatingTextComponent>(entity);
+            auto& pos = view.get<TransformComponent>(entity);
+            ft.elapsed += dt;
+            pos.position.y -= ft.riseSpeed * dt;
+            if (ft.elapsed >= ft.lifetime) {
+                reg.emplace_or_replace<DestroyFlag>(entity);
+            }
+        }
+    }
+
+    // ---- Particle emitter lifetime ----
+    {
+        auto view = reg.view<ParticleEmitterComponent>();
+        for (auto entity : view) {
+            auto& pe = view.get<ParticleEmitterComponent>(entity);
+            pe.elapsed += dt;
+            if (pe.elapsed >= pe.lifetime) {
+                reg.emplace_or_replace<DestroyFlag>(entity);
+            }
+        }
+    }
 }

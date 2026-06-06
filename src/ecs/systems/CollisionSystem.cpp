@@ -72,14 +72,21 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
         if (playerBottom <= enemyTopZone && pVel.velocity.y > 0.0f) {
             // Stomp!
             pVel.velocity.y = Config::PLAYER_STOMP_BOUNCE;
+            Vec2f stompPos = reg.get<TransformComponent>(enemyEnt).position;
+            EntityFactory::createParticleEffect(reg, stompPos,
+                ParticleEmitterComponent::Effect::StompPoof);
 
             if (ec.type == EnemyType::Koopa) {
                 // Koopa → become shell
                 ec.state = EnemyState::Shell;
                 ec.isShell = true;
                 ec.shellMoving = false;
+                EntityFactory::createFloatingText(reg,
+                    {stompPos.x, stompPos.y - 16.0f},
+                    "+" + std::to_string(Config::ENEMY_STOMP_VALUE),
+                    Color{255, 255, 255, 255});
                 events.publish(EnemyKilledEvent{"koopa",
-                    reg.get<TransformComponent>(enemyEnt).position, Config::ENEMY_STOMP_VALUE});
+                    stompPos, Config::ENEMY_STOMP_VALUE});
             } else if (ec.type == EnemyType::Bowser) {
                 // Bowser — takes damage but doesn't die from one stomp
                 auto& eHealth = reg.get<HealthComponent>(enemyEnt);
@@ -88,8 +95,11 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
                 if (eHealth.hp <= 0) {
                     eHealth.isDead = true;
                     ec.state = EnemyState::Dead;
+                    EntityFactory::createFloatingText(reg,
+                        {stompPos.x, stompPos.y - 16.0f}, "+5000",
+                        Color{255, 220, 50, 255});
                     events.publish(EnemyKilledEvent{"bowser",
-                        reg.get<TransformComponent>(enemyEnt).position, 5000});
+                        stompPos, 5000});
                     reg.emplace_or_replace<DestroyFlag>(enemyEnt);
                 }
             } else {
@@ -100,8 +110,12 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
                     eH.isDead = true;
                 }
                 ec.state = EnemyState::Dead;
+                EntityFactory::createFloatingText(reg,
+                    {stompPos.x, stompPos.y - 16.0f},
+                    "+" + std::to_string(Config::ENEMY_STOMP_VALUE),
+                    Color{255, 255, 255, 255});
                 events.publish(EnemyKilledEvent{"goomba",
-                    reg.get<TransformComponent>(enemyEnt).position, Config::ENEMY_STOMP_VALUE});
+                    stompPos, Config::ENEMY_STOMP_VALUE});
                 reg.emplace_or_replace<DestroyFlag>(enemyEnt);
             }
             return;
@@ -145,6 +159,12 @@ void handlePlayerCollectible(entt::registry& reg, EventBus& events,
 
     switch (collectible.type) {
         case CollectibleType::Coin:
+            EntityFactory::createParticleEffect(reg, pos,
+                ParticleEmitterComponent::Effect::CoinSparkle);
+            EntityFactory::createFloatingText(reg,
+                {pos.x, pos.y - 16.0f},
+                "+" + std::to_string(collectible.value),
+                Color{255, 220, 50, 255});
             events.publish(CoinCollectedEvent{collectible.value, pos, player.playerIndex});
             break;
 
@@ -220,6 +240,12 @@ void handlePlayerQuestionBlock(entt::registry& reg, EventBus& events,
     // Spawn contents
     switch (qb.contents) {
         case CollectibleType::Coin:
+            EntityFactory::createParticleEffect(reg, spawnPos,
+                ParticleEmitterComponent::Effect::CoinSparkle);
+            EntityFactory::createFloatingText(reg,
+                {spawnPos.x, spawnPos.y - 16.0f},
+                "+" + std::to_string(Config::COIN_VALUE),
+                Color{255, 220, 50, 255});
             events.publish(CoinCollectedEvent{Config::COIN_VALUE, spawnPos, player.playerIndex});
             events.publish(BlockHitEvent{blockPos, "coin", player.playerIndex});
             break;

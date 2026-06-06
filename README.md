@@ -1,6 +1,6 @@
-# Ruins of the Ancients
+# Super Mario Bros
 
-**A professional-grade 2D platformer built in C++17 — inspired by classic Super Mario Bros with original mechanics.**
+**A classic Super Mario Bros remake built in C++17 — featuring 3 levels, 2-player modes, and full browser support.**
 
 [![Build](https://github.com/ahmed-albustany/super-mario/actions/workflows/build.yml/badge.svg)](https://github.com/ahmed-albustany/super-mario/actions/workflows/build.yml)
 [![Pages](https://github.com/ahmed-albustany/super-mario/actions/workflows/pages.yml/badge.svg)](https://github.com/ahmed-albustany/super-mario/actions/workflows/pages.yml)
@@ -11,7 +11,7 @@
 
 ## Play Now
 
-> **[▶ Play in Browser](https://ahmed-albustany.github.io/super-mario)**
+> **[Play in Browser](https://ahmed-albustany.github.io/super-mario)**
 >
 > No download required. Works on desktop and mobile browsers.
 
@@ -19,61 +19,89 @@
 
 ## Screenshots
 
-<!-- Replace these placeholders with actual screenshots -->
+| Gameplay | Menu |
+|----------|------|
+| ![Gameplay](docs/screenshots/gameplay.png) | ![Menu](docs/screenshots/menu.png) |
 
-| Gameplay | Game Over |
-|----------|-----------|
-| ![Gameplay](docs/screenshots/gameplay.png) | ![Game Over](docs/screenshots/gameover.png) |
+| HUD & World Display | Victory Screen |
+|----------------------|----------------|
+| ![HUD](docs/screenshots/hud.png) | ![Victory](docs/screenshots/victory.png) |
 
-| Menu | HUD |
-|------|-----|
-| ![Menu](docs/screenshots/menu.png) | ![HUD](docs/screenshots/hud.png) |
-
-*Screenshots are placeholders — replace with actual captures after building.*
+*Replace placeholder images with actual screenshots after building.*
 
 ---
 
 ## Features
 
-- **Double Jump** — jump again mid-air for extra height and reach
-- **Dash** — burst forward at high speed, break through destructible terrain, brief cooldown
-- **Wall Slide & Wall Jump** — slide down walls and kick off them with velocity lockout
-- **Destructible Terrain** — dash through breakable blocks to reveal secrets
-- **4 Enemy Types** — Walker (patrol), Jumper (bounce), Shooter (ranged projectiles), Guardian (armored, 2 hits)
-- **3 Collectible Types** — Coins (score), Gem Shards (rare), Power Crystals (invincibility + speed boost)
-- **Dynamic HUD** — live score, lives, coins, gems, countdown timer, power-up duration bar
-- **Parallax Backgrounds** — 3-layer scrolling ruins with depth effect
-- **Screen Shake** — camera shake on damage for impact feedback
-- **Coyote Time & Jump Buffer** — forgiving input timing for tight platforming
-- **Variable Jump Height** — release early for short hops, hold for full height
-- **Arcade Rules** — no saves, no file writes, session-only score and lives
-- **Cross-Platform** — native desktop (SFML) + browser (Emscripten + SDL2)
-- **Mobile Touch Controls** — on-screen D-pad and action buttons for phones/tablets
+### Mario Mechanics
+- **Power-up system** — Small Mario, Big Mario (Mushroom), Fire Mario (Fire Flower)
+- **Hit system** — Big/Fire Mario shrinks to Small on hit with invincibility frames (2-second blink)
+- **Fireball shooting** — Fire Mario can shoot bouncing fireballs
+- **Star invincibility** — temporary invincibility with speed boost and contact kills
+- **Enemy stomping** — jump on Goombas, Koopas, and even Bowser with stomp particles and score popups
+- **Koopa shells** — stomp Koopas into shells, kick them to take out other enemies
+- **Question blocks** — hit from below to spawn coins, mushrooms, fire flowers, stars, or 1-ups
+- **Destructible bricks** — Big Mario can break brick blocks
+- **Pipes** — enterable pipes that teleport the player
+- **Flagpole scoring** — height-based bonus points at the end of each level
+
+### Levels
+- **World 1-1** — Classic overworld with Goombas, Koopas, pipes, and platforming
+- **World 1-2** — Underground level with more enemies, hidden blocks, and tight corridors
+- **World 1-4** — Castle level with lava pits, Bowser boss fight, and castle music
+- **Level progression** — complete the flagpole to advance; beat all 3 to see the Victory screen
+
+### Game Modes
+- **1 Player** — Classic single-player Mario
+- **2 Player Alternating** — Players take turns; when one dies, the other plays
+- **2 Player Co-op** — Both Mario and Luigi on screen simultaneously
+
+### Visual Effects
+- **Floating score popups** — "+100", "+200" text rises and fades on coin collect and enemy stomp
+- **Particle effects** — coin sparkles, stomp poofs, brick debris, fireball bursts
+- **Parallax backgrounds** — 3-layer scrolling for depth
+- **Screen shake** — camera shake on damage
+- **Invincibility blink** — sprite flashes during i-frames
+
+### Engine
+- **ECS architecture** — EnTT-based Entity Component System with 8 specialized systems
+- **Scene stack** — Menu, Game, HUD, Pause, GameOver, GetReady, Victory scenes
+- **Cross-platform** — native desktop (SFML) + browser (Emscripten + SDL2)
+- **Mobile touch controls** — on-screen D-pad and action buttons
+- **Coyote time & jump buffer** — forgiving input timing
+- **Variable jump height** — hold for full height, release early for short hops
 
 ---
 
 ## Controls
 
-### Keyboard
+### Player 1 — Keyboard
 
 | Action | Keys |
 |--------|------|
-| Move Left/Right | Arrow Keys, A/D |
-| Jump | Z, Space, W |
-| Dash | X, Left Shift |
+| Move Left/Right | Arrow Keys |
+| Jump | Z, Space |
+| Run / Fire | X, Left Shift |
 | Pause | Escape, P |
-| Confirm | Enter, Z |
-| Debug Overlay | F1 |
+| Confirm (menus) | Enter, Z |
+
+### Player 2 — Keyboard
+
+| Action | Keys |
+|--------|------|
+| Move Left/Right | A / D |
+| Move Down (pipes) | S |
+| Jump | J |
+| Run / Fire | K |
 
 ### Mobile Touch
 
 | Button | Position | Action |
 |--------|----------|--------|
-| Left Arrow | Bottom-left | Move left |
-| Right Arrow | Bottom-left | Move right |
-| JUMP | Bottom-right | Jump / double jump |
-| DASH | Bottom-right | Dash |
-| Pause | Top-right | Pause menu |
+| Left / Right arrows | Bottom-left | Move |
+| JUMP | Bottom-right | Jump |
+| RUN | Bottom-right | Run / shoot fireballs |
+| Pause (II) | Top-right | Pause menu |
 
 ---
 
@@ -136,8 +164,6 @@ cd build/debug-native
 ctest --output-on-failure
 ```
 
-See [docs/BUILD.md](docs/BUILD.md) for detailed platform-specific instructions.
-
 ---
 
 ## Dependencies
@@ -158,12 +184,6 @@ The engine uses a **Platform Abstraction Layer** so game code never touches SFML
 
 Game logic is driven by an **Entity Component System** (EnTT) with 8 specialized systems processed in a fixed order each frame. Scenes are managed via a **stack-based scene manager** with deferred push/pop/replace commands.
 
-For the full technical breakdown, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
----
-
-## Project Structure
-
 ```
 super_mario/
 ├── src/
@@ -171,22 +191,21 @@ super_mario/
 │   ├── platform/       # IPlatform, SFMLPlatform, SDLPlatform
 │   ├── ecs/            # Components + 8 systems
 │   ├── entities/       # EntityFactory, Player, Enemy wrappers
-│   ├── scenes/         # Boot, Menu, Game, Pause, HUD, GameOver
+│   ├── scenes/         # Boot, Menu, Game, Pause, HUD, GameOver, Victory
 │   ├── world/          # TileMap, LevelLoader, Camera, Parallax
 │   ├── physics/        # AABB math, PhysicsWorld config
 │   ├── audio/          # AudioManager
 │   ├── ui/             # Button, Panel, Text
-│   ├── utils/          # Math, Logger, SafeFileIO, Timer, StateMachine
+│   ├── utils/          # Math, Logger, SafeFileIO, Timer
 │   └── main.cpp
 ├── assets/
-│   ├── levels/         # JSON level files
+│   ├── levels/         # 3 JSON level files (1-1, 1-2, 1-4)
 │   ├── textures/       # Spritesheets and backgrounds
 │   ├── audio/          # Sound effects and music
 │   ├── fonts/          # TTF fonts
 │   └── manifest.json   # Asset manifest for preloading
 ├── web/                # WASM web shell (HTML, CSS, JS)
 ├── tests/              # Google Test unit tests
-├── docs/               # Architecture and build documentation
 └── .github/workflows/  # CI/CD pipelines
 ```
 

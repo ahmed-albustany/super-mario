@@ -54,6 +54,10 @@ public:
         entt::registry& registry, Vec2f pos,
         ParticleEmitterComponent::Effect type);
 
+    [[nodiscard]] static entt::entity createFloatingText(
+        entt::registry& registry, Vec2f pos,
+        const std::string& text, Color color = Color{255, 255, 255, 255});
+
     // ---- Legacy aliases for backward compatibility ----
     [[nodiscard]] static entt::entity createWalker(entt::registry& registry, Vec2f pos,
                                                     float patrolLeft, float patrolRight) {

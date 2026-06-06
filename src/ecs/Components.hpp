@@ -319,6 +319,16 @@ struct GoalComponent {
     bool reached = false;
 };
 
+/// @brief Floating score text that rises and fades out (e.g. "+100").
+struct FloatingTextComponent {
+    std::string text;
+    float lifetime    = 0.8f;   ///< Total duration
+    float elapsed     = 0.0f;
+    float riseSpeed   = 80.0f;  ///< Pixels/second upward
+    Color color       = Color{255, 255, 255, 255};
+    int   fontSize    = 14;
+};
+
 /// @brief Particle effect burst.
 struct ParticleEmitterComponent {
     enum class Effect {
