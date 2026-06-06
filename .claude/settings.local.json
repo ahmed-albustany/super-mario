@@ -31,7 +31,8 @@
       "Bash(grep -oE audio/[^\"\"]+ manifest.json)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(bash scripts/rename_assets.sh)"
+      "Bash(bash scripts/rename_assets.sh)",
+      "Bash(cmake -B build -DMARIO_BUILD_TESTS=OFF -DMARIO_BUILD_WASM=OFF)"
     ]
   }
 }

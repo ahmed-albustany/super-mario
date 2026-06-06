@@ -36,8 +36,10 @@ void GameScene::onEnter() {
     m_state->numPlayers    = np;
     m_state->coopMode      = coop;
     m_state->currentPlayer = 0;
-    m_state->p1.lives      = Config::DEFAULT_LIVES;
-    m_state->p2.lives      = Config::DEFAULT_LIVES;
+    m_state->p1.lives       = Config::DEFAULT_LIVES;
+    m_state->p1.playerIndex = 0;
+    m_state->p2.lives       = Config::DEFAULT_LIVES;
+    m_state->p2.playerIndex = 1;
 
     // Subscribe to events
     auto& bus = m_game.events();
@@ -244,6 +246,18 @@ void GameScene::update(float dt) {
     m_collisionSystem.update(m_registry, dt, m_game.events());
     m_powerUpSystem.update(m_registry, dt, m_game.events());
     m_animationSystem.update(m_registry, dt);
+
+    // Sync power state from ECS entities to shared GameState
+    auto syncPower = [&](Player& player, PlayerGameState& ps) {
+        if (player.isValid(m_registry)) {
+            auto& pc = m_registry.get<PlayerComponent>(player.getEntity());
+            ps.powerState = static_cast<int>(pc.power);
+        }
+    };
+    syncPower(m_player1, m_state->p1);
+    if (m_state->coopMode) {
+        syncPower(m_player2, m_state->p2);
+    }
 
     // Update camera to follow the active player (or P1 in co-op)
     Player* cameraTarget = &m_player1;

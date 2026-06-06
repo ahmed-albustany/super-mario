@@ -1,6 +1,7 @@
 #include "ecs/systems/PlayerSystem.hpp"
 #include "ecs/Components.hpp"
 #include "core/InputManager.hpp"
+#include "core/PlayerController.hpp"
 #include "core/EventBus.hpp"
 #include "core/Events.hpp"
 #include "core/GameConfig.hpp"
@@ -8,42 +9,6 @@
 #include "utils/Math.hpp"
 
 #include <cmath>
-
-namespace {
-
-/// @brief Resolve input for a specific player index.
-struct PlayerInput {
-    float moveX = 0.0f;
-    bool  moveDown = false;
-    bool  jumpPressed = false;
-    bool  jumpReleased = false;
-    bool  runHeld = false;
-    bool  runPressed = false;
-
-    static PlayerInput read(const InputManager& input, int playerIndex) {
-        PlayerInput pi;
-        if (playerIndex == 0) {
-            if (input.isHeld(Action::MoveLeft))  pi.moveX -= 1.0f;
-            if (input.isHeld(Action::MoveRight)) pi.moveX += 1.0f;
-            pi.moveDown     = input.isHeld(Action::MoveDown);
-            pi.jumpPressed  = input.isJustPressed(Action::Jump);
-            pi.jumpReleased = input.isJustReleased(Action::Jump);
-            pi.runHeld      = input.isHeld(Action::Run);
-            pi.runPressed   = input.isJustPressed(Action::Run);
-        } else {
-            if (input.isHeldP2(Action::MoveLeft))  pi.moveX -= 1.0f;
-            if (input.isHeldP2(Action::MoveRight)) pi.moveX += 1.0f;
-            pi.moveDown     = input.isHeldP2(Action::MoveDown);
-            pi.jumpPressed  = input.isJustPressedP2(Action::Jump);
-            pi.jumpReleased = input.isJustReleasedP2(Action::Jump);
-            pi.runHeld      = input.isHeldP2(Action::Run);
-            pi.runPressed   = input.isJustPressedP2(Action::Run);
-        }
-        return pi;
-    }
-};
-
-} // anonymous namespace
 
 void PlayerSystem::update(entt::registry& reg, float dt,
                            const InputManager& input, EventBus& events) {
@@ -120,7 +85,8 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         // ================================================================
         // Read input for this player
         // ================================================================
-        auto pi = PlayerInput::read(input, player.playerIndex);
+        PlayerController pi(player.playerIndex);
+        pi.update(input);
 
         // ================================================================
         // Timer updates
@@ -137,18 +103,18 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         // ================================================================
         // Buffer jump input
         // ================================================================
-        if (pi.jumpPressed) {
+        if (pi.jumpPressed()) {
             player.jumpBufferTimer = PlayerComponent::JUMP_BUFFER;
         }
 
         // ================================================================
         // Facing direction
         // ================================================================
-        if (pi.moveX != 0.0f) {
-            player.facing = (pi.moveX > 0.0f) ? 1 : -1;
+        if (pi.moveX() != 0.0f) {
+            player.facing = (pi.moveX() > 0.0f) ? 1 : -1;
         }
 
-        player.isRunning = pi.runHeld;
+        player.isRunning = pi.runHeld();
         bool wasGrounded = player.isGrounded;
 
         // ================================================================
@@ -166,14 +132,14 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         }
 
         // Variable jump height: release jump early → cut upward velocity
-        if (pi.jumpReleased && vel.velocity.y < 0.0f) {
+        if (pi.jumpReleased() && vel.velocity.y < 0.0f) {
             vel.velocity.y *= Config::PLAYER_JUMP_CUT;
         }
 
         // ================================================================
         // FIREBALL (Fire Mario only, on Run press)
         // ================================================================
-        if (pi.runPressed && player.power == MarioPowerState::Fire) {
+        if (pi.runPressed() && player.power == MarioPowerState::Fire) {
             // Spawn fireball
             auto& transform = view.get<TransformComponent>(entity);
             Vec2f fbPos = {
@@ -216,8 +182,8 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         float maxSpeed = player.isRunning ? Config::PLAYER_RUN_SPEED : Config::PLAYER_WALK_SPEED;
         float accel = player.isGrounded ? Config::PLAYER_ACCEL : Config::PLAYER_AIR_ACCEL;
 
-        if (pi.moveX != 0.0f) {
-            float targetSpeed = pi.moveX * maxSpeed;
+        if (pi.moveX() != 0.0f) {
+            float targetSpeed = pi.moveX() * maxSpeed;
             // Accelerate toward target
             vel.velocity.x = Math::approach(vel.velocity.x, targetSpeed, accel * dt);
         } else if (player.isGrounded) {
@@ -248,9 +214,9 @@ void PlayerSystem::update(entt::registry& reg, float dt,
                 }
 
                 // Skidding: moving one direction but facing the other with speed
-                bool skidding = (pi.moveX != 0.0f) &&
-                    ((vel.velocity.x > 50.0f && pi.moveX < 0.0f) ||
-                     (vel.velocity.x < -50.0f && pi.moveX > 0.0f));
+                bool skidding = (pi.moveX() != 0.0f) &&
+                    ((vel.velocity.x > 50.0f && pi.moveX() < 0.0f) ||
+                     (vel.velocity.x < -50.0f && pi.moveX() > 0.0f));
 
                 if (skidding) {
                     player.state = PlayerState::Skidding;

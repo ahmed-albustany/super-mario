@@ -5,14 +5,16 @@
 /// @brief Shared gameplay state — owned by GameScene, safely shared with HUDScene.
 ///        Lives on the heap via shared_ptr so HUDScene never holds dangling references.
 struct PlayerGameState {
-    int   score = 0;
-    int   lives = 3;
-    int   coins = 0;
+    int   score       = 0;
+    int   lives       = 3;
+    int   coins       = 0;
+    int   powerState  = 0;    ///< 0 = Small, 1 = Big, 2 = Fire (mirrors MarioPowerState)
+    int   playerIndex = 0;    ///< 0 = P1 (Mario), 1 = P2 (Luigi)
 };
 
 struct GameState {
-    PlayerGameState p1;
-    PlayerGameState p2;
+    PlayerGameState p1{0, 3, 0, 0, 0};
+    PlayerGameState p2{0, 3, 0, 0, 1};
     float levelTimer = 300.0f;
     bool  levelWon   = false;
     bool  gameOver   = false;
