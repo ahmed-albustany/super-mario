@@ -50,6 +50,9 @@ private:
     /// @brief Alternating mode: switch to the other player's turn.
     void switchTurn();
 
+    /// @brief Load the next level, or show VictoryScene if all levels completed.
+    void advanceLevel();
+
     Game& m_game;
 
     // ECS

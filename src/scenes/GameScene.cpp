@@ -1,6 +1,7 @@
 #include "scenes/GameScene.hpp"
 #include "scenes/PauseScene.hpp"
 #include "scenes/GameOverScene.hpp"
+#include "scenes/VictoryScene.hpp"
 #include "scenes/HUDScene.hpp"
 #include "scenes/GetReadyScene.hpp"
 #include "core/Game.hpp"
@@ -29,13 +30,16 @@ void GameScene::onEnter() {
     LOG_INFO("GameScene: entering (" << m_state->numPlayers << "P"
              << (m_state->coopMode ? " co-op" : "") << ")");
 
-    // Reset gameplay state (preserve mode settings)
+    // Reset gameplay state (preserve mode settings and level index)
     int np = m_state->numPlayers;
     bool coop = m_state->coopMode;
+    int startLevel = m_state->currentLevel;
     m_state = std::make_shared<GameState>();
     m_state->numPlayers    = np;
     m_state->coopMode      = coop;
     m_state->currentPlayer = 0;
+    m_state->currentLevel  = startLevel;
+    m_state->worldDisplay  = GameState::WORLD_NAMES[static_cast<size_t>(startLevel)];
     m_state->p1.lives       = Config::DEFAULT_LIVES;
     m_state->p1.playerIndex = 0;
     m_state->p2.lives       = Config::DEFAULT_LIVES;
@@ -58,14 +62,24 @@ void GameScene::onEnter() {
     m_subFlagPole      = bus.subscribe<FlagPoleGrabbedEvent>(
         [this](const FlagPoleGrabbedEvent& e) { onFlagPoleGrabbed(e); });
 
-    // Load level
-    loadLevel("levels/level_01.json");
+    // Load current level
+    const auto& levelPath = GameState::LEVEL_PATHS[static_cast<size_t>(m_state->currentLevel)];
+    loadLevel(levelPath);
 
     // Push HUD as overlay on top of us
     m_game.scenes().push(std::make_unique<HUDScene>(m_game, m_state));
 
-    // Start gameplay music
-    AudioManager::instance().playMusic("overworld_theme", true);
+    // Start music based on level theme
+    const std::string& music = m_levelData.music;
+    if (!music.empty()) {
+        // Strip .ogg extension to get the audio key
+        std::string musicKey = music;
+        auto dotPos = musicKey.rfind('.');
+        if (dotPos != std::string::npos) musicKey = musicKey.substr(0, dotPos);
+        AudioManager::instance().playMusic(musicKey, true);
+    } else {
+        AudioManager::instance().playMusic("overworld_theme", true);
+    }
 }
 
 void GameScene::onExit() {
@@ -415,9 +429,7 @@ void GameScene::onLevelComplete(const LevelCompleteEvent& /*event*/) {
     ps.score = Math::safeAdd(ps.score, timeBonus);
     m_state->levelWon = true;
 
-    int totalScore = m_state->p1.score;
-    if (m_state->numPlayers == 2) totalScore += m_state->p2.score;
-    m_game.scenes().push(std::make_unique<GameOverScene>(m_game, true, totalScore));
+    advanceLevel();
 }
 
 void GameScene::onBlockHit(const BlockHitEvent& event) {
@@ -430,6 +442,33 @@ void GameScene::onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event) {
     int flagScore = static_cast<int>(event.grabHeight * static_cast<float>(Config::FLAGPOLE_BASE_SCORE));
     auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
     ps.score = Math::safeAdd(ps.score, std::max(100, flagScore));
+}
+
+// =============================================================================
+// Level progression
+// =============================================================================
+
+void GameScene::advanceLevel() {
+    if (m_state->hasNextLevel()) {
+        // Move to next level
+        ++m_state->currentLevel;
+        m_state->worldDisplay = GameState::WORLD_NAMES[m_state->currentLevel];
+        m_state->levelWon = false;
+        m_state->levelTimer = 300.0f;
+
+        // Reload
+        loadLevel(GameState::LEVEL_PATHS[m_state->currentLevel]);
+        spawnEntities();
+
+        // Switch music
+        std::string musicKey = m_levelData.music;
+        if (musicKey.size() > 4 && musicKey.substr(musicKey.size() - 4) == ".ogg")
+            musicKey = musicKey.substr(0, musicKey.size() - 4);
+        AudioManager::instance().playMusic(musicKey);
+    } else {
+        // All levels complete — show victory screen
+        m_game.scenes().push(std::make_unique<VictoryScene>(m_game, m_state));
+    }
 }
 
 // =============================================================================

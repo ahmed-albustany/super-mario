@@ -100,6 +100,7 @@ set(MARIO_SCENE_SOURCES
     src/scenes/HUDScene.cpp
     src/scenes/GameOverScene.cpp
     src/scenes/GetReadyScene.cpp
+    src/scenes/VictoryScene.cpp
 )
 
 set(MARIO_ENTITY_SOURCES

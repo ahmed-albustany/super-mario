@@ -65,7 +65,7 @@ void HUDScene::render(IPlatform& platform) {
     // ---- WORLD (top-center) ----
     float worldX = screenW * 0.5f - 40.0f;
     platform.drawText(f, "WORLD", {worldX, pad}, 14, Color{255, 255, 255, 255});
-    platform.drawText(f, "1-1", {worldX + 8.0f, pad + 18.0f}, 22, Color{255, 255, 255, 255});
+    platform.drawText(f, gs.worldDisplay, {worldX + 8.0f, pad + 18.0f}, 22, Color{255, 255, 255, 255});
 
     // ---- TIME (top-right area) ----
     float timeX = (gs.numPlayers == 2) ? screenW * 0.5f + 60.0f : screenW - 200.0f;
