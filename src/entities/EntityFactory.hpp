@@ -26,15 +26,15 @@ public:
                                                     float patrolLeft, float patrolRight);
 
     // ---- Collectibles ----
-    [[nodiscard]] static entt::entity createCoin(entt::registry& registry, Vec2f pos);
-    [[nodiscard]] static entt::entity createMushroom(entt::registry& registry, Vec2f pos,
-                                                      bool fromBlock = false);
-    [[nodiscard]] static entt::entity createFireFlower(entt::registry& registry, Vec2f pos,
-                                                        bool fromBlock = false);
-    [[nodiscard]] static entt::entity createStar(entt::registry& registry, Vec2f pos,
-                                                   bool fromBlock = false);
-    [[nodiscard]] static entt::entity createOneUp(entt::registry& registry, Vec2f pos,
-                                                    bool fromBlock = false);
+    static entt::entity createCoin(entt::registry& registry, Vec2f pos);
+    static entt::entity createMushroom(entt::registry& registry, Vec2f pos,
+                                       bool fromBlock = false);
+    static entt::entity createFireFlower(entt::registry& registry, Vec2f pos,
+                                         bool fromBlock = false);
+    static entt::entity createStar(entt::registry& registry, Vec2f pos,
+                                    bool fromBlock = false);
+    static entt::entity createOneUp(entt::registry& registry, Vec2f pos,
+                                     bool fromBlock = false);
 
     // ---- World objects ----
     [[nodiscard]] static entt::entity createQuestionBlock(entt::registry& registry, Vec2f pos,
@@ -49,12 +49,12 @@ public:
     [[nodiscard]] static entt::entity createProjectile(entt::registry& registry, Vec2f pos,
                                                         Vec2f direction, entt::entity owner);
 
-    // ---- Effects ----
-    [[nodiscard]] static entt::entity createParticleEffect(
+    // ---- Effects (fire-and-forget, return value may be ignored) ----
+    static entt::entity createParticleEffect(
         entt::registry& registry, Vec2f pos,
         ParticleEmitterComponent::Effect type);
 
-    [[nodiscard]] static entt::entity createFloatingText(
+    static entt::entity createFloatingText(
         entt::registry& registry, Vec2f pos,
         const std::string& text, Color color = Color{255, 255, 255, 255});
 

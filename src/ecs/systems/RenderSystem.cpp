@@ -91,10 +91,10 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
 
     // ---- Particle effects (simple colored rects) ----
     {
-        auto view = reg.view<ParticleEmitterComponent, TransformComponent>();
-        for (auto entity : view) {
-            const auto& pe  = view.get<ParticleEmitterComponent>(entity);
-            const auto& pos = view.get<TransformComponent>(entity);
+        auto particleView = reg.view<ParticleEmitterComponent, TransformComponent>();
+        for (auto entity : particleView) {
+            const auto& pe  = particleView.get<ParticleEmitterComponent>(entity);
+            const auto& pos = particleView.get<TransformComponent>(entity);
             if (!pe.active) continue;
 
             float progress = pe.elapsed / pe.lifetime;
@@ -118,10 +118,10 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
         auto font = ResourceManager::instance().getFont("main");
         if (font) {
             FontHandle f = *font;
-            auto view = reg.view<FloatingTextComponent, TransformComponent>();
-            for (auto entity : view) {
-                const auto& ft  = view.get<FloatingTextComponent>(entity);
-                const auto& pos = view.get<TransformComponent>(entity);
+            auto floatingTextView = reg.view<FloatingTextComponent, TransformComponent>();
+            for (auto entity : floatingTextView) {
+                const auto& ft  = floatingTextView.get<FloatingTextComponent>(entity);
+                const auto& pos = floatingTextView.get<TransformComponent>(entity);
                 float progress = ft.elapsed / ft.lifetime;
                 auto alpha = static_cast<uint8_t>((1.0f - progress) * static_cast<float>(ft.color.a));
                 Color c = {ft.color.r, ft.color.g, ft.color.b, alpha};

@@ -26,5 +26,5 @@ public:
 
 private:
     entt::entity m_entity = entt::null;
-    EnemyType    m_type   = EnemyType::Walker;
+    EnemyType    m_type   = EnemyType::Goomba;
 };

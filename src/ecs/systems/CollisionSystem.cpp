@@ -3,6 +3,7 @@
 #include "core/GameConfig.hpp"
 #include "core/EventBus.hpp"
 #include "core/Events.hpp"
+#include "core/InputManager.hpp"
 #include "entities/EntityFactory.hpp"
 #include "physics/AABB.hpp"
 #include "utils/Logger.hpp"
