@@ -19,6 +19,13 @@ void TileMap::load(const std::vector<TileData>& tiles,
     m_tileset = tileset;
     m_tilesetColumns = (tilesetColumns > 0) ? tilesetColumns : 16;
 
+    // Destroy existing tile entities before re-allocating
+    for (auto& tile : m_tiles) {
+        if (tile.entity != entt::null && reg.valid(tile.entity)) {
+            reg.destroy(tile.entity);
+        }
+    }
+
     // Allocate grid — default all air
     m_tiles.clear();
     m_tiles.resize(static_cast<size_t>(m_width) * static_cast<size_t>(m_height));
@@ -130,7 +137,7 @@ bool TileMap::inBounds(int x, int y) const {
 }
 
 // =============================================================================
-// Destroy tile (dash-through mechanic)
+// Destroy tile (Big Mario brick break)
 // =============================================================================
 
 void TileMap::destroyTile(int x, int y, entt::registry& reg) {

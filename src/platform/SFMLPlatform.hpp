@@ -57,6 +57,9 @@ public:
                                          const std::string& path) override;
     [[nodiscard]] FontHandle loadFont(const std::string& key,
                                        const std::string& path) override;
+    void unloadTexture(TextureHandle handle) override;
+    void unloadSound(SoundHandle handle) override;
+    void unloadFont(FontHandle handle) override;
 
     // ---- Camera ----
     void setCameraOffset(const Vec2f& offset) override;

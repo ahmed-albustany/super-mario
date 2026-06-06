@@ -45,7 +45,7 @@ public:
     [[nodiscard]] bool isDestructible(int x, int y) const;
     [[nodiscard]] bool inBounds(int x, int y) const;
 
-    /// @brief Destroy a destructible tile (dash-through mechanic).
+    /// @brief Destroy a destructible tile (Big Mario breaks bricks from below).
     ///        Marks internal data as destroyed and removes the ECS collider entity.
     void destroyTile(int x, int y, entt::registry& reg);
 

@@ -11,12 +11,15 @@
 
 #ifdef NDEBUG
 
-// ---- Release: all logging stripped ----
+// ---- Release: all logging stripped except FATAL ----
 #define LOG_DEBUG(msg) ((void)0)
 #define LOG_INFO(msg)  ((void)0)
 #define LOG_WARN(msg)  ((void)0)
 #define LOG_ERROR(msg) ((void)0)
-#define LOG_FATAL(msg) ((void)0)
+// FATAL must still abort even in Release — a no-op here causes null deref crashes
+#include <cstdlib>
+#include <iostream>
+#define LOG_FATAL(msg) do { std::cerr << "FATAL: " << msg << std::endl; std::abort(); } while(0)
 
 // Compile-time proof that logging is stripped
 namespace LoggerStripped {

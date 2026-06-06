@@ -18,7 +18,7 @@ struct TileData {
 };
 
 struct EnemySpawnData {
-    std::string type;       ///< "walker", "jumper", "shooter", "guardian"
+    std::string type;       ///< "goomba", "koopa", "piranha_plant", "bowser"
     float x = 0.0f;
     float y = 0.0f;
     float patrolLeft  = 0.0f;
@@ -27,9 +27,23 @@ struct EnemySpawnData {
 };
 
 struct CollectibleSpawnData {
-    std::string type;       ///< "coin", "gem_shard", "power_crystal"
+    std::string type;       ///< "coin", "mushroom", "fire_flower", "star", "1up"
     float x = 0.0f;
     float y = 0.0f;
+};
+
+struct QuestionBlockSpawnData {
+    float x = 0.0f;
+    float y = 0.0f;
+    std::string contents;   ///< "coin", "mushroom", "fire_flower", "star", "1up"
+};
+
+struct PipeSpawnData {
+    float x = 0.0f;
+    float y = 0.0f;
+    bool  enterable = false;
+    float destX = 0.0f;
+    float destY = 0.0f;
 };
 
 /// @brief Complete level description parsed from JSON.
@@ -44,10 +58,13 @@ struct LevelData {
     std::vector<std::string> backgroundLayers; ///< Filenames for parallax layers
     std::vector<TileData> tiles;
     Vec2f playerSpawn;
-    std::vector<EnemySpawnData>       enemies;
-    std::vector<CollectibleSpawnData> collectibles;
+    std::vector<EnemySpawnData>          enemies;
+    std::vector<CollectibleSpawnData>    collectibles;
+    std::vector<QuestionBlockSpawnData>  questionBlocks;
+    std::vector<PipeSpawnData>           pipes;
     Vec2f goalPosition;
     std::string goalType = "flagpole";
+    float flagPoleHeight = 288.0f;
 };
 
 // =============================================================================

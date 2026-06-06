@@ -6,21 +6,57 @@
 
 namespace {
 
-/// @brief Map PlayerState enum to animation clip name.
-const char* playerStateToClip(PlayerState state) {
+/// @brief Base clip name for a player state (without power prefix).
+const char* playerStateBaseClip(PlayerState state) {
     switch (state) {
         case PlayerState::Idle:           return "idle";
         case PlayerState::Running:        return "run";
         case PlayerState::Jumping:        return "jump";
-        case PlayerState::DoubleJumping:  return "double_jump";
         case PlayerState::Falling:        return "fall";
-        case PlayerState::Dashing:        return "dash";
-        case PlayerState::WallSliding:    return "wall_slide";
-        case PlayerState::WallJumping:    return "wall_jump";
+        case PlayerState::Skidding:       return "skid";
+        case PlayerState::Growing:        return "grow";
+        case PlayerState::Shrinking:      return "shrink";
+        case PlayerState::FlagPole:       return "flagpole";
+        case PlayerState::EnteringPipe:   return "idle";
         case PlayerState::Hurt:           return "hurt";
         case PlayerState::Dead:           return "dead";
     }
     return "idle";
+}
+
+/// @brief Power-state prefix for animation clips.
+const char* powerPrefix(MarioPowerState power) {
+    switch (power) {
+        case MarioPowerState::Small: return "";
+        case MarioPowerState::Big:   return "big_";
+        case MarioPowerState::Fire:  return "fire_";
+    }
+    return "";
+}
+
+/// @brief Build full clip name: e.g. "big_run", "fire_jump", "idle".
+///        Falls back to base clip if prefixed version doesn't exist.
+void playPlayerClip(AnimationComponent& anim, PlayerState state, MarioPowerState power) {
+    const char* base = playerStateBaseClip(state);
+
+    // Growing/Shrinking/Dead use the base clip regardless of power
+    if (state == PlayerState::Growing || state == PlayerState::Shrinking ||
+        state == PlayerState::Dead) {
+        anim.play(base);
+        return;
+    }
+
+    // Try prefixed clip first (e.g. "big_run")
+    std::string prefixed = std::string(powerPrefix(power)) + base;
+    // Check if clip exists by name
+    for (int i = 0; i < static_cast<int>(anim.clips.size()); ++i) {
+        if (anim.clips[static_cast<size_t>(i)].name == prefixed) {
+            anim.play(prefixed);
+            return;
+        }
+    }
+    // Fall back to unprefixed
+    anim.play(base);
 }
 
 /// @brief Map EnemyState enum to animation clip name.
@@ -30,6 +66,7 @@ const char* enemyStateToClip(EnemyState state) {
         case EnemyState::Patrol:  return "walk";
         case EnemyState::Chase:   return "walk";
         case EnemyState::Attack:  return "attack";
+        case EnemyState::Shell:   return "shell";
         case EnemyState::Hurt:    return "hurt";
         case EnemyState::Dead:    return "dead";
     }
@@ -49,8 +86,8 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
             auto& anim         = view.get<AnimationComponent>(entity);
             auto& sprite       = view.get<SpriteComponent>(entity);
 
-            // Set clip based on state
-            anim.play(playerStateToClip(player.state));
+            // Set clip based on state + power level
+            playPlayerClip(anim, player.state, player.power);
 
             // Flip sprite based on facing direction
             sprite.flipX = (player.facing < 0);

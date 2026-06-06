@@ -13,22 +13,37 @@ public:
     EntityFactory() = delete;
 
     // ---- Player ----
-    [[nodiscard]] static entt::entity createPlayer(entt::registry& registry, Vec2f spawnPos);
+    [[nodiscard]] static entt::entity createPlayer(entt::registry& registry, Vec2f spawnPos,
+                                                    int playerIndex = 0);
 
-    // ---- Enemies ----
-    [[nodiscard]] static entt::entity createWalker(entt::registry& registry, Vec2f pos,
+    // ---- Enemies (Mario style) ----
+    [[nodiscard]] static entt::entity createGoomba(entt::registry& registry, Vec2f pos,
                                                     float patrolLeft, float patrolRight);
-    [[nodiscard]] static entt::entity createJumper(entt::registry& registry, Vec2f pos,
+    [[nodiscard]] static entt::entity createKoopa(entt::registry& registry, Vec2f pos,
+                                                   float patrolLeft, float patrolRight);
+    [[nodiscard]] static entt::entity createPiranhaPlant(entt::registry& registry, Vec2f pos);
+    [[nodiscard]] static entt::entity createBowser(entt::registry& registry, Vec2f pos,
                                                     float patrolLeft, float patrolRight);
-    [[nodiscard]] static entt::entity createShooter(entt::registry& registry, Vec2f pos,
-                                                     bool facingLeft);
-    [[nodiscard]] static entt::entity createGuardian(entt::registry& registry, Vec2f pos,
-                                                      float patrolLeft, float patrolRight);
 
     // ---- Collectibles ----
     [[nodiscard]] static entt::entity createCoin(entt::registry& registry, Vec2f pos);
-    [[nodiscard]] static entt::entity createGemShard(entt::registry& registry, Vec2f pos);
-    [[nodiscard]] static entt::entity createPowerCrystal(entt::registry& registry, Vec2f pos);
+    [[nodiscard]] static entt::entity createMushroom(entt::registry& registry, Vec2f pos,
+                                                      bool fromBlock = false);
+    [[nodiscard]] static entt::entity createFireFlower(entt::registry& registry, Vec2f pos,
+                                                        bool fromBlock = false);
+    [[nodiscard]] static entt::entity createStar(entt::registry& registry, Vec2f pos,
+                                                   bool fromBlock = false);
+    [[nodiscard]] static entt::entity createOneUp(entt::registry& registry, Vec2f pos,
+                                                    bool fromBlock = false);
+
+    // ---- World objects ----
+    [[nodiscard]] static entt::entity createQuestionBlock(entt::registry& registry, Vec2f pos,
+                                                           CollectibleType contents);
+    [[nodiscard]] static entt::entity createPipe(entt::registry& registry, Vec2f pos,
+                                                   bool enterable, Vec2f destination);
+    [[nodiscard]] static entt::entity createFlagPole(entt::registry& registry, Vec2f pos,
+                                                      float height);
+    [[nodiscard]] static entt::entity createGoal(entt::registry& registry, Vec2f pos);
 
     // ---- Projectiles ----
     [[nodiscard]] static entt::entity createProjectile(entt::registry& registry, Vec2f pos,
@@ -39,8 +54,31 @@ public:
         entt::registry& registry, Vec2f pos,
         ParticleEmitterComponent::Effect type);
 
-    // ---- World objects ----
-    [[nodiscard]] static entt::entity createGoal(entt::registry& registry, Vec2f pos);
+    // ---- Legacy aliases for backward compatibility ----
+    [[nodiscard]] static entt::entity createWalker(entt::registry& registry, Vec2f pos,
+                                                    float patrolLeft, float patrolRight) {
+        return createGoomba(registry, pos, patrolLeft, patrolRight);
+    }
+    [[nodiscard]] static entt::entity createJumper(entt::registry& registry, Vec2f pos,
+                                                    float patrolLeft, float patrolRight) {
+        return createKoopa(registry, pos, patrolLeft, patrolRight);
+    }
+    [[nodiscard]] static entt::entity createShooter(entt::registry& registry, Vec2f pos,
+                                                     bool /*facingLeft*/) {
+        return createPiranhaPlant(registry, pos);
+    }
+    [[nodiscard]] static entt::entity createGuardian(entt::registry& registry, Vec2f pos,
+                                                      float patrolLeft, float patrolRight) {
+        return createBowser(registry, pos, patrolLeft, patrolRight);
+    }
+
+    // Legacy collectible aliases
+    [[nodiscard]] static entt::entity createGemShard(entt::registry& registry, Vec2f pos) {
+        return createCoin(registry, pos);
+    }
+    [[nodiscard]] static entt::entity createPowerCrystal(entt::registry& registry, Vec2f pos) {
+        return createStar(registry, pos);
+    }
 
 private:
     /// @brief Shared helper to attach base enemy components.

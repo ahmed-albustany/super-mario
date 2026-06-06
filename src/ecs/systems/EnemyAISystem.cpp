@@ -9,17 +9,28 @@
 #include <cmath>
 
 void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
-    // Find the player's position for sight-based AI
+    // Find the nearest living player position for AI targeting
     Vec2f playerPos = {0.0f, 0.0f};
     bool  playerAlive = false;
     {
         auto pView = reg.view<PlayerComponent, TransformComponent, HealthComponent>();
+        float bestDist = 99999.0f;
         for (auto e : pView) {
             const auto& h = pView.get<HealthComponent>(e);
             if (!h.isDead) {
-                playerPos = pView.get<TransformComponent>(e).position;
-                playerAlive = true;
-                break; // single player
+                Vec2f pos = pView.get<TransformComponent>(e).position;
+                // Use first alive player (or nearest in co-op)
+                if (!playerAlive) {
+                    playerPos = pos;
+                    playerAlive = true;
+                    bestDist = pos.lengthSq();
+                } else {
+                    float d = pos.lengthSq();
+                    if (d < bestDist) {
+                        playerPos = pos;
+                        bestDist = d;
+                    }
+                }
             }
         }
     }
@@ -43,42 +54,32 @@ void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
             --health.invincibilityFrames;
         }
 
-        // -----------------------------------------------------------------
-        // Per-type AI
-        // -----------------------------------------------------------------
+        // Koopa shell sliding — separate logic
+        if (enemy.state == EnemyState::Shell) {
+            if (enemy.shellMoving) {
+                vel.velocity.x = enemy.shellSpeed * static_cast<float>(enemy.facing);
+            } else {
+                vel.velocity.x = 0.0f;
+            }
+            // Reverse at patrol bounds
+            if (transform.position.x <= enemy.patrolLeft) {
+                enemy.facing = 1;
+            } else if (transform.position.x >= enemy.patrolRight) {
+                enemy.facing = -1;
+            }
+            continue;
+        }
 
         switch (enemy.type) {
 
         // =================================================================
-        // WALKER — patrol between patrol bounds, reverse at edges
+        // GOOMBA — walk, reverse at edges, die on stomp
         // =================================================================
-        case EnemyType::Walker: {
+        case EnemyType::Goomba: {
             enemy.state = EnemyState::Patrol;
-
-            float speed = 80.0f;
-            vel.velocity.x = speed * static_cast<float>(enemy.facing);
-
-            // Reverse at patrol bounds
-            if (transform.position.x <= enemy.patrolLeft) {
-                transform.position.x = enemy.patrolLeft;
-                enemy.facing = 1;
-            } else if (transform.position.x >= enemy.patrolRight) {
-                transform.position.x = enemy.patrolRight;
-                enemy.facing = -1;
-            }
-            break;
-        }
-
-        // =================================================================
-        // JUMPER — same as walker but periodically bounces
-        // =================================================================
-        case EnemyType::Jumper: {
-            enemy.state = EnemyState::Patrol;
-
             float speed = 60.0f;
             vel.velocity.x = speed * static_cast<float>(enemy.facing);
 
-            // Reverse at patrol bounds
             if (transform.position.x <= enemy.patrolLeft) {
                 transform.position.x = enemy.patrolLeft;
                 enemy.facing = 1;
@@ -86,21 +87,63 @@ void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
                 transform.position.x = enemy.patrolRight;
                 enemy.facing = -1;
             }
+            break;
+        }
 
-            // Periodic bounce
-            enemy.bounceTimer -= dt;
-            if (enemy.bounceTimer <= 0.0f) {
-                vel.velocity.y = enemy.bounceForce;
-                enemy.bounceTimer = 1.5f + Math::randFloat(0.0f, 1.0f);
+        // =================================================================
+        // KOOPA — walk, reverse at edges, stomp → shell
+        // =================================================================
+        case EnemyType::Koopa: {
+            enemy.state = EnemyState::Patrol;
+            float speed = 50.0f;
+            vel.velocity.x = speed * static_cast<float>(enemy.facing);
+
+            if (transform.position.x <= enemy.patrolLeft) {
+                transform.position.x = enemy.patrolLeft;
+                enemy.facing = 1;
+            } else if (transform.position.x >= enemy.patrolRight) {
+                transform.position.x = enemy.patrolRight;
+                enemy.facing = -1;
             }
             break;
         }
 
         // =================================================================
-        // SHOOTER — patrol slowly, fire projectile when player is in sight
+        // PIRANHA PLANT — bobs up/down from pipe, can't be stomped
         // =================================================================
-        case EnemyType::Shooter: {
-            // Slow patrol
+        case EnemyType::PiranhaPlant: {
+            enemy.state = EnemyState::Idle;
+            vel.velocity.x = 0.0f;
+
+            // Bob cycle: 0..1 over ~3 seconds
+            enemy.bobTimer += dt;
+            float cycle = 3.0f;
+            enemy.bobPhase = std::fmod(enemy.bobTimer, cycle) / cycle;
+
+            // Rise up for first half, retreat for second half
+            float bobHeight = 32.0f;
+            float offset;
+            if (enemy.bobPhase < 0.3f) {
+                // Rising
+                offset = -bobHeight * (enemy.bobPhase / 0.3f);
+            } else if (enemy.bobPhase < 0.7f) {
+                // Fully out
+                offset = -bobHeight;
+            } else {
+                // Retreating
+                offset = -bobHeight * (1.0f - (enemy.bobPhase - 0.7f) / 0.3f);
+            }
+            transform.position.y = enemy.bobBaseY + offset;
+
+            // Don't alert if player is very close to pipe top (classic behavior)
+            break;
+        }
+
+        // =================================================================
+        // BOWSER — patrol, shoot fire, takes multiple hits
+        // =================================================================
+        case EnemyType::Bowser: {
+            enemy.state = EnemyState::Patrol;
             float speed = 40.0f;
             vel.velocity.x = speed * static_cast<float>(enemy.facing);
 
@@ -112,89 +155,52 @@ void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
                 enemy.facing = -1;
             }
 
-            enemy.state = EnemyState::Patrol;
-
-            // Sight cone: horizontal line within ±48px vertical, 300px horizontal range
+            // Fire breath at player
             if (playerAlive) {
                 float dx = playerPos.x - transform.position.x;
-                float dy = playerPos.y - transform.position.y;
-                bool inVerticalRange  = std::abs(dy) < 48.0f;
-                bool inHorizontalRange = std::abs(dx) < 300.0f;
                 bool facingPlayer = (dx > 0.0f && enemy.facing == 1) ||
                                     (dx < 0.0f && enemy.facing == -1);
 
-                if (inVerticalRange && inHorizontalRange && facingPlayer) {
-                    enemy.isAlerted = true;
+                if (facingPlayer && std::abs(dx) < 400.0f) {
                     enemy.state = EnemyState::Attack;
-                    vel.velocity.x = 0.0f; // stop moving while shooting
 
                     enemy.shootCooldown -= dt;
                     if (enemy.shootCooldown <= 0.0f) {
                         enemy.shootCooldown = enemy.shootInterval;
 
-                        // Spawn projectile entity
-                        auto projEntity = reg.create();
                         float projDir = (enemy.facing == 1) ? 1.0f : -1.0f;
                         Vec2f spawnPos = {
-                            transform.position.x + projDir * 20.0f,
+                            transform.position.x + projDir * 24.0f,
                             transform.position.y + 8.0f
                         };
 
+                        auto projEntity = reg.create();
                         reg.emplace<TransformComponent>(projEntity,
                             TransformComponent{spawnPos, {1.0f, 1.0f}, 0.0f});
                         reg.emplace<VelocityComponent>(projEntity,
-                            VelocityComponent{{projDir * 250.0f, 0.0f}});
+                            VelocityComponent{{projDir * 200.0f, 0.0f}});
                         reg.emplace<ColliderComponent>(projEntity,
-                            ColliderComponent{{0.0f, 0.0f}, {8.0f, 8.0f}, true, false});
+                            ColliderComponent{{0.0f, 0.0f}, {12.0f, 8.0f}, true, false});
                         reg.emplace<ProjectileComponent>(projEntity,
                             ProjectileComponent{
                                 static_cast<uint32_t>(entity),
-                                1,        // damage
-                                3.0f,     // lifetime
-                                250.0f,   // speed
-                                {projDir, 0.0f}
+                                1, 4.0f, 200.0f,
+                                {projDir, 0.0f},
+                                false, true
                             });
 
-                        // Assign projectile texture
                         SpriteComponent projSprite;
-                        auto projTex = ResourceManager::instance().getTexture("projectile");
+                        auto projTex = ResourceManager::instance().getTexture("bowser_fire");
                         projSprite.texture = projTex.value_or(TextureHandle{0});
-                        projSprite.srcRect = {0.0f, 0.0f, 24.0f, 24.0f};
+                        projSprite.srcRect = {0.0f, 0.0f, 16.0f, 8.0f};
                         projSprite.zOrder = 8;
                         reg.emplace<SpriteComponent>(projEntity, projSprite);
-
-                        reg.emplace<TagComponent>(projEntity, TagComponent{"projectile"});
+                        reg.emplace<TagComponent>(projEntity, TagComponent{"bowser_fire"});
 
                         events.publish(EnemyShootEvent{spawnPos});
                     }
-                } else {
-                    enemy.isAlerted = false;
                 }
             }
-            break;
-        }
-
-        // =================================================================
-        // GUARDIAN — armored walker, flashes on first hit
-        // =================================================================
-        case EnemyType::Guardian: {
-            enemy.state = EnemyState::Patrol;
-
-            float speed = 50.0f;
-            vel.velocity.x = speed * static_cast<float>(enemy.facing);
-
-            if (transform.position.x <= enemy.patrolLeft) {
-                transform.position.x = enemy.patrolLeft;
-                enemy.facing = 1;
-            } else if (transform.position.x >= enemy.patrolRight) {
-                transform.position.x = enemy.patrolRight;
-                enemy.facing = -1;
-            }
-
-            // When armor is broken (isArmored == false), Guardian behaves like
-            // a regular Walker but slower, vulnerable to one more hit.
-            // The armor-break visual (flash) is handled by AnimationSystem
-            // via the invincibilityFrames on HealthComponent.
             break;
         }
 

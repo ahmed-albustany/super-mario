@@ -34,6 +34,10 @@ public:
     ///        Override to true for overlay scenes (pause, HUD).
     [[nodiscard]] virtual bool isTransparent() const { return false; }
 
+    /// @brief If true, the scene below receives update() and handleInput() too.
+    ///        Only true for pure visual overlays (e.g. HUD). Pause/GameOver block updates.
+    [[nodiscard]] virtual bool passesUpdate() const { return false; }
+
     /// @brief Debug name for logging.
     [[nodiscard]] virtual std::string name() const = 0;
 };

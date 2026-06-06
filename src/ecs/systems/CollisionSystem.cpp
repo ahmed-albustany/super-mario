@@ -3,6 +3,7 @@
 #include "core/GameConfig.hpp"
 #include "core/EventBus.hpp"
 #include "core/Events.hpp"
+#include "entities/EntityFactory.hpp"
 #include "physics/AABB.hpp"
 #include "utils/Logger.hpp"
 
@@ -11,7 +12,7 @@
 #include <set>
 
 // =============================================================================
-// Anonymous-namespace helpers — MUST be defined before class methods that call them
+// Anonymous-namespace helpers
 // =============================================================================
 
 namespace {
@@ -23,117 +24,266 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
     auto& pHealth = reg.get<HealthComponent>(playerEnt);
     auto& pVel    = reg.get<VelocityComponent>(playerEnt);
 
-    // Invincible player (power-up or i-frames) → kill enemy on contact
-    if (pHealth.invincibilityFrames > 0) {
-        if (reg.all_of<HealthComponent>(enemyEnt)) {
-            auto& eHealth = reg.get<HealthComponent>(enemyEnt);
-            eHealth.hp = 0;
-            eHealth.isDead = true;
+    // Star invincibility — kill enemy on contact
+    if (reg.all_of<PowerUpComponent>(playerEnt)) {
+        auto& pu = reg.get<PowerUpComponent>(playerEnt);
+        if (pu.type == PowerUpType::StarInvincibility) {
+            if (reg.all_of<HealthComponent>(enemyEnt)) {
+                auto& eHealth = reg.get<HealthComponent>(enemyEnt);
+                eHealth.hp = 0;
+                eHealth.isDead = true;
+            }
             if (reg.all_of<EnemyComponent>(enemyEnt)) {
                 reg.get<EnemyComponent>(enemyEnt).state = EnemyState::Dead;
             }
             events.publish(EnemyKilledEvent{"enemy",
-                reg.get<TransformComponent>(enemyEnt).position});
+                reg.get<TransformComponent>(enemyEnt).position, Config::FIREBALL_KILL_VALUE});
             reg.emplace_or_replace<DestroyFlag>(enemyEnt);
+            return;
         }
+    }
+
+    // i-frames active — ignore contact
+    if (pHealth.invincibilityFrames > 0) return;
+
+    auto& ec = reg.get<EnemyComponent>(enemyEnt);
+
+    // Piranha Plant — can't be stomped, always hurts on contact
+    if (ec.type == EnemyType::PiranhaPlant) {
+        // Take damage
+        goto take_damage;
+    }
+
+    // Koopa shell — special handling
+    if (ec.state == EnemyState::Shell) {
+        // Kick the shell
+        float kickDir = (playerRect.center().x < enemyRect.center().x) ? 1.0f : -1.0f;
+        ec.shellMoving = !ec.shellMoving;
+        ec.facing = (kickDir > 0.0f) ? 1 : -1;
+        pVel.velocity.y = Config::PLAYER_STOMP_BOUNCE;
         return;
     }
 
-    // Dashing player → kill enemy (unless Guardian with armor)
-    if (player.state == PlayerState::Dashing) {
-        if (reg.all_of<EnemyComponent>(enemyEnt)) {
-            auto& ec = reg.get<EnemyComponent>(enemyEnt);
-            if (ec.type == EnemyType::Guardian && ec.isArmored) {
-                ec.isArmored = false;
-                if (reg.all_of<HealthComponent>(enemyEnt)) {
-                    reg.get<HealthComponent>(enemyEnt).invincibilityFrames = 30;
-                }
-                return;
-            }
-        }
-        if (reg.all_of<HealthComponent>(enemyEnt)) {
-            auto& eH = reg.get<HealthComponent>(enemyEnt);
-            eH.hp = 0;
-            eH.isDead = true;
-        }
-        if (reg.all_of<EnemyComponent>(enemyEnt)) {
-            reg.get<EnemyComponent>(enemyEnt).state = EnemyState::Dead;
-        }
-        events.publish(EnemyKilledEvent{"enemy",
-            reg.get<TransformComponent>(enemyEnt).position});
-        reg.emplace_or_replace<DestroyFlag>(enemyEnt);
-        return;
-    }
+    // Stomp detection: player's bottom is above enemy's top 40%
+    {
+        float playerBottom = playerRect.bottom();
+        float enemyTopZone = enemyRect.y + enemyRect.h * 0.4f;
 
-    // Stomp detection: player's bottom is above enemy's vertical midpoint
-    float playerBottom = playerRect.bottom();
-    float enemyMidY    = enemyRect.y + enemyRect.h * 0.5f;
+        if (playerBottom <= enemyTopZone && pVel.velocity.y > 0.0f) {
+            // Stomp!
+            pVel.velocity.y = Config::PLAYER_STOMP_BOUNCE;
 
-    if (playerBottom <= enemyMidY && pVel.velocity.y > 0.0f) {
-        // Stomp — bounce player up
-        pVel.velocity.y = Config::PLAYER_JUMP_FORCE * 0.7f;
-
-        if (reg.all_of<EnemyComponent>(enemyEnt)) {
-            auto& ec = reg.get<EnemyComponent>(enemyEnt);
-            if (ec.type == EnemyType::Guardian && ec.isArmored) {
-                ec.isArmored = false;
-                if (reg.all_of<HealthComponent>(enemyEnt)) {
-                    reg.get<HealthComponent>(enemyEnt).invincibilityFrames = 30;
+            if (ec.type == EnemyType::Koopa) {
+                // Koopa → become shell
+                ec.state = EnemyState::Shell;
+                ec.isShell = true;
+                ec.shellMoving = false;
+                events.publish(EnemyKilledEvent{"koopa",
+                    reg.get<TransformComponent>(enemyEnt).position, Config::ENEMY_STOMP_VALUE});
+            } else if (ec.type == EnemyType::Bowser) {
+                // Bowser — takes damage but doesn't die from one stomp
+                auto& eHealth = reg.get<HealthComponent>(enemyEnt);
+                eHealth.hp -= 1;
+                eHealth.invincibilityFrames = 60;
+                if (eHealth.hp <= 0) {
+                    eHealth.isDead = true;
+                    ec.state = EnemyState::Dead;
+                    events.publish(EnemyKilledEvent{"bowser",
+                        reg.get<TransformComponent>(enemyEnt).position, 5000});
+                    reg.emplace_or_replace<DestroyFlag>(enemyEnt);
                 }
             } else {
+                // Goomba — instant kill
                 if (reg.all_of<HealthComponent>(enemyEnt)) {
                     auto& eH = reg.get<HealthComponent>(enemyEnt);
                     eH.hp = 0;
                     eH.isDead = true;
                 }
                 ec.state = EnemyState::Dead;
-                events.publish(EnemyKilledEvent{"enemy",
-                    reg.get<TransformComponent>(enemyEnt).position});
+                events.publish(EnemyKilledEvent{"goomba",
+                    reg.get<TransformComponent>(enemyEnt).position, Config::ENEMY_STOMP_VALUE});
                 reg.emplace_or_replace<DestroyFlag>(enemyEnt);
             }
-        }
-    } else {
-        // Side/below contact — player takes damage
-        if (pHealth.invincibilityFrames <= 0) {
-            pHealth.hp -= 1;
-            pHealth.invincibilityFrames = Config::INVINCIBILITY_FRAMES;
-            player.state = PlayerState::Hurt;
-
-            float knockDir = (playerRect.center().x < enemyRect.center().x) ? -1.0f : 1.0f;
-            pVel.velocity.x = knockDir * 200.0f;
-            pVel.velocity.y = -300.0f;
-
-            if (pHealth.hp <= 0) {
-                pHealth.isDead = true;
-                events.publish(PlayerDiedEvent{0});
-            } else {
-                events.publish(PlayerHurtEvent{pHealth.hp});
-            }
+            return;
         }
     }
+
+take_damage:
+    // Side/below contact — player takes damage based on power state
+    if (player.power == MarioPowerState::Small) {
+        // Small Mario — die
+        pHealth.isDead = true;
+        player.state = PlayerState::Dead;
+        events.publish(PlayerDiedEvent{0, player.playerIndex});
+    } else {
+        // Big/Fire Mario — shrink to Small
+        player.power = MarioPowerState::Small;
+        player.state = PlayerState::Shrinking;
+        player.growTimer = PlayerComponent::GROW_DURATION;
+        pHealth.invincibilityFrames = Config::INVINCIBILITY_FRAMES;
+
+        // Shrink collider
+        auto& coll = reg.get<ColliderComponent>(playerEnt);
+        coll.size = {14.0f, 16.0f};
+
+        events.publish(PlayerHurtEvent{1, player.playerIndex});
+    }
+
+    float knockDir = (playerRect.center().x < enemyRect.center().x) ? -1.0f : 1.0f;
+    pVel.velocity.x = knockDir * 150.0f;
+    pVel.velocity.y = -200.0f;
 }
 
 void handlePlayerCollectible(entt::registry& reg, EventBus& events,
-                              entt::entity collectEnt) {
+                              entt::entity playerEnt, entt::entity collectEnt) {
     auto& collectible = reg.get<CollectibleComponent>(collectEnt);
     if (collectible.collected) return;
 
     collectible.collected = true;
     Vec2f pos = reg.get<TransformComponent>(collectEnt).position;
+    auto& player = reg.get<PlayerComponent>(playerEnt);
 
     switch (collectible.type) {
         case CollectibleType::Coin:
-            events.publish(CoinCollectedEvent{collectible.value, pos});
+            events.publish(CoinCollectedEvent{collectible.value, pos, player.playerIndex});
             break;
-        case CollectibleType::GemShard:
-            events.publish(GemCollectedEvent{collectible.value, pos});
+
+        case CollectibleType::Mushroom:
+            if (player.power == MarioPowerState::Small) {
+                player.power = MarioPowerState::Big;
+                player.state = PlayerState::Growing;
+                player.growTimer = PlayerComponent::GROW_DURATION;
+                // Grow collider
+                auto& coll = reg.get<ColliderComponent>(playerEnt);
+                coll.size = {14.0f, 30.0f};
+            }
+            events.publish(PlayerPowerUpEvent{"mushroom", player.playerIndex});
             break;
-        case CollectibleType::PowerCrystal:
-            events.publish(PowerUpActivatedEvent{"invincibility", Config::POWER_CRYSTAL_DURATION});
+
+        case CollectibleType::FireFlower:
+            if (player.power == MarioPowerState::Small) {
+                // Small → Big first
+                player.power = MarioPowerState::Big;
+                player.state = PlayerState::Growing;
+                player.growTimer = PlayerComponent::GROW_DURATION;
+                auto& coll = reg.get<ColliderComponent>(playerEnt);
+                coll.size = {14.0f, 30.0f};
+            } else {
+                // Big → Fire
+                player.power = MarioPowerState::Fire;
+            }
+            events.publish(PlayerPowerUpEvent{"fire_flower", player.playerIndex});
+            break;
+
+        case CollectibleType::Star: {
+            PowerUpComponent pu{};
+            pu.type = PowerUpType::StarInvincibility;
+            pu.durationRemaining = Config::STAR_DURATION;
+            reg.emplace_or_replace<PowerUpComponent>(playerEnt, pu);
+            events.publish(PowerUpActivatedEvent{"star", Config::STAR_DURATION, player.playerIndex});
+            break;
+        }
+
+        case CollectibleType::OneUp:
+            events.publish(PlayerPowerUpEvent{"1up", player.playerIndex});
             break;
     }
 
     reg.emplace_or_replace<DestroyFlag>(collectEnt);
+}
+
+void handlePlayerQuestionBlock(entt::registry& reg, EventBus& events,
+                                entt::entity playerEnt, entt::entity blockEnt,
+                                const Rect& playerRect, const Rect& blockRect) {
+    // Only trigger when hitting from below
+    float playerTop = playerRect.top();
+    float blockBottom = blockRect.bottom();
+
+    if (playerTop > blockBottom - 4.0f) return; // Not hitting from below
+
+    auto& qb = reg.get<QuestionBlockComponent>(blockEnt);
+    if (qb.isHit) return; // Already used
+
+    qb.isHit = true;
+    qb.bumpTimer = Config::BLOCK_BUMP_DURATION;
+
+    // Switch animation to "empty"
+    if (reg.all_of<AnimationComponent>(blockEnt)) {
+        reg.get<AnimationComponent>(blockEnt).play("empty");
+    }
+
+    Vec2f blockPos = reg.get<TransformComponent>(blockEnt).position;
+    Vec2f spawnPos = {blockPos.x, blockPos.y - 32.0f};
+
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+
+    // Spawn contents
+    switch (qb.contents) {
+        case CollectibleType::Coin:
+            events.publish(CoinCollectedEvent{Config::COIN_VALUE, spawnPos, player.playerIndex});
+            events.publish(BlockHitEvent{blockPos, "coin", player.playerIndex});
+            break;
+        case CollectibleType::Mushroom:
+            EntityFactory::createMushroom(reg, spawnPos, true);
+            events.publish(BlockHitEvent{blockPos, "mushroom", player.playerIndex});
+            break;
+        case CollectibleType::FireFlower:
+            // Spawn mushroom if Small, fire flower if Big/Fire
+            if (player.power == MarioPowerState::Small) {
+                EntityFactory::createMushroom(reg, spawnPos, true);
+            } else {
+                EntityFactory::createFireFlower(reg, spawnPos, true);
+            }
+            events.publish(BlockHitEvent{blockPos, "fire_flower", player.playerIndex});
+            break;
+        case CollectibleType::Star:
+            EntityFactory::createStar(reg, spawnPos, true);
+            events.publish(BlockHitEvent{blockPos, "star", player.playerIndex});
+            break;
+        case CollectibleType::OneUp:
+            EntityFactory::createOneUp(reg, spawnPos, true);
+            events.publish(BlockHitEvent{blockPos, "1up", player.playerIndex});
+            break;
+    }
+}
+
+void handlePlayerFlagPole(entt::registry& reg, EventBus& events,
+                           entt::entity playerEnt, entt::entity flagEnt) {
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+    auto& vel = reg.get<VelocityComponent>(playerEnt);
+    auto& flagPole = reg.get<FlagPoleComponent>(flagEnt);
+
+    if (flagPole.activated) return;
+    flagPole.activated = true;
+
+    player.state = PlayerState::FlagPole;
+    vel.velocity.x = 0.0f;
+    vel.velocity.y = 200.0f; // slide down
+
+    // Calculate grab height for score
+    float playerY = reg.get<TransformComponent>(playerEnt).position.y;
+    float height = (flagPole.bottomY - playerY) / (flagPole.bottomY - flagPole.topY);
+    height = Math::clamp(height, 0.0f, 1.0f);
+
+    events.publish(FlagPoleGrabbedEvent{height, player.playerIndex});
+    events.publish(LevelCompleteEvent{0, 0.0f, player.playerIndex});
+}
+
+void handlePlayerPipe(entt::registry& reg,
+                       entt::entity playerEnt, entt::entity pipeEnt,
+                       const InputManager* /*input*/, bool moveDownHeld) {
+    auto& pipe = reg.get<PipeComponent>(pipeEnt);
+    if (!pipe.isEnterable) return;
+
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+    if (player.state == PlayerState::EnteringPipe) return;
+
+    // Player must be standing on top and pressing down
+    if (!player.isGrounded || !moveDownHeld) return;
+
+    player.state = PlayerState::EnteringPipe;
+    player.pipeTimer = PlayerComponent::PIPE_DURATION;
+    player.pipeTarget = pipe.destination;
 }
 
 void handleProjectileHit(entt::registry& reg, EventBus& events,
@@ -142,9 +292,57 @@ void handleProjectileHit(entt::registry& reg, EventBus& events,
 
     if (static_cast<uint32_t>(targetEnt) == proj.ownerId) return;
 
-    if (reg.all_of<HealthComponent>(targetEnt)) {
+    // Fireball kills enemies
+    if (proj.isFireball && reg.all_of<EnemyComponent>(targetEnt)) {
+        auto& ec = reg.get<EnemyComponent>(targetEnt);
+        if (ec.type != EnemyType::PiranhaPlant || true) { // fireballs can kill piranha
+            if (reg.all_of<HealthComponent>(targetEnt)) {
+                auto& eH = reg.get<HealthComponent>(targetEnt);
+                eH.hp -= proj.damage;
+                if (eH.hp <= 0) {
+                    eH.isDead = true;
+                    ec.state = EnemyState::Dead;
+                    events.publish(EnemyKilledEvent{"enemy",
+                        reg.get<TransformComponent>(targetEnt).position,
+                        Config::FIREBALL_KILL_VALUE});
+                    reg.emplace_or_replace<DestroyFlag>(targetEnt);
+                }
+            }
+        }
+        reg.emplace_or_replace<DestroyFlag>(projEnt);
+        return;
+    }
+
+    // Enemy projectile (Bowser fire) hitting player
+    if (proj.isBowserFire && reg.all_of<PlayerComponent>(targetEnt)) {
+        auto& player = reg.get<PlayerComponent>(targetEnt);
         auto& health = reg.get<HealthComponent>(targetEnt);
 
+        if (health.invincibilityFrames > 0) {
+            reg.emplace_or_replace<DestroyFlag>(projEnt);
+            return;
+        }
+
+        if (player.power == MarioPowerState::Small) {
+            health.isDead = true;
+            player.state = PlayerState::Dead;
+            events.publish(PlayerDiedEvent{0, player.playerIndex});
+        } else {
+            player.power = MarioPowerState::Small;
+            player.state = PlayerState::Shrinking;
+            player.growTimer = PlayerComponent::GROW_DURATION;
+            health.invincibilityFrames = Config::INVINCIBILITY_FRAMES;
+            auto& coll = reg.get<ColliderComponent>(targetEnt);
+            coll.size = {14.0f, 16.0f};
+            events.publish(PlayerHurtEvent{1, player.playerIndex});
+        }
+        reg.emplace_or_replace<DestroyFlag>(projEnt);
+        return;
+    }
+
+    // Generic projectile hit
+    if (reg.all_of<HealthComponent>(targetEnt)) {
+        auto& health = reg.get<HealthComponent>(targetEnt);
         if (health.invincibilityFrames > 0) {
             reg.emplace_or_replace<DestroyFlag>(projEnt);
             return;
@@ -153,22 +351,11 @@ void handleProjectileHit(entt::registry& reg, EventBus& events,
         health.hp -= proj.damage;
         health.invincibilityFrames = Config::INVINCIBILITY_FRAMES / 2;
 
-        if (reg.all_of<PlayerComponent>(targetEnt)) {
-            auto& player = reg.get<PlayerComponent>(targetEnt);
-            player.state = PlayerState::Hurt;
-            if (health.hp <= 0) {
-                health.isDead = true;
-                events.publish(PlayerDiedEvent{0});
-            } else {
-                events.publish(PlayerHurtEvent{health.hp});
-            }
-        }
-
         if (reg.all_of<EnemyComponent>(targetEnt) && health.hp <= 0) {
             health.isDead = true;
             reg.get<EnemyComponent>(targetEnt).state = EnemyState::Dead;
             events.publish(EnemyKilledEvent{"enemy",
-                reg.get<TransformComponent>(targetEnt).position});
+                reg.get<TransformComponent>(targetEnt).position, Config::ENEMY_STOMP_VALUE});
             reg.emplace_or_replace<DestroyFlag>(targetEnt);
         }
     }
@@ -187,9 +374,7 @@ void CollisionSystem::update(entt::registry& reg, float /*dt*/, EventBus& events
     auto playerView = reg.view<PlayerComponent>();
     for (auto e : playerView) {
         auto& p = playerView.get<PlayerComponent>(e);
-        p.isGrounded          = false;
-        p.isTouchingWallLeft  = false;
-        p.isTouchingWallRight = false;
+        p.isGrounded = false;
     }
 
     // 2. Resolve dynamic-vs-static collisions (tiles, walls)
@@ -215,9 +400,7 @@ void CollisionSystem::update(entt::registry& reg, float /*dt*/, EventBus& events
 // =============================================================================
 
 void CollisionSystem::rebuildGrid(entt::registry& reg) {
-    for (auto& [key, vec] : m_grid) {
-        vec.clear();
-    }
+    m_grid.clear();
 
     auto view = reg.view<TransformComponent, ColliderComponent>();
     for (auto entity : view) {
@@ -307,6 +490,7 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
 
                 if (!seen.insert(pair).second) continue;
                 if (!reg.valid(a) || !reg.valid(b)) continue;
+                if (reg.all_of<DestroyFlag>(a) || reg.all_of<DestroyFlag>(b)) continue;
 
                 const auto& tA = reg.get<TransformComponent>(a);
                 const auto& cA = reg.get<ColliderComponent>(a);
@@ -335,23 +519,55 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
 
                 // Player vs Collectible
                 if (aIsPlayer && reg.all_of<CollectibleComponent>(b)) {
-                    handlePlayerCollectible(reg, events, b);
+                    handlePlayerCollectible(reg, events, a, b);
                     continue;
                 }
                 if (bIsPlayer && reg.all_of<CollectibleComponent>(a)) {
-                    handlePlayerCollectible(reg, events, a);
+                    handlePlayerCollectible(reg, events, b, a);
                     continue;
                 }
 
-                // Player vs Goal
-                if ((aIsPlayer && reg.all_of<GoalComponent>(b)) ||
-                    (bIsPlayer && reg.all_of<GoalComponent>(a))) {
+                // Player vs QuestionBlock (hit from below)
+                if (aIsPlayer && reg.all_of<QuestionBlockComponent>(b)) {
+                    handlePlayerQuestionBlock(reg, events, a, b, rA, rB);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<QuestionBlockComponent>(a)) {
+                    handlePlayerQuestionBlock(reg, events, b, a, rB, rA);
+                    continue;
+                }
+
+                // Player vs FlagPole
+                if (aIsPlayer && reg.all_of<FlagPoleComponent>(b)) {
+                    handlePlayerFlagPole(reg, events, a, b);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<FlagPoleComponent>(a)) {
+                    handlePlayerFlagPole(reg, events, b, a);
+                    continue;
+                }
+
+                // Player vs Goal (backward compat)
+                if ((aIsPlayer && reg.all_of<GoalComponent>(b) && !reg.all_of<FlagPoleComponent>(b)) ||
+                    (bIsPlayer && reg.all_of<GoalComponent>(a) && !reg.all_of<FlagPoleComponent>(a))) {
                     auto goalEnt = aIsPlayer ? b : a;
                     auto& goal = reg.get<GoalComponent>(goalEnt);
                     if (!goal.reached) {
                         goal.reached = true;
-                        events.publish(LevelCompleteEvent{0, 0.0f});
+                        events.publish(LevelCompleteEvent{0, 0.0f, 0});
                     }
+                    continue;
+                }
+
+                // Player vs Pipe
+                if (aIsPlayer && reg.all_of<PipeComponent>(b)) {
+                    auto& pl = reg.get<PlayerComponent>(a);
+                    handlePlayerPipe(reg, a, b, nullptr, pl.isGrounded);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<PipeComponent>(a)) {
+                    auto& pl = reg.get<PlayerComponent>(b);
+                    handlePlayerPipe(reg, b, a, nullptr, pl.isGrounded);
                     continue;
                 }
 
@@ -366,6 +582,27 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
                 if (bIsProj && (aIsPlayer || aIsEnemy)) {
                     handleProjectileHit(reg, events, b, a);
                     continue;
+                }
+
+                // Koopa shell hitting enemies
+                if (aIsEnemy && bIsEnemy) {
+                    auto& ecA = reg.get<EnemyComponent>(a);
+                    auto& ecB = reg.get<EnemyComponent>(b);
+                    if (ecA.state == EnemyState::Shell && ecA.shellMoving) {
+                        auto& hB = reg.get<HealthComponent>(b);
+                        hB.hp = 0; hB.isDead = true;
+                        ecB.state = EnemyState::Dead;
+                        reg.emplace_or_replace<DestroyFlag>(b);
+                        events.publish(EnemyKilledEvent{"enemy",
+                            reg.get<TransformComponent>(b).position, Config::ENEMY_STOMP_VALUE});
+                    } else if (ecB.state == EnemyState::Shell && ecB.shellMoving) {
+                        auto& hA = reg.get<HealthComponent>(a);
+                        hA.hp = 0; hA.isDead = true;
+                        ecA.state = EnemyState::Dead;
+                        reg.emplace_or_replace<DestroyFlag>(a);
+                        events.publish(EnemyKilledEvent{"enemy",
+                            reg.get<TransformComponent>(a).position, Config::ENEMY_STOMP_VALUE});
+                    }
                 }
             }
         }
@@ -386,10 +623,8 @@ void CollisionSystem::updatePlayerProbes(entt::registry& reg) {
 
         Rect pRect = pCollider.toRect(pTransform.position);
 
-        // Thin probes extending 2px from each face
-        Rect groundProbe    = {pRect.x + 1.0f,  pRect.bottom(),  pRect.w - 2.0f, 2.0f};
-        Rect leftWallProbe  = {pRect.x - 2.0f,  pRect.y + 2.0f,  2.0f, pRect.h - 4.0f};
-        Rect rightWallProbe = {pRect.right(),    pRect.y + 2.0f,  2.0f, pRect.h - 4.0f};
+        // Thin ground probe extending 2px below player
+        Rect groundProbe = {pRect.x + 1.0f, pRect.bottom(), pRect.w - 2.0f, 2.0f};
 
         auto staticView = reg.view<TransformComponent, ColliderComponent>();
         for (auto statEnt : staticView) {
@@ -403,9 +638,10 @@ void CollisionSystem::updatePlayerProbes(entt::registry& reg) {
             const auto& st = staticView.get<TransformComponent>(statEnt);
             Rect sRect = sc.toRect(st.position);
 
-            if (!player.isGrounded          && AABB::intersects(groundProbe, sRect))    player.isGrounded = true;
-            if (!player.isTouchingWallLeft  && AABB::intersects(leftWallProbe, sRect))  player.isTouchingWallLeft = true;
-            if (!player.isTouchingWallRight && AABB::intersects(rightWallProbe, sRect)) player.isTouchingWallRight = true;
+            if (!player.isGrounded && AABB::intersects(groundProbe, sRect)) {
+                player.isGrounded = true;
+                break;
+            }
         }
     }
 }

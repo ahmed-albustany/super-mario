@@ -3,6 +3,7 @@
 #include "scenes/IScene.hpp"
 #include "core/EventBus.hpp"
 #include "core/Events.hpp"
+#include "core/GameState.hpp"
 #include "entities/Player.hpp"
 #include "physics/PhysicsWorld.hpp"
 #include "world/TileMap.hpp"
@@ -17,11 +18,15 @@
 class Game;
 
 /// @brief Core gameplay scene — owns the ECS registry, all systems, tilemap, camera.
-///        Tick order: Player → EnemyAI → Physics → Movement → Collision →
-///        PowerUp → Animation → Render.
+///        Supports 1P, 2P alternating, and 2P co-op modes.
 class GameScene final : public IScene {
 public:
     explicit GameScene(Game& game);
+
+    /// @brief Configure player mode before onEnter(). Call from MenuScene.
+    /// @param numPlayers 1 or 2
+    /// @param coop       true = co-op (simultaneous), false = alternating (if 2P)
+    void setPlayerMode(int numPlayers, bool coop);
 
     void onEnter() override;
     void onExit() override;
@@ -33,20 +38,26 @@ public:
 private:
     void loadLevel(const std::string& levelPath);
     void spawnEntities();
+    void spawnCurrentPlayer();
     void onPlayerDied(const PlayerDiedEvent& event);
     void onPlayerHurt(const PlayerHurtEvent& event);
     void onCoinCollected(const CoinCollectedEvent& event);
-    void onGemCollected(const GemCollectedEvent& event);
     void onEnemyKilled(const EnemyKilledEvent& event);
     void onLevelComplete(const LevelCompleteEvent& event);
+    void onBlockHit(const BlockHitEvent& event);
+    void onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event);
+
+    /// @brief Alternating mode: switch to the other player's turn.
+    void switchTurn();
 
     Game& m_game;
 
     // ECS
     entt::registry m_registry;
 
-    // Player wrapper
-    Player m_player;
+    // Players (P2 only used in co-op mode)
+    Player m_player1;
+    Player m_player2;
 
     // Systems
     PlayerSystem    m_playerSystem;
@@ -65,21 +76,16 @@ private:
     Parallax     m_parallax;
     LevelData    m_levelData;
 
-    // Gameplay state (RAM only — no persistence)
-    int   m_score      = 0;
-    int   m_lives      = 3;
-    int   m_coins      = 0;
-    int   m_gems       = 0;
-    float m_levelTimer = 300.0f;
-    bool  m_levelWon   = false;
-    bool  m_gameOver   = false;
+    // Gameplay state (shared with HUDScene)
+    GameStatePtr m_state = std::make_shared<GameState>();
     Vec2f m_spawnPoint;
 
     // Event subscriber IDs
-    SubscriberID m_subPlayerDied   = 0;
+    SubscriberID m_subPlayerDied    = 0;
     SubscriberID m_subPlayerHurt   = 0;
     SubscriberID m_subCoin         = 0;
-    SubscriberID m_subGem          = 0;
     SubscriberID m_subEnemyKilled  = 0;
     SubscriberID m_subLevelComplete = 0;
+    SubscriberID m_subBlockHit     = 0;
+    SubscriberID m_subFlagPole     = 0;
 };

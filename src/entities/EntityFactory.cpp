@@ -22,9 +22,14 @@ AnimationComponent::Clip makeClip(const std::string& name, const std::string& te
     return clip;
 }
 
-// Standard source rects for whole-image sprites
-constexpr Rect CHAR_RECT  = {0.0f, 0.0f, 24.0f, 24.0f}; // 24x24 character sprites
-constexpr Rect ITEM_RECT  = {0.0f, 0.0f, 18.0f, 18.0f}; // 18x18 item sprites
+// Standard source rects
+constexpr Rect SMALL_RECT = {0.0f, 0.0f, 16.0f, 16.0f}; // Small Mario
+constexpr Rect BIG_RECT   = {0.0f, 0.0f, 16.0f, 32.0f}; // Big/Fire Mario
+constexpr Rect ENEMY_RECT = {0.0f, 0.0f, 16.0f, 16.0f}; // Goomba/Koopa
+constexpr Rect ITEM_RECT  = {0.0f, 0.0f, 16.0f, 16.0f}; // Coins, items
+constexpr Rect TILE_RECT  = {0.0f, 0.0f, 32.0f, 32.0f}; // Block tiles
+constexpr Rect PIPE_RECT  = {0.0f, 0.0f, 64.0f, 64.0f}; // Pipe (2x2 tiles)
+constexpr Rect BOWSER_RECT = {0.0f, 0.0f, 32.0f, 32.0f}; // Bowser
 
 } // anonymous namespace
 
@@ -32,45 +37,64 @@ constexpr Rect ITEM_RECT  = {0.0f, 0.0f, 18.0f, 18.0f}; // 18x18 item sprites
 // Player
 // =============================================================================
 
-entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPos) {
+entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPos,
+                                          int playerIndex) {
     auto entity = registry.create();
 
     registry.emplace<TransformComponent>(entity, TransformComponent{spawnPos});
     registry.emplace<VelocityComponent>(entity);
     registry.emplace<GravityComponent>(entity);
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {24.0f, 24.0f}, false, false
+        {0.0f, 0.0f}, {14.0f, 16.0f}, false, false
     });
 
-    // Sprite — start with idle texture
+    // Sprite prefix: "mario_" for P1, "luigi_" for P2
+    std::string prefix = (playerIndex == 0) ? "mario_" : "luigi_";
+
     SpriteComponent sprite;
-    sprite.texture = tex("player_idle");
-    sprite.srcRect = CHAR_RECT;
-    sprite.zOrder  = 10; // player renders above most things
+    sprite.texture = tex(prefix + "small_idle");
+    sprite.srcRect = SMALL_RECT;
+    sprite.zOrder  = 10;
     registry.emplace<SpriteComponent>(entity, sprite);
 
-    // Animation clips — one clip per player state, each referencing its own texture
+    // Animation clips for all Mario states + power states
     AnimationComponent anim;
+    // Small Mario clips
     anim.clips = {
-        makeClip("idle",        "player_idle",      CHAR_RECT, 1.0f, true),
-        makeClip("run",         "player_run",       CHAR_RECT, 8.0f, true),
-        makeClip("jump",        "player_jump",      CHAR_RECT, 1.0f, false),
-        makeClip("double_jump", "player_jump",      CHAR_RECT, 1.0f, false),
-        makeClip("fall",        "player_fall",      CHAR_RECT, 1.0f, true),
-        makeClip("dash",        "player_dash",      CHAR_RECT, 1.0f, false),
-        makeClip("wall_slide",  "player_wallslide", CHAR_RECT, 1.0f, true),
-        makeClip("wall_jump",   "player_jump",      CHAR_RECT, 1.0f, false),
-        makeClip("hurt",        "player_hurt",      CHAR_RECT, 1.0f, false),
-        makeClip("dead",        "player_dead",      CHAR_RECT, 1.0f, false),
+        makeClip("idle",     prefix + "small_idle",    SMALL_RECT, 1.0f, true),
+        makeClip("run",      prefix + "small_run",     SMALL_RECT, 10.0f, true),
+        makeClip("jump",     prefix + "small_jump",    SMALL_RECT, 1.0f, false),
+        makeClip("fall",     prefix + "small_jump",    SMALL_RECT, 1.0f, true),
+        makeClip("skid",     prefix + "small_skid",    SMALL_RECT, 1.0f, false),
+        makeClip("hurt",     prefix + "small_hurt",    SMALL_RECT, 1.0f, false),
+        makeClip("dead",     prefix + "small_dead",    SMALL_RECT, 1.0f, false),
+        makeClip("grow",     prefix + "small_grow",    SMALL_RECT, 8.0f, false),
+        makeClip("flagpole", prefix + "small_climb",   SMALL_RECT, 4.0f, true),
+        makeClip("pipe",     prefix + "small_idle",    SMALL_RECT, 1.0f, false),
+        // Big Mario clips
+        makeClip("big_idle",     prefix + "big_idle",    BIG_RECT, 1.0f, true),
+        makeClip("big_run",      prefix + "big_run",     BIG_RECT, 10.0f, true),
+        makeClip("big_jump",     prefix + "big_jump",    BIG_RECT, 1.0f, false),
+        makeClip("big_fall",     prefix + "big_jump",    BIG_RECT, 1.0f, true),
+        makeClip("big_skid",     prefix + "big_skid",    BIG_RECT, 1.0f, false),
+        makeClip("big_flagpole", prefix + "big_climb",   BIG_RECT, 4.0f, true),
+        // Fire Mario clips
+        makeClip("fire_idle",     prefix + "fire_idle",    BIG_RECT, 1.0f, true),
+        makeClip("fire_run",      prefix + "fire_run",     BIG_RECT, 10.0f, true),
+        makeClip("fire_jump",     prefix + "fire_jump",    BIG_RECT, 1.0f, false),
+        makeClip("fire_fall",     prefix + "fire_jump",    BIG_RECT, 1.0f, true),
+        makeClip("fire_skid",     prefix + "fire_skid",    BIG_RECT, 1.0f, false),
+        makeClip("fire_flagpole", prefix + "fire_climb",   BIG_RECT, 4.0f, true),
     };
     anim.currentClip = 0;
     registry.emplace<AnimationComponent>(entity, anim);
 
-    registry.emplace<PlayerComponent>(entity);
-    registry.emplace<HealthComponent>(entity, HealthComponent{
-        Config::PLAYER_MAX_HP, Config::PLAYER_MAX_HP, 0, false
-    });
-    registry.emplace<TagComponent>(entity, TagComponent{"player"});
+    PlayerComponent pc{};
+    pc.playerIndex = playerIndex;
+    registry.emplace<PlayerComponent>(entity, pc);
+
+    registry.emplace<HealthComponent>(entity, HealthComponent{1, 1, 0, false});
+    registry.emplace<TagComponent>(entity, TagComponent{playerIndex == 0 ? "mario" : "luigi"});
 
     return entity;
 }
@@ -86,33 +110,38 @@ void EntityFactory::attachEnemyBase(entt::registry& registry, entt::entity entit
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<VelocityComponent>(entity);
     registry.emplace<GravityComponent>(entity);
+
+    float collW = 14.0f, collH = 14.0f;
+    if (type == EnemyType::Bowser) {
+        collW = 28.0f; collH = 30.0f;
+    }
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {24.0f, 24.0f}, false, false
+        {0.0f, 0.0f}, {collW, collH}, false, false
     });
 
-    // Determine texture key based on enemy type
     std::string texKey;
+    Rect rect = ENEMY_RECT;
     switch (type) {
-        case EnemyType::Walker:   texKey = "walker";   break;
-        case EnemyType::Jumper:   texKey = "jumper";   break;
-        case EnemyType::Shooter:  texKey = "shooter";  break;
-        case EnemyType::Guardian: texKey = "guardian";  break;
+        case EnemyType::Goomba:       texKey = "goomba";        break;
+        case EnemyType::Koopa:        texKey = "koopa";         break;
+        case EnemyType::PiranhaPlant: texKey = "piranha_plant"; break;
+        case EnemyType::Bowser:       texKey = "bowser"; rect = BOWSER_RECT; break;
     }
 
     SpriteComponent sprite;
     sprite.texture = tex(texKey);
-    sprite.srcRect = CHAR_RECT;
+    sprite.srcRect = rect;
     sprite.zOrder  = 5;
     registry.emplace<SpriteComponent>(entity, sprite);
 
-    // Simple animation — all states use the same single-frame texture
     AnimationComponent anim;
     anim.clips = {
-        makeClip("idle",   texKey, CHAR_RECT, 1.0f, true),
-        makeClip("walk",   texKey, CHAR_RECT, 6.0f, true),
-        makeClip("attack", texKey, CHAR_RECT, 1.0f, false),
-        makeClip("hurt",   texKey, CHAR_RECT, 1.0f, false),
-        makeClip("dead",   texKey, CHAR_RECT, 1.0f, false),
+        makeClip("idle",   texKey, rect, 1.0f, true),
+        makeClip("walk",   texKey, rect, 6.0f, true),
+        makeClip("attack", texKey, rect, 1.0f, false),
+        makeClip("shell",  texKey, rect, 1.0f, true),
+        makeClip("hurt",   texKey, rect, 1.0f, false),
+        makeClip("dead",   texKey, rect, 1.0f, false),
     };
     anim.currentClip = 0;
     registry.emplace<AnimationComponent>(entity, anim);
@@ -126,73 +155,68 @@ void EntityFactory::attachEnemyBase(entt::registry& registry, entt::entity entit
     ec.patrolRight = patrolRight;
     ec.facing      = facing;
     ec.isAlerted   = false;
-    ec.isArmored   = (type == EnemyType::Guardian);
+    if (type == EnemyType::Bowser) {
+        ec.hitsToKill = 5;
+    }
+    if (type == EnemyType::PiranhaPlant) {
+        ec.bobBaseY = pos.y;
+    }
     registry.emplace<EnemyComponent>(entity, ec);
 }
 
 // =============================================================================
-// Walker
+// Goomba
 // =============================================================================
 
-entt::entity EntityFactory::createWalker(entt::registry& registry, Vec2f pos,
+entt::entity EntityFactory::createGoomba(entt::registry& registry, Vec2f pos,
                                           float patrolLeft, float patrolRight) {
     auto entity = registry.create();
-    attachEnemyBase(registry, entity, pos, EnemyType::Walker, 1,
+    attachEnemyBase(registry, entity, pos, EnemyType::Goomba, 1,
                     patrolLeft, patrolRight, 1);
-    registry.emplace<TagComponent>(entity, TagComponent{"walker"});
+    registry.emplace<TagComponent>(entity, TagComponent{"goomba"});
     return entity;
 }
 
 // =============================================================================
-// Jumper
+// Koopa
 // =============================================================================
 
-entt::entity EntityFactory::createJumper(entt::registry& registry, Vec2f pos,
+entt::entity EntityFactory::createKoopa(entt::registry& registry, Vec2f pos,
+                                         float patrolLeft, float patrolRight) {
+    auto entity = registry.create();
+    attachEnemyBase(registry, entity, pos, EnemyType::Koopa, 1,
+                    patrolLeft, patrolRight, 1);
+    registry.emplace<TagComponent>(entity, TagComponent{"koopa"});
+    return entity;
+}
+
+// =============================================================================
+// Piranha Plant
+// =============================================================================
+
+entt::entity EntityFactory::createPiranhaPlant(entt::registry& registry, Vec2f pos) {
+    auto entity = registry.create();
+    attachEnemyBase(registry, entity, pos, EnemyType::PiranhaPlant, 1,
+                    pos.x, pos.x, 1);
+    // Piranha plants don't fall — disable gravity
+    registry.get<GravityComponent>(entity).multiplier = 0.0f;
+    // Static collider — can't be pushed
+    auto& coll = registry.get<ColliderComponent>(entity);
+    coll.size = {14.0f, 24.0f};
+    registry.emplace<TagComponent>(entity, TagComponent{"piranha_plant"});
+    return entity;
+}
+
+// =============================================================================
+// Bowser
+// =============================================================================
+
+entt::entity EntityFactory::createBowser(entt::registry& registry, Vec2f pos,
                                           float patrolLeft, float patrolRight) {
     auto entity = registry.create();
-    attachEnemyBase(registry, entity, pos, EnemyType::Jumper, 1,
-                    patrolLeft, patrolRight, 1);
-
-    // Jumper-specific tuning
-    auto& ec         = registry.get<EnemyComponent>(entity);
-    ec.bounceForce   = -500.0f;
-    ec.bounceTimer   = 1.5f;
-
-    registry.emplace<TagComponent>(entity, TagComponent{"jumper"});
-    return entity;
-}
-
-// =============================================================================
-// Shooter
-// =============================================================================
-
-entt::entity EntityFactory::createShooter(entt::registry& registry, Vec2f pos,
-                                           bool facingLeft) {
-    auto entity = registry.create();
-    int facing = facingLeft ? -1 : 1;
-    // Shooters are mostly stationary — patrol range is tight around their position
-    attachEnemyBase(registry, entity, pos, EnemyType::Shooter, 1,
-                    pos.x - 16.0f, pos.x + 16.0f, facing);
-
-    // Shooter-specific tuning
-    auto& ec          = registry.get<EnemyComponent>(entity);
-    ec.shootCooldown  = 0.0f;
-    ec.shootInterval  = 2.0f;
-
-    registry.emplace<TagComponent>(entity, TagComponent{"shooter"});
-    return entity;
-}
-
-// =============================================================================
-// Guardian
-// =============================================================================
-
-entt::entity EntityFactory::createGuardian(entt::registry& registry, Vec2f pos,
-                                            float patrolLeft, float patrolRight) {
-    auto entity = registry.create();
-    attachEnemyBase(registry, entity, pos, EnemyType::Guardian, 2,
-                    patrolLeft, patrolRight, 1);
-    registry.emplace<TagComponent>(entity, TagComponent{"guardian"});
+    attachEnemyBase(registry, entity, pos, EnemyType::Bowser, 5,
+                    patrolLeft, patrolRight, -1);
+    registry.emplace<TagComponent>(entity, TagComponent{"bowser"});
     return entity;
 }
 
@@ -202,10 +226,9 @@ entt::entity EntityFactory::createGuardian(entt::registry& registry, Vec2f pos,
 
 entt::entity EntityFactory::createCoin(entt::registry& registry, Vec2f pos) {
     auto entity = registry.create();
-
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
+        {0.0f, 0.0f}, {14.0f, 14.0f}, true, false
     });
 
     SpriteComponent sprite;
@@ -215,67 +238,186 @@ entt::entity EntityFactory::createCoin(entt::registry& registry, Vec2f pos) {
     registry.emplace<SpriteComponent>(entity, sprite);
 
     AnimationComponent anim;
-    anim.clips = {makeClip("idle", "coin", ITEM_RECT, 1.0f, true)};
+    anim.clips = {makeClip("idle", "coin", ITEM_RECT, 4.0f, true)};
     registry.emplace<AnimationComponent>(entity, anim);
 
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
-        CollectibleType::Coin, Config::COIN_VALUE, false
+        CollectibleType::Coin, Config::COIN_VALUE, false, false
     });
     registry.emplace<TagComponent>(entity, TagComponent{"coin"});
-
     return entity;
 }
 
-entt::entity EntityFactory::createGemShard(entt::registry& registry, Vec2f pos) {
+entt::entity EntityFactory::createMushroom(entt::registry& registry, Vec2f pos, bool fromBlock) {
     auto entity = registry.create();
-
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<VelocityComponent>(entity, VelocityComponent{
+        {80.0f, fromBlock ? -100.0f : 0.0f}
+    });
+    registry.emplace<GravityComponent>(entity);
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
+        {0.0f, 0.0f}, {14.0f, 14.0f}, true, false
     });
 
     SpriteComponent sprite;
-    sprite.texture = tex("gem_shard");
+    sprite.texture = tex("mushroom");
     sprite.srcRect = ITEM_RECT;
-    sprite.zOrder  = 3;
+    sprite.zOrder  = 4;
     registry.emplace<SpriteComponent>(entity, sprite);
 
-    AnimationComponent anim;
-    anim.clips = {makeClip("idle", "gem_shard", ITEM_RECT, 1.0f, true)};
-    registry.emplace<AnimationComponent>(entity, anim);
-
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
-        CollectibleType::GemShard, Config::GEM_VALUE, false
+        CollectibleType::Mushroom, 1000, false, fromBlock
     });
-    registry.emplace<TagComponent>(entity, TagComponent{"gem_shard"});
-
+    registry.emplace<TagComponent>(entity, TagComponent{"mushroom"});
     return entity;
 }
 
-entt::entity EntityFactory::createPowerCrystal(entt::registry& registry, Vec2f pos) {
+entt::entity EntityFactory::createFireFlower(entt::registry& registry, Vec2f pos, bool fromBlock) {
     auto entity = registry.create();
-
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
+        {0.0f, 0.0f}, {14.0f, 14.0f}, true, false
     });
 
     SpriteComponent sprite;
-    sprite.texture = tex("power_crystal");
+    sprite.texture = tex("fire_flower");
     sprite.srcRect = ITEM_RECT;
-    sprite.zOrder  = 3;
+    sprite.zOrder  = 4;
     registry.emplace<SpriteComponent>(entity, sprite);
 
     AnimationComponent anim;
-    anim.clips = {makeClip("idle", "power_crystal", ITEM_RECT, 1.0f, true)};
+    anim.clips = {makeClip("idle", "fire_flower", ITEM_RECT, 4.0f, true)};
     registry.emplace<AnimationComponent>(entity, anim);
 
     registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
-        CollectibleType::PowerCrystal, 0, false
+        CollectibleType::FireFlower, 1000, false, fromBlock
     });
-    registry.emplace<TagComponent>(entity, TagComponent{"power_crystal"});
-
+    registry.emplace<TagComponent>(entity, TagComponent{"fire_flower"});
     return entity;
+}
+
+entt::entity EntityFactory::createStar(entt::registry& registry, Vec2f pos, bool fromBlock) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<VelocityComponent>(entity, VelocityComponent{
+        {120.0f, fromBlock ? -200.0f : 0.0f}
+    });
+    registry.emplace<GravityComponent>(entity);
+    registry.emplace<ColliderComponent>(entity, ColliderComponent{
+        {0.0f, 0.0f}, {14.0f, 14.0f}, true, false
+    });
+
+    SpriteComponent sprite;
+    sprite.texture = tex("star");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 4;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    AnimationComponent anim;
+    anim.clips = {makeClip("idle", "star", ITEM_RECT, 6.0f, true)};
+    registry.emplace<AnimationComponent>(entity, anim);
+
+    registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
+        CollectibleType::Star, 1000, false, fromBlock
+    });
+    registry.emplace<TagComponent>(entity, TagComponent{"star"});
+    return entity;
+}
+
+entt::entity EntityFactory::createOneUp(entt::registry& registry, Vec2f pos, bool fromBlock) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<VelocityComponent>(entity, VelocityComponent{
+        {60.0f, fromBlock ? -100.0f : 0.0f}
+    });
+    registry.emplace<GravityComponent>(entity);
+    registry.emplace<ColliderComponent>(entity, ColliderComponent{
+        {0.0f, 0.0f}, {14.0f, 14.0f}, true, false
+    });
+
+    SpriteComponent sprite;
+    sprite.texture = tex("oneup_mushroom");
+    sprite.srcRect = ITEM_RECT;
+    sprite.zOrder  = 4;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    registry.emplace<CollectibleComponent>(entity, CollectibleComponent{
+        CollectibleType::OneUp, 0, false, fromBlock
+    });
+    registry.emplace<TagComponent>(entity, TagComponent{"1up"});
+    return entity;
+}
+
+// =============================================================================
+// World objects
+// =============================================================================
+
+entt::entity EntityFactory::createQuestionBlock(entt::registry& registry, Vec2f pos,
+                                                 CollectibleType contents) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<ColliderComponent>(entity, ColliderComponent{
+        {0.0f, 0.0f}, {32.0f, 32.0f}, false, true
+    });
+
+    SpriteComponent sprite;
+    sprite.texture = tex("question_block");
+    sprite.srcRect = TILE_RECT;
+    sprite.zOrder  = 2;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    AnimationComponent anim;
+    anim.clips = {
+        makeClip("active", "question_block", TILE_RECT, 4.0f, true),
+        makeClip("empty",  "empty_block",    TILE_RECT, 1.0f, true),
+    };
+    registry.emplace<AnimationComponent>(entity, anim);
+
+    registry.emplace<QuestionBlockComponent>(entity, QuestionBlockComponent{contents, false, 0.0f, 0.0f});
+    registry.emplace<TagComponent>(entity, TagComponent{"question_block"});
+    return entity;
+}
+
+entt::entity EntityFactory::createPipe(entt::registry& registry, Vec2f pos,
+                                        bool enterable, Vec2f destination) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<ColliderComponent>(entity, ColliderComponent{
+        {0.0f, 0.0f}, {64.0f, 64.0f}, false, true
+    });
+
+    SpriteComponent sprite;
+    sprite.texture = tex("pipe");
+    sprite.srcRect = PIPE_RECT;
+    sprite.zOrder  = 2;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    registry.emplace<PipeComponent>(entity, PipeComponent{enterable, destination, true});
+    registry.emplace<TagComponent>(entity, TagComponent{"pipe"});
+    return entity;
+}
+
+entt::entity EntityFactory::createFlagPole(entt::registry& registry, Vec2f pos, float height) {
+    auto entity = registry.create();
+    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
+    registry.emplace<ColliderComponent>(entity, ColliderComponent{
+        {14.0f, 0.0f}, {4.0f, height}, true, false
+    });
+
+    SpriteComponent sprite;
+    sprite.texture = tex("flagpole");
+    sprite.srcRect = {0.0f, 0.0f, 32.0f, height};
+    sprite.zOrder  = 1;
+    registry.emplace<SpriteComponent>(entity, sprite);
+
+    registry.emplace<FlagPoleComponent>(entity, FlagPoleComponent{pos.y, pos.y + height, false});
+    registry.emplace<GoalComponent>(entity);
+    registry.emplace<TagComponent>(entity, TagComponent{"flagpole"});
+    return entity;
+}
+
+entt::entity EntityFactory::createGoal(entt::registry& registry, Vec2f pos) {
+    return createFlagPole(registry, pos, 288.0f); // 9 tiles tall
 }
 
 // =============================================================================
@@ -291,21 +433,18 @@ entt::entity EntityFactory::createProjectile(entt::registry& registry, Vec2f pos
         {direction.x * 300.0f, direction.y * 300.0f}
     });
     registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {3.0f, 3.0f}, {18.0f, 18.0f}, true, false
+        {3.0f, 3.0f}, {10.0f, 10.0f}, true, false
     });
 
     SpriteComponent sprite;
     sprite.texture = tex("projectile");
-    sprite.srcRect = CHAR_RECT;
+    sprite.srcRect = {0.0f, 0.0f, 16.0f, 16.0f};
     sprite.zOrder  = 8;
     registry.emplace<SpriteComponent>(entity, sprite);
 
     registry.emplace<ProjectileComponent>(entity, ProjectileComponent{
         static_cast<uint32_t>(entt::to_integral(owner)),
-        1,              // damage
-        3.0f,           // lifetime
-        300.0f,         // speed
-        direction
+        1, 3.0f, 300.0f, direction, false, false
     });
     registry.emplace<TagComponent>(entity, TagComponent{"projectile"});
 
@@ -319,7 +458,6 @@ entt::entity EntityFactory::createProjectile(entt::registry& registry, Vec2f pos
 entt::entity EntityFactory::createParticleEffect(entt::registry& registry, Vec2f pos,
                                                   ParticleEmitterComponent::Effect type) {
     auto entity = registry.create();
-
     registry.emplace<TransformComponent>(entity, TransformComponent{pos});
 
     ParticleEmitterComponent emitter{};
@@ -328,25 +466,30 @@ entt::entity EntityFactory::createParticleEffect(entt::registry& registry, Vec2f
     emitter.elapsed = 0.0f;
 
     switch (type) {
-        case ParticleEmitterComponent::Effect::DoubleJumpBurst:
-            emitter.lifetime      = 0.3f;
-            emitter.particleCount = 6;
-            emitter.color         = Color{200, 220, 255, 200};
-            break;
-        case ParticleEmitterComponent::Effect::DashAfterimage:
-            emitter.lifetime      = 0.25f;
-            emitter.particleCount = 4;
-            emitter.color         = Color{180, 140, 255, 180};
-            break;
         case ParticleEmitterComponent::Effect::CoinSparkle:
             emitter.lifetime      = 0.4f;
             emitter.particleCount = 5;
             emitter.color         = Color{255, 220, 50, 230};
             break;
-        case ParticleEmitterComponent::Effect::DestructionDebris:
+        case ParticleEmitterComponent::Effect::BrickDebris:
             emitter.lifetime      = 0.6f;
             emitter.particleCount = 10;
-            emitter.color         = Color{160, 140, 120, 220};
+            emitter.color         = Color{160, 100, 60, 220};
+            break;
+        case ParticleEmitterComponent::Effect::StompPoof:
+            emitter.lifetime      = 0.3f;
+            emitter.particleCount = 6;
+            emitter.color         = Color{200, 200, 200, 200};
+            break;
+        case ParticleEmitterComponent::Effect::FireballBurst:
+            emitter.lifetime      = 0.25f;
+            emitter.particleCount = 4;
+            emitter.color         = Color{255, 160, 40, 230};
+            break;
+        case ParticleEmitterComponent::Effect::PowerUpSparkle:
+            emitter.lifetime      = 0.5f;
+            emitter.particleCount = 8;
+            emitter.color         = Color{255, 255, 200, 230};
             break;
         case ParticleEmitterComponent::Effect::DeathPoof:
             emitter.lifetime      = 0.5f;
@@ -357,30 +500,5 @@ entt::entity EntityFactory::createParticleEffect(entt::registry& registry, Vec2f
 
     registry.emplace<ParticleEmitterComponent>(entity, emitter);
     registry.emplace<TagComponent>(entity, TagComponent{"particle"});
-
-    return entity;
-}
-
-// =============================================================================
-// Goal (flagpole / exit portal)
-// =============================================================================
-
-entt::entity EntityFactory::createGoal(entt::registry& registry, Vec2f pos) {
-    auto entity = registry.create();
-
-    registry.emplace<TransformComponent>(entity, TransformComponent{pos});
-    registry.emplace<ColliderComponent>(entity, ColliderComponent{
-        {0.0f, 0.0f}, {18.0f, 18.0f}, true, false
-    });
-
-    SpriteComponent sprite;
-    sprite.texture = tex("flagpole");
-    sprite.srcRect = ITEM_RECT;
-    sprite.zOrder  = 2;
-    registry.emplace<SpriteComponent>(entity, sprite);
-
-    registry.emplace<GoalComponent>(entity);
-    registry.emplace<TagComponent>(entity, TagComponent{"goal"});
-
     return entity;
 }

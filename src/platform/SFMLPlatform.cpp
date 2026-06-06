@@ -38,16 +38,25 @@ SFMLPlatform::~SFMLPlatform() {
 // Key mapping
 // =============================================================================
 void SFMLPlatform::initKeyMap() {
-    m_keyMap[static_cast<int>(KeyCode::Up)]      = {sf::Keyboard::Up,     sf::Keyboard::W};
-    m_keyMap[static_cast<int>(KeyCode::Down)]     = {sf::Keyboard::Down,   sf::Keyboard::S};
-    m_keyMap[static_cast<int>(KeyCode::Left)]     = {sf::Keyboard::Left,   sf::Keyboard::A};
-    m_keyMap[static_cast<int>(KeyCode::Right)]    = {sf::Keyboard::Right,  sf::Keyboard::D};
+    // Player 1: Arrow keys + Z (jump) + X (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::Up)]      = {sf::Keyboard::Up,     sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::Down)]     = {sf::Keyboard::Down,   sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::Left)]     = {sf::Keyboard::Left,   sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::Right)]    = {sf::Keyboard::Right,  sf::Keyboard::Unknown};
     m_keyMap[static_cast<int>(KeyCode::Jump)]     = {sf::Keyboard::Z,      sf::Keyboard::Space};
-    m_keyMap[static_cast<int>(KeyCode::Dash)]     = {sf::Keyboard::X,      sf::Keyboard::LShift};
+    m_keyMap[static_cast<int>(KeyCode::Run)]      = {sf::Keyboard::X,      sf::Keyboard::LShift};
     m_keyMap[static_cast<int>(KeyCode::Pause)]    = {sf::Keyboard::Escape, sf::Keyboard::P};
     m_keyMap[static_cast<int>(KeyCode::Confirm)]  = {sf::Keyboard::Return, sf::Keyboard::Z};
     m_keyMap[static_cast<int>(KeyCode::Back)]     = {sf::Keyboard::Escape, sf::Keyboard::X};
     m_keyMap[static_cast<int>(KeyCode::Debug)]    = {sf::Keyboard::F1,     sf::Keyboard::Unknown};
+
+    // Player 2: WASD + J (jump) + K (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P2Up)]    = {sf::Keyboard::W,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P2Down)]   = {sf::Keyboard::S,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P2Left)]   = {sf::Keyboard::A,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P2Right)]  = {sf::Keyboard::D,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P2Jump)]   = {sf::Keyboard::J,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P2Run)]    = {sf::Keyboard::K,      sf::Keyboard::Unknown};
 }
 
 sf::Color SFMLPlatform::toSFColor(const Color& c) {
@@ -312,6 +321,31 @@ FontHandle SFMLPlatform::loadFont(const std::string& key,
     m_fonts[id] = std::move(font);
     LOG_DEBUG("Loaded font '" << key << "' as handle " << id);
     return FontHandle{id};
+}
+
+// =============================================================================
+// Resource unloading
+// =============================================================================
+void SFMLPlatform::unloadTexture(TextureHandle handle) {
+    m_textures.erase(handle.id);
+}
+
+void SFMLPlatform::unloadSound(SoundHandle handle) {
+    // Stop any sounds using this buffer before erasing
+    auto it = m_soundBuffers.find(handle.id);
+    if (it != m_soundBuffers.end()) {
+        for (auto& slot : m_soundPool) {
+            if (slot.getStatus() != sf::Sound::Stopped &&
+                slot.getBuffer() == it->second.get()) {
+                slot.stop();
+            }
+        }
+    }
+    m_soundBuffers.erase(handle.id);
+}
+
+void SFMLPlatform::unloadFont(FontHandle handle) {
+    m_fonts.erase(handle.id);
 }
 
 // =============================================================================

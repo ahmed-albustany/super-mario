@@ -126,7 +126,7 @@ std::optional<LevelData> LevelLoader::load(const std::string& relativePath) {
                 if (!e.is_object()) continue;
 
                 EnemySpawnData esd;
-                esd.type        = safeGet<std::string>(e, "type", "walker");
+                esd.type        = safeGet<std::string>(e, "type", "goomba");
                 esd.x           = safeGet<float>(e, "x", 0.0f) * 32.0f;
                 esd.y           = safeGet<float>(e, "y", 0.0f) * 32.0f;
                 esd.patrolLeft  = safeGet<float>(e, "patrol_left", esd.x / 32.0f - 3.0f) * 32.0f;
@@ -155,6 +155,36 @@ std::optional<LevelData> LevelLoader::load(const std::string& relativePath) {
             }
         }
 
+        // Question block spawns
+        if (spawns.contains("question_blocks") && spawns["question_blocks"].is_array()) {
+            for (const auto& q : spawns["question_blocks"]) {
+                if (!q.is_object()) continue;
+
+                QuestionBlockSpawnData qsd;
+                qsd.x        = safeGet<float>(q, "x", 0.0f) * 32.0f;
+                qsd.y        = safeGet<float>(q, "y", 0.0f) * 32.0f;
+                qsd.contents = safeGet<std::string>(q, "contents", "coin");
+
+                data.questionBlocks.push_back(qsd);
+            }
+        }
+
+        // Pipe spawns
+        if (spawns.contains("pipes") && spawns["pipes"].is_array()) {
+            for (const auto& p : spawns["pipes"]) {
+                if (!p.is_object()) continue;
+
+                PipeSpawnData psd;
+                psd.x         = safeGet<float>(p, "x", 0.0f) * 32.0f;
+                psd.y         = safeGet<float>(p, "y", 0.0f) * 32.0f;
+                psd.enterable = safeGet<bool>(p, "enterable", false);
+                psd.destX     = safeGet<float>(p, "dest_x", 0.0f) * 32.0f;
+                psd.destY     = safeGet<float>(p, "dest_y", 0.0f) * 32.0f;
+
+                data.pipes.push_back(psd);
+            }
+        }
+
         // ================================================================
         // Parse goal
         // ================================================================
@@ -165,6 +195,7 @@ std::optional<LevelData> LevelLoader::load(const std::string& relativePath) {
                 safeGet<float>(g, "y", 12.0f) * 32.0f
             };
             data.goalType = safeGet<std::string>(g, "type", "flagpole");
+            data.flagPoleHeight = safeGet<float>(g, "height", 288.0f);
         }
 
     } catch (const json::exception& e) {

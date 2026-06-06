@@ -71,21 +71,6 @@ TEST_F(PhysicsSystemTest, TerminalVelocityUpwardCapped) {
     EXPECT_GE(vel.velocity.y, -Config::TERMINAL_VELOCITY);
 }
 
-TEST_F(PhysicsSystemTest, WallSlideReducesGravity) {
-    auto e = makePlayer(PlayerState::WallSliding);
-    float dt = 1.0f / 60.0f;
-
-    system.update(registry, dt);
-
-    auto& vel = registry.get<VelocityComponent>(e);
-    float expected = Config::WALL_SLIDE_GRAVITY * dt;
-    EXPECT_NEAR(vel.velocity.y, expected, 0.01f);
-
-    // Confirm it's less than normal gravity would produce
-    float normalGravityResult = Config::GRAVITY * dt;
-    EXPECT_LT(vel.velocity.y, normalGravityResult);
-}
-
 TEST_F(PhysicsSystemTest, ZeroGravityMultiplierProducesNoChange) {
     auto e = makeEntity({0.0f, 0.0f}, 0.0f);
 
@@ -95,17 +80,8 @@ TEST_F(PhysicsSystemTest, ZeroGravityMultiplierProducesNoChange) {
     EXPECT_FLOAT_EQ(vel.velocity.y, 0.0f);
 }
 
-TEST_F(PhysicsSystemTest, DashingPlayerIgnoresGravity) {
-    auto e = makePlayer(PlayerState::Dashing, {Config::PLAYER_DASH_SPEED, 0.0f});
-
-    system.update(registry, 1.0f / 60.0f);
-
-    auto& vel = registry.get<VelocityComponent>(e);
-    EXPECT_FLOAT_EQ(vel.velocity.y, 0.0f);
-}
-
 TEST_F(PhysicsSystemTest, HorizontalVelocityCapped) {
-    float maxHoriz = Config::PLAYER_DASH_SPEED * 1.5f;
+    float maxHoriz = Config::PLAYER_RUN_SPEED * 1.5f;
     auto e = makeEntity({maxHoriz + 500.0f, 0.0f});
 
     system.update(registry, 1.0f / 60.0f);

@@ -51,12 +51,18 @@ struct FontHandle {
 /// @brief Abstract key codes — game logic uses these, never raw platform keys.
 enum class KeyCode {
     Up, Down, Left, Right,
-    Jump,    // Z, Space, or W
-    Dash,    // X, LShift
+    Jump,    // Z, Space
+    Run,     // X, LShift (run / fire)
     Pause,   // Escape, P
     Confirm, // Enter, Z
     Back,    // Escape, X
     Debug,   // F1
+
+    // Player 2 keys (WASD + J/K)
+    P2Up, P2Down, P2Left, P2Right,
+    P2Jump,  // J
+    P2Run,   // K
+
     COUNT    // sentinel — must be last
 };
 
@@ -129,6 +135,11 @@ public:
                                                  const std::string& path) = 0;
     [[nodiscard]] virtual FontHandle loadFont(const std::string& key,
                                                const std::string& path) = 0;
+
+    // ---- Resource unloading ----
+    virtual void unloadTexture(TextureHandle handle) = 0;
+    virtual void unloadSound(SoundHandle handle) = 0;
+    virtual void unloadFont(FontHandle handle) = 0;
 
     // ---- Camera transform (offset all drawing) ----
     virtual void setCameraOffset(const Vec2f& offset) = 0;

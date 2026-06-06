@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#08060e">
-    <meta name="description" content="Ruins of the Ancients — A pixel platformer adventure. Play in your browser.">
-    <title>Ruins of the Ancients</title>
+    <meta name="description" content="Super Mario Bros — Classic platformer. Play in your browser.">
+    <title>Super Mario Bros</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,7 +18,7 @@
     <!-- ================================================================= -->
     <div id="loading-screen">
         <div id="loading-content">
-            <h1 id="loading-title">Ruins of<br>the Ancients</h1>
+            <h1 id="loading-title">Super<br>Mario Bros</h1>
             <p id="loading-subtitle">Loading&hellip;</p>
             <div id="progress-bar-outer">
                 <div id="progress-bar-inner"></div>
@@ -60,8 +60,8 @@
             <button class="touch-btn action-btn" id="btn-jump" aria-label="Jump">
                 <span>JUMP</span>
             </button>
-            <button class="touch-btn action-btn" id="btn-dash" aria-label="Dash">
-                <span>DASH</span>
+            <button class="touch-btn action-btn" id="btn-dash" aria-label="Run">
+                <span>RUN</span>
             </button>
         </div>
 
@@ -156,6 +156,38 @@
 
         window.addEventListener('resize', resizeCanvas);
 
+        // ---- Fix: round getBoundingClientRect to prevent fractional mouse coords ----
+        // SDL2's fillMouseEventData writes float coords into an integer heap when
+        // the canvas bounding rect has sub-pixel values (from flexbox centering,
+        // DPI scaling, etc.). Override to guarantee integer geometry.
+        (function() {
+            var canvas = document.getElementById('canvas');
+            if (!canvas) return;
+            var origGetBCR = canvas.getBoundingClientRect.bind(canvas);
+            canvas.getBoundingClientRect = function() {
+                var r = origGetBCR();
+                return {
+                    left:   Math.round(r.left),
+                    top:    Math.round(r.top),
+                    right:  Math.round(r.right),
+                    bottom: Math.round(r.bottom),
+                    width:  Math.round(r.width),
+                    height: Math.round(r.height),
+                    x:      Math.round(r.x),
+                    y:      Math.round(r.y)
+                };
+            };
+        })();
+
+        // ---- Fix: prevent default on game-relevant keys to stop page scrolling ----
+        window.addEventListener('keydown', function(e) {
+            var dominated = ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',
+                             ' ','Escape','Enter','Tab'];
+            if (dominated.indexOf(e.key) !== -1) {
+                e.preventDefault();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             bindTouchButton('btn-left',  ACTION_MOVE_LEFT);
             bindTouchButton('btn-right', ACTION_MOVE_RIGHT);
@@ -192,10 +224,8 @@
             canvas: (function() {
                 return document.getElementById('canvas');
             })(),
-            // Route keyboard events to canvas element (required for WASM SDL2 input)
-            keyboardListeningElement: (function() {
-                return document.getElementById('canvas');
-            })(),
+            // Route keyboard events to window so input works regardless of focus
+            keyboardListeningElement: window,
             onRuntimeInitialized: function() {
                 onWASMReady();
             },

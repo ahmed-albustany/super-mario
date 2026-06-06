@@ -29,7 +29,9 @@
       "Bash(done)",
       "Bash(grep -oE textures/[^\"\"]+ manifest.json)",
       "Bash(grep -oE audio/[^\"\"]+ manifest.json)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(bash scripts/rename_assets.sh)"
     ]
   }
 }

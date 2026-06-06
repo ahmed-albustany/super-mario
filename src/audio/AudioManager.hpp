@@ -78,16 +78,16 @@ private:
     std::string m_currentMusicKey;
 
     // Event subscriptions
-    SubscriberID m_subLevelComplete = 0;
-    SubscriberID m_subPlayerDied   = 0;
-    SubscriberID m_subCoinCollected = 0;
-    SubscriberID m_subEnemyKilled  = 0;
-    SubscriberID m_subPowerUp      = 0;
-    SubscriberID m_subPlayerJump   = 0;
-    SubscriberID m_subPlayerDash   = 0;
-    SubscriberID m_subPlayerWallJump = 0;
-    SubscriberID m_subPlayerLanded = 0;
-    SubscriberID m_subPlayerHurt   = 0;
-    SubscriberID m_subEnemyShoot   = 0;
+    SubscriberID m_subLevelComplete  = 0;
+    SubscriberID m_subPlayerDied     = 0;
+    SubscriberID m_subCoinCollected  = 0;
+    SubscriberID m_subEnemyKilled    = 0;
+    SubscriberID m_subPowerUp        = 0;
+    SubscriberID m_subPlayerJump     = 0;
+    SubscriberID m_subPlayerLanded   = 0;
+    SubscriberID m_subPlayerHurt     = 0;
+    SubscriberID m_subEnemyShoot     = 0;
     SubscriberID m_subPowerUpExpired = 0;
+    SubscriberID m_subFireball       = 0;
+    SubscriberID m_subBlockHit       = 0;
 };

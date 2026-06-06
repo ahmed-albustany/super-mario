@@ -5,7 +5,7 @@
 
 class Game;
 
-/// @brief Main menu — animated title, Play / Quit buttons.
+/// @brief Main menu — animated title, 1 Player / 2P Alternating / 2P Co-op / Quit.
 ///        Navigable via keyboard (Up/Down + Confirm) and mouse/touch.
 class MenuScene final : public IScene {
 public:
@@ -21,13 +21,15 @@ public:
 private:
     Game& m_game;
     int   m_selectedItem = 0;
-    float m_titleBob     = 0.0f; // animated y offset for title
+    float m_titleBob     = 0.0f;
     float m_elapsed      = 0.0f;
-    bool  m_confirmed    = false; // prevent repeated confirmSelection
+    bool  m_confirmed    = false;
 
-    static constexpr int MENU_PLAY = 0;
-    static constexpr int MENU_QUIT = 1;
-    static constexpr int MENU_COUNT = 2;
+    static constexpr int MENU_1P        = 0;
+    static constexpr int MENU_2P_ALT    = 1;
+    static constexpr int MENU_2P_COOP   = 2;
+    static constexpr int MENU_QUIT      = 3;
+    static constexpr int MENU_COUNT     = 4;
 
     void selectItem(int index);
     void confirmSelection();

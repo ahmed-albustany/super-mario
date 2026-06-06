@@ -12,7 +12,6 @@
 void AudioManager::init(IPlatform& platform, EventBus& eventBus) {
     m_platform = &platform;
 
-    // Reset all state (session only — no disk reads)
     m_masterVolume    = 1.0f;
     m_sfxVolume       = Config::DEFAULT_SFX_VOL;
     m_musicVolume     = Config::DEFAULT_MUSIC_VOL;
@@ -22,7 +21,6 @@ void AudioManager::init(IPlatform& platform, EventBus& eventBus) {
     m_fadeStartVolume = 0.0f;
     m_currentMusicKey.clear();
 
-    // Apply initial volumes
     applyMusicVolume();
     m_platform->setSfxVolume(m_masterVolume * m_sfxVolume);
 
@@ -53,18 +51,8 @@ void AudioManager::init(IPlatform& platform, EventBus& eventBus) {
         });
 
     m_subPlayerJump = eventBus.subscribe<PlayerJumpEvent>(
-        [this](const PlayerJumpEvent& e) {
-            playSound(e.jumpNumber >= 2 ? "double_jump" : "jump");
-        });
-
-    m_subPlayerDash = eventBus.subscribe<PlayerDashEvent>(
-        [this](const PlayerDashEvent& /*e*/) {
-            playSound("dash");
-        });
-
-    m_subPlayerWallJump = eventBus.subscribe<PlayerWallJumpEvent>(
-        [this](const PlayerWallJumpEvent& /*e*/) {
-            playSound("wall_jump");
+        [this](const PlayerJumpEvent& /*e*/) {
+            playSound("jump");
         });
 
     m_subPlayerLanded = eventBus.subscribe<PlayerLandedEvent>(
@@ -87,6 +75,16 @@ void AudioManager::init(IPlatform& platform, EventBus& eventBus) {
             playSound("powerup_expire");
         });
 
+    m_subFireball = eventBus.subscribe<FireballEvent>(
+        [this](const FireballEvent& /*e*/) {
+            playSound("fireball");
+        });
+
+    m_subBlockHit = eventBus.subscribe<BlockHitEvent>(
+        [this](const BlockHitEvent& /*e*/) {
+            playSound("block_hit");
+        });
+
     LOG_INFO("AudioManager: initialized");
 }
 
@@ -97,12 +95,12 @@ void AudioManager::shutdown(EventBus& eventBus) {
     eventBus.unsubscribe<EnemyKilledEvent>(m_subEnemyKilled);
     eventBus.unsubscribe<PowerUpActivatedEvent>(m_subPowerUp);
     eventBus.unsubscribe<PlayerJumpEvent>(m_subPlayerJump);
-    eventBus.unsubscribe<PlayerDashEvent>(m_subPlayerDash);
-    eventBus.unsubscribe<PlayerWallJumpEvent>(m_subPlayerWallJump);
     eventBus.unsubscribe<PlayerLandedEvent>(m_subPlayerLanded);
     eventBus.unsubscribe<PlayerHurtEvent>(m_subPlayerHurt);
     eventBus.unsubscribe<EnemyShootEvent>(m_subEnemyShoot);
     eventBus.unsubscribe<PowerUpExpiredEvent>(m_subPowerUpExpired);
+    eventBus.unsubscribe<FireballEvent>(m_subFireball);
+    eventBus.unsubscribe<BlockHitEvent>(m_subBlockHit);
 
     m_platform = nullptr;
     LOG_INFO("AudioManager: shut down");
@@ -117,13 +115,11 @@ void AudioManager::update(float dt) {
 
     m_fadeTimer += dt;
     if (m_fadeTimer >= m_fadeDuration) {
-        // Fade complete — stop music
         m_fading = false;
         m_platform->stopMusic();
         m_currentMusicKey.clear();
         applyMusicVolume();
     } else {
-        // Interpolate volume down
         float t = m_fadeTimer / m_fadeDuration;
         float fadeVolume = m_fadeStartVolume * (1.0f - t);
         m_platform->setMusicVolume(fadeVolume);
@@ -151,18 +147,11 @@ void AudioManager::playSound(const std::string& key) {
 void AudioManager::playMusic(const std::string& key, bool loop) {
     if (!m_platform) return;
 
-    // Don't restart if same track is already playing
     if (key == m_currentMusicKey && !m_fading) return;
 
-    // Stop any fade in progress
     m_fading = false;
-
-    // Stop current music
     m_platform->stopMusic();
 
-    // Build the asset path from key
-    // The platform's playMusic takes a file path, so we construct it
-    // from the key using the standard audio directory convention
 #ifdef MARIO_WASM
     std::string path = "/assets/audio/" + key + ".ogg";
 #else
@@ -224,7 +213,6 @@ void AudioManager::setMusicVolume(float volume) {
 
 void AudioManager::applyMusicVolume() {
     if (!m_platform) return;
-    // Don't override fade volume — fade controls platform volume directly
     if (!m_fading) {
         m_platform->setMusicVolume(m_masterVolume * m_musicVolume);
     }

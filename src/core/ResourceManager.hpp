@@ -96,12 +96,22 @@ public:
     // ---- Cleanup ----
 
     void unload(const std::string& key) {
-        m_textures.erase(key);
-        m_sounds.erase(key);
-        m_fonts.erase(key);
+        if (m_platform) {
+            auto tit = m_textures.find(key);
+            if (tit != m_textures.end()) { m_platform->unloadTexture(tit->second); m_textures.erase(tit); }
+            auto sit = m_sounds.find(key);
+            if (sit != m_sounds.end()) { m_platform->unloadSound(sit->second); m_sounds.erase(sit); }
+            auto fit = m_fonts.find(key);
+            if (fit != m_fonts.end()) { m_platform->unloadFont(fit->second); m_fonts.erase(fit); }
+        }
     }
 
     void unloadAll() {
+        if (m_platform) {
+            for (auto& [k, h] : m_textures) m_platform->unloadTexture(h);
+            for (auto& [k, h] : m_sounds)   m_platform->unloadSound(h);
+            for (auto& [k, h] : m_fonts)    m_platform->unloadFont(h);
+        }
         m_textures.clear();
         m_sounds.clear();
         m_fonts.clear();

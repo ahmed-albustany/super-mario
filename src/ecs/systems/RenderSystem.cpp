@@ -3,7 +3,6 @@
 #include "platform/IPlatform.hpp"
 
 #include <algorithm>
-#include <vector>
 
 void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
     // ---- Toggle debug draw with F1 (KeyCode::Debug) ----
@@ -14,29 +13,23 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
     m_debugKeyWasPressed = debugKeyDown;
 
     // ---- Collect and sort renderable entities by z-order ----
-    struct RenderEntry {
-        entt::entity entity;
-        int zOrder;
-    };
-
-    std::vector<RenderEntry> entries;
-    entries.reserve(128);
+    m_entries.clear();
 
     auto view = reg.view<TransformComponent, SpriteComponent>();
     for (auto entity : view) {
         const auto& sprite = view.get<SpriteComponent>(entity);
         if (!sprite.visible) continue;
-        entries.push_back({entity, sprite.zOrder});
+        m_entries.push_back({entity, sprite.zOrder});
     }
 
     // Stable sort by z-order (lower z draws first = behind)
-    std::stable_sort(entries.begin(), entries.end(),
+    std::stable_sort(m_entries.begin(), m_entries.end(),
         [](const RenderEntry& a, const RenderEntry& b) {
             return a.zOrder < b.zOrder;
         });
 
     // ---- Draw sprites ----
-    for (const auto& entry : entries) {
+    for (const auto& entry : m_entries) {
         const auto& transform = reg.get<TransformComponent>(entry.entity);
         const auto& sprite    = reg.get<SpriteComponent>(entry.entity);
 
@@ -78,7 +71,7 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
             platform.drawRect(aabb, Color::Transparent(), outlineColor, 1.0f);
         }
 
-        // Draw player ground/wall probes
+        // Draw player ground probe
         auto playerView = reg.view<PlayerComponent, TransformComponent, ColliderComponent>();
         for (auto pEnt : playerView) {
             const auto& pt = playerView.get<TransformComponent>(pEnt);
@@ -91,14 +84,6 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
             Rect gp = {pRect.x + 1.0f, pRect.bottom(), pRect.w - 2.0f, 2.0f};
             Color gpColor = pp.isGrounded ? Color{0, 255, 0, 200} : Color{255, 0, 0, 200};
             platform.drawRect(gp, gpColor, Color::Transparent(), 0.0f);
-
-            // Wall probes
-            Rect lp = {pRect.x - 2.0f, pRect.y + 2.0f, 2.0f, pRect.h - 4.0f};
-            Rect rp = {pRect.right(),   pRect.y + 2.0f, 2.0f, pRect.h - 4.0f};
-            Color lpColor = pp.isTouchingWallLeft  ? Color{0, 255, 0, 200} : Color{255, 100, 0, 120};
-            Color rpColor = pp.isTouchingWallRight ? Color{0, 255, 0, 200} : Color{255, 100, 0, 120};
-            platform.drawRect(lp, lpColor, Color::Transparent(), 0.0f);
-            platform.drawRect(rp, rpColor, Color::Transparent(), 0.0f);
         }
     }
 }

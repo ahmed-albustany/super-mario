@@ -11,22 +11,7 @@ void PhysicsSystem::update(entt::registry& reg, float dt) {
         auto& vel   = view.get<VelocityComponent>(entity);
         auto& grav  = view.get<GravityComponent>(entity);
 
-        // Check if player is wall-sliding — use reduced gravity
         float gravity = Config::GRAVITY * grav.multiplier;
-
-        if (reg.all_of<PlayerComponent>(entity)) {
-            const auto& player = reg.get<PlayerComponent>(entity);
-
-            // No gravity during dash
-            if (player.state == PlayerState::Dashing) {
-                continue;
-            }
-
-            // Reduced gravity while wall sliding
-            if (player.state == PlayerState::WallSliding) {
-                gravity = Config::WALL_SLIDE_GRAVITY;
-            }
-        }
 
         vel.velocity.y += gravity * dt;
 
@@ -41,7 +26,7 @@ void PhysicsSystem::update(entt::registry& reg, float dt) {
         }
 
         // Cap horizontal velocity
-        float maxHoriz = Config::PLAYER_DASH_SPEED * 1.5f;
+        float maxHoriz = Config::PLAYER_RUN_SPEED * 1.5f;
         vel.velocity.x = Math::clamp(vel.velocity.x, -maxHoriz, maxHoriz);
     }
 

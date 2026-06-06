@@ -13,18 +13,31 @@ namespace Config {
     constexpr float FIXED_TIMESTEP       = 1.0f / 60.0f;
     constexpr float MAX_DELTA_TIME       = 1.0f / 30.0f;  // spiral-of-death guard
 
-    // ---- Physics ----
-    constexpr float GRAVITY              = 1800.0f;   // px/s^2
+    // ---- Physics (Mario-style) ----
+    constexpr float GRAVITY              = 2400.0f;   // px/s^2 — snappier than before
     constexpr float TERMINAL_VELOCITY    = 900.0f;    // px/s
-    constexpr float PLAYER_SPEED         = 260.0f;    // px/s
-    constexpr float PLAYER_JUMP_FORCE    = -620.0f;   // px/s (negative = up)
-    constexpr float PLAYER_DASH_SPEED    = 520.0f;    // px/s
-    constexpr float PLAYER_DASH_DURATION = 0.22f;     // seconds
-    constexpr float PLAYER_DASH_COOLDOWN = 0.9f;      // seconds
-    constexpr float WALL_SLIDE_GRAVITY   = 200.0f;    // reduced gravity on wall
-    constexpr float WALL_JUMP_FORCE_X    = 340.0f;    // px/s horizontal kick
-    constexpr float WALL_JUMP_FORCE_Y    = -560.0f;   // px/s vertical kick
-    constexpr int   MAX_JUMPS            = 2;         // double jump
+    constexpr float PLAYER_WALK_SPEED    = 200.0f;    // px/s walking
+    constexpr float PLAYER_RUN_SPEED     = 380.0f;    // px/s running (hold Run button)
+    constexpr float PLAYER_JUMP_FORCE    = -680.0f;   // px/s (negative = up)
+    constexpr float PLAYER_JUMP_CUT      = 0.4f;      // velocity multiplier on early release
+    constexpr float PLAYER_STOMP_BOUNCE  = -400.0f;   // bounce velocity after stomping enemy
+    constexpr float PLAYER_ACCEL         = 1200.0f;   // px/s^2 ground acceleration
+    constexpr float PLAYER_DECEL         = 1800.0f;   // px/s^2 skid deceleration
+    constexpr float PLAYER_AIR_ACCEL     = 800.0f;    // px/s^2 air acceleration
+    constexpr int   MAX_JUMPS            = 1;         // single jump only
+
+    // ---- Fireball ----
+    constexpr float FIREBALL_SPEED       = 400.0f;    // px/s
+    constexpr float FIREBALL_BOUNCE_VY   = -300.0f;   // bounce off ground
+    constexpr float FIREBALL_GRAVITY     = 1800.0f;
+    constexpr float FIREBALL_LIFETIME    = 3.0f;
+
+    // ---- Star (invincibility) ----
+    constexpr float STAR_DURATION        = 10.0f;     // seconds
+
+    // ---- Question Block ----
+    constexpr float BLOCK_BUMP_SPEED     = -200.0f;   // bump animation speed
+    constexpr float BLOCK_BUMP_DURATION  = 0.2f;
 
     // ---- Tile ----
     constexpr int   TILE_SIZE            = 32;        // pixels
@@ -41,21 +54,22 @@ namespace Config {
     constexpr float DEFAULT_SFX_VOL      = 1.0f;      // 0.0 – 1.0
 
     // ---- Gameplay ----
-    constexpr int   PLAYER_MAX_HP            = 3;
-    constexpr int   INVINCIBILITY_FRAMES     = 90;     // frames of i-frames after hit
-    constexpr float POWER_CRYSTAL_DURATION   = 10.0f;  // seconds
-    constexpr int   COIN_VALUE               = 100;    // score points
-    constexpr int   GEM_VALUE                = 500;
-    constexpr int   ENEMY_STOMP_VALUE        = 200;
+    constexpr int   INVINCIBILITY_FRAMES     = 120;    // frames of i-frames after hit
+    constexpr int   COIN_VALUE               = 200;    // score points
+    constexpr int   COIN_EXTRA_LIFE          = 100;    // coins needed for 1-up
+    constexpr int   ENEMY_STOMP_VALUE        = 100;
+    constexpr int   BLOCK_HIT_VALUE          = 10;
+    constexpr int   FIREBALL_KILL_VALUE      = 200;
+    constexpr int   FLAGPOLE_BASE_SCORE      = 2000;
     constexpr int   DEFAULT_LIVES            = 3;
     constexpr float DEFAULT_TIME_LIMIT       = 300.0f; // seconds per level
 
     // ---- Save ----
     constexpr uint32_t SAVE_MAGIC    = 0xDEADC0DE;
-    constexpr int      SAVE_VERSION  = 1;
+    constexpr int      SAVE_VERSION  = 2;
 
     // ---- Identity ----
-    inline const std::string GAME_TITLE   = "Ruins of the Ancients";
-    inline const std::string GAME_VERSION = "1.0.0";
+    inline const std::string GAME_TITLE   = "Super Mario Bros";
+    inline const std::string GAME_VERSION = "2.0.0";
 
 } // namespace Config

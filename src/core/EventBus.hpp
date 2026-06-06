@@ -53,10 +53,16 @@ public:
     }
 
     void publish(const EventType& event) {
+        // Copy subscriber list before invoking handlers so that handlers
+        // can safely subscribe/unsubscribe without invalidating the iteration.
+        std::vector<Subscriber> snapshot;
+        {
 #ifndef MARIO_WASM
-        std::lock_guard<std::mutex> lock(m_mutex);
+            std::lock_guard<std::mutex> lock(m_mutex);
 #endif
-        for (const auto& sub : m_subscribers) {
+            snapshot = m_subscribers;
+        }
+        for (const auto& sub : snapshot) {
             if (sub.handler) {
                 sub.handler(event);
             }

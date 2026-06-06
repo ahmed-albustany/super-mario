@@ -98,16 +98,25 @@ SDLPlatform::~SDLPlatform() {
 // Key mapping
 // =============================================================================
 void SDLPlatform::initKeyMap() {
-    m_keyMap[static_cast<int>(KeyCode::Up)]      = {SDL_SCANCODE_UP,      SDL_SCANCODE_W};
-    m_keyMap[static_cast<int>(KeyCode::Down)]     = {SDL_SCANCODE_DOWN,    SDL_SCANCODE_S};
-    m_keyMap[static_cast<int>(KeyCode::Left)]     = {SDL_SCANCODE_LEFT,    SDL_SCANCODE_A};
-    m_keyMap[static_cast<int>(KeyCode::Right)]    = {SDL_SCANCODE_RIGHT,   SDL_SCANCODE_D};
+    // Player 1: Arrow keys + Z (jump) + X (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::Up)]      = {SDL_SCANCODE_UP,      SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::Down)]     = {SDL_SCANCODE_DOWN,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::Left)]     = {SDL_SCANCODE_LEFT,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::Right)]    = {SDL_SCANCODE_RIGHT,   SDL_SCANCODE_UNKNOWN};
     m_keyMap[static_cast<int>(KeyCode::Jump)]     = {SDL_SCANCODE_Z,       SDL_SCANCODE_SPACE};
-    m_keyMap[static_cast<int>(KeyCode::Dash)]     = {SDL_SCANCODE_X,       SDL_SCANCODE_LSHIFT};
+    m_keyMap[static_cast<int>(KeyCode::Run)]      = {SDL_SCANCODE_X,       SDL_SCANCODE_LSHIFT};
     m_keyMap[static_cast<int>(KeyCode::Pause)]    = {SDL_SCANCODE_ESCAPE,  SDL_SCANCODE_P};
     m_keyMap[static_cast<int>(KeyCode::Confirm)]  = {SDL_SCANCODE_RETURN,  SDL_SCANCODE_Z};
     m_keyMap[static_cast<int>(KeyCode::Back)]     = {SDL_SCANCODE_ESCAPE,  SDL_SCANCODE_X};
     m_keyMap[static_cast<int>(KeyCode::Debug)]    = {SDL_SCANCODE_F1,      SDL_SCANCODE_UNKNOWN};
+
+    // Player 2: WASD + J (jump) + K (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P2Up)]    = {SDL_SCANCODE_W,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P2Down)]   = {SDL_SCANCODE_S,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P2Left)]   = {SDL_SCANCODE_A,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P2Right)]  = {SDL_SCANCODE_D,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P2Jump)]   = {SDL_SCANCODE_J,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P2Run)]    = {SDL_SCANCODE_K,       SDL_SCANCODE_UNKNOWN};
 }
 
 // =============================================================================
@@ -458,6 +467,35 @@ FontHandle SDLPlatform::loadFont(const std::string& key,
     m_fonts[id] = std::move(data);
     LOG_DEBUG("Loaded font '" << key << "' as handle " << id);
     return FontHandle{id};
+}
+
+// =============================================================================
+// Resource unloading
+// =============================================================================
+void SDLPlatform::unloadTexture(TextureHandle handle) {
+    auto it = m_textures.find(handle.id);
+    if (it != m_textures.end()) {
+        if (it->second.texture) SDL_DestroyTexture(it->second.texture);
+        m_textures.erase(it);
+    }
+}
+
+void SDLPlatform::unloadSound(SoundHandle handle) {
+    auto it = m_sounds.find(handle.id);
+    if (it != m_sounds.end()) {
+        if (it->second) Mix_FreeChunk(it->second);
+        m_sounds.erase(it);
+    }
+}
+
+void SDLPlatform::unloadFont(FontHandle handle) {
+    auto it = m_fonts.find(handle.id);
+    if (it != m_fonts.end()) {
+        for (auto& [size, font] : it->second.sizedFonts) {
+            if (font) TTF_CloseFont(font);
+        }
+        m_fonts.erase(it);
+    }
 }
 
 // =============================================================================

@@ -16,14 +16,32 @@ void SceneManager::pop() {
 }
 
 void SceneManager::handleInput(const InputManager& input) {
-    if (!m_stack.empty()) {
-        m_stack.back()->handleInput(input);
+    if (m_stack.empty()) return;
+
+    // Walk down through scenes that pass update (e.g. HUD overlay) so input
+    // reaches the gameplay scene below. Scenes that don't pass update (pause,
+    // game over) block input to scenes below them.
+    size_t inputFrom = m_stack.size() - 1;
+    while (inputFrom > 0 && m_stack[inputFrom]->passesUpdate()) {
+        --inputFrom;
+    }
+    for (size_t i = inputFrom; i < m_stack.size(); ++i) {
+        m_stack[i]->handleInput(input);
     }
 }
 
 void SceneManager::update(float dt) {
-    if (!m_stack.empty()) {
-        m_stack.back()->update(dt);
+    if (m_stack.empty()) return;
+
+    // Update through overlay scenes that pass update (e.g. HUD) so the scene
+    // below continues to tick. Scenes like pause/game-over don't pass update,
+    // so they block the game from updating while active.
+    size_t updateFrom = m_stack.size() - 1;
+    while (updateFrom > 0 && m_stack[updateFrom]->passesUpdate()) {
+        --updateFrom;
+    }
+    for (size_t i = updateFrom; i < m_stack.size(); ++i) {
+        m_stack[i]->update(dt);
     }
 }
 

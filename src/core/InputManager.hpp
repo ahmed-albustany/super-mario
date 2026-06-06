@@ -9,8 +9,9 @@
 enum class Action {
     MoveLeft,
     MoveRight,
+    MoveDown,    ///< For entering pipes
     Jump,
-    Dash,
+    Run,         ///< Hold to run / fire fireballs
     Pause,
     Confirm,
     Back,
@@ -33,7 +34,7 @@ public:
     ///        Reads platform key state, merges touch input, and applies filters.
     void update();
 
-    // ---- Action queries ----
+    // ---- Action queries (Player 1 by default) ----
 
     /// @brief Is the action currently held down?
     [[nodiscard]] bool isHeld(Action action) const;
@@ -43,6 +44,12 @@ public:
 
     /// @brief Was the action just released this frame?
     [[nodiscard]] bool isJustReleased(Action action) const;
+
+    // ---- Player 2 queries ----
+
+    [[nodiscard]] bool isHeldP2(Action action) const;
+    [[nodiscard]] bool isJustPressedP2(Action action) const;
+    [[nodiscard]] bool isJustReleasedP2(Action action) const;
 
     // ---- Touch virtual buttons (for WASM/mobile overlay) ----
 
@@ -69,13 +76,14 @@ private:
 
     IPlatform* m_platform = nullptr;
 
-    // Current and previous frame action state (after filtering)
+    // Player 1 state
     std::array<bool, ACTION_COUNT> m_currState{};
     std::array<bool, ACTION_COUNT> m_prevState{};
-
-    // Touch virtual button state
     std::array<bool, ACTION_COUNT> m_touchState{};
-
-    // Action → KeyCode mapping
     std::array<KeyCode, ACTION_COUNT> m_bindings{};
+
+    // Player 2 state
+    std::array<bool, ACTION_COUNT> m_currStateP2{};
+    std::array<bool, ACTION_COUNT> m_prevStateP2{};
+    std::array<KeyCode, ACTION_COUNT> m_bindingsP2{};
 };

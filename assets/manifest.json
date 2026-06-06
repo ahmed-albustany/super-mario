@@ -1,66 +1,108 @@
 {
     "textures": [
-        { "key": "player_idle",     "path": "textures/player_idle.png"     },
-        { "key": "player_run",      "path": "textures/player_run.png"      },
-        { "key": "player_jump",     "path": "textures/player_jump.png"     },
-        { "key": "player_fall",     "path": "textures/player_fall.png"     },
-        { "key": "player_dash",     "path": "textures/player_dash.png"     },
-        { "key": "player_wallslide","path": "textures/player_wallslide.png"},
-        { "key": "player_hurt",     "path": "textures/player_hurt.png"     },
-        { "key": "player_dead",     "path": "textures/player_dead.png"     },
+        { "key": "mario_small_idle",    "path": "textures/mario_small_idle.png"    },
+        { "key": "mario_small_run",     "path": "textures/mario_small_run.png"     },
+        { "key": "mario_small_jump",    "path": "textures/mario_small_jump.png"    },
+        { "key": "mario_small_skid",    "path": "textures/mario_small_skid.png"    },
+        { "key": "mario_small_hurt",    "path": "textures/mario_small_hurt.png"    },
+        { "key": "mario_small_dead",    "path": "textures/mario_small_dead.png"    },
+        { "key": "mario_small_grow",    "path": "textures/mario_small_grow.png"    },
+        { "key": "mario_small_climb",   "path": "textures/mario_small_climb.png"   },
 
-        { "key": "walker",          "path": "textures/enemy_walker.png"    },
-        { "key": "jumper",          "path": "textures/enemy_jumper.png"    },
-        { "key": "shooter",         "path": "textures/enemy_shooter.png"   },
-        { "key": "guardian",         "path": "textures/enemy_guardian.png"  },
-        { "key": "projectile",      "path": "textures/projectile.png"     },
+        { "key": "mario_big_idle",      "path": "textures/mario_big_idle.png"      },
+        { "key": "mario_big_run",       "path": "textures/mario_big_run.png"       },
+        { "key": "mario_big_jump",      "path": "textures/mario_big_jump.png"      },
+        { "key": "mario_big_skid",      "path": "textures/mario_big_skid.png"      },
+        { "key": "mario_big_climb",     "path": "textures/mario_big_climb.png"     },
 
-        { "key": "tileset_ruins",   "path": "textures/tileset_ruins.png"   },
-        { "key": "destructible",    "path": "textures/destructible.png"    },
+        { "key": "mario_fire_idle",     "path": "textures/mario_fire_idle.png"     },
+        { "key": "mario_fire_run",      "path": "textures/mario_fire_run.png"      },
+        { "key": "mario_fire_jump",     "path": "textures/mario_fire_jump.png"     },
+        { "key": "mario_fire_skid",     "path": "textures/mario_fire_skid.png"     },
+        { "key": "mario_fire_climb",    "path": "textures/mario_fire_climb.png"    },
 
-        { "key": "coin",            "path": "textures/coin.png"            },
-        { "key": "gem_shard",       "path": "textures/gem_shard.png"       },
-        { "key": "power_crystal",   "path": "textures/power_crystal.png"   },
+        { "key": "luigi_small_idle",    "path": "textures/luigi_small_idle.png"    },
+        { "key": "luigi_small_run",     "path": "textures/luigi_small_run.png"     },
+        { "key": "luigi_small_jump",    "path": "textures/luigi_small_jump.png"    },
+        { "key": "luigi_small_skid",    "path": "textures/luigi_small_skid.png"    },
+        { "key": "luigi_small_hurt",    "path": "textures/luigi_small_hurt.png"    },
+        { "key": "luigi_small_dead",    "path": "textures/luigi_small_dead.png"    },
+        { "key": "luigi_small_grow",    "path": "textures/luigi_small_grow.png"    },
+        { "key": "luigi_small_climb",   "path": "textures/luigi_small_climb.png"   },
 
-        { "key": "flagpole",        "path": "textures/flagpole.png"        },
-        { "key": "particle",        "path": "textures/particle.png"        },
+        { "key": "luigi_big_idle",      "path": "textures/luigi_big_idle.png"      },
+        { "key": "luigi_big_run",       "path": "textures/luigi_big_run.png"       },
+        { "key": "luigi_big_jump",      "path": "textures/luigi_big_jump.png"      },
+        { "key": "luigi_big_skid",      "path": "textures/luigi_big_skid.png"      },
+        { "key": "luigi_big_climb",     "path": "textures/luigi_big_climb.png"     },
 
-        { "key": "bg_ruins_far",    "path": "textures/bg_ruins_far.png"    },
-        { "key": "bg_ruins_mid",    "path": "textures/bg_ruins_mid.png"    },
-        { "key": "bg_ruins_near",   "path": "textures/bg_ruins_near.png"   }
+        { "key": "luigi_fire_idle",     "path": "textures/luigi_fire_idle.png"     },
+        { "key": "luigi_fire_run",      "path": "textures/luigi_fire_run.png"      },
+        { "key": "luigi_fire_jump",     "path": "textures/luigi_fire_jump.png"     },
+        { "key": "luigi_fire_skid",     "path": "textures/luigi_fire_skid.png"     },
+        { "key": "luigi_fire_climb",    "path": "textures/luigi_fire_climb.png"    },
+
+        { "key": "goomba",             "path": "textures/enemy_goomba.png"        },
+        { "key": "koopa",              "path": "textures/enemy_koopa.png"         },
+        { "key": "piranha_plant",      "path": "textures/enemy_piranha.png"       },
+        { "key": "bowser",             "path": "textures/enemy_bowser.png"        },
+        { "key": "bowser_fire",        "path": "textures/bowser_fire.png"         },
+        { "key": "fireball",           "path": "textures/fireball.png"            },
+
+        { "key": "tileset_mario",      "path": "textures/tileset_mario.png"       },
+        { "key": "question_block",     "path": "textures/question_block.png"      },
+        { "key": "brick",              "path": "textures/brick.png"               },
+        { "key": "pipe",               "path": "textures/pipe.png"                },
+
+        { "key": "coin",               "path": "textures/coin.png"                },
+        { "key": "mushroom",           "path": "textures/mushroom.png"            },
+        { "key": "fire_flower",        "path": "textures/fire_flower.png"         },
+        { "key": "star",               "path": "textures/star.png"                },
+        { "key": "one_up",             "path": "textures/one_up.png"              },
+
+        { "key": "flagpole",           "path": "textures/flagpole.png"            },
+        { "key": "particle",           "path": "textures/particle.png"            },
+
+        { "key": "bg_sky",             "path": "textures/bg_sky.png"              },
+        { "key": "bg_hills",           "path": "textures/bg_hills.png"            },
+        { "key": "bg_bushes",          "path": "textures/bg_bushes.png"           }
     ],
     "sounds": [
-        { "key": "jump",            "path": "audio/jump.ogg"               },
-        { "key": "double_jump",     "path": "audio/double_jump.ogg"        },
-        { "key": "dash",            "path": "audio/dash.ogg"               },
-        { "key": "wall_jump",       "path": "audio/wall_jump.ogg"          },
-        { "key": "wall_slide",      "path": "audio/wall_slide.ogg"         },
-        { "key": "land",            "path": "audio/land.ogg"               },
+        { "key": "jump",               "path": "audio/jump.ogg"                   },
+        { "key": "land",               "path": "audio/land.ogg"                   },
 
-        { "key": "coin_pickup",     "path": "audio/coin_pickup.ogg"        },
-        { "key": "gem_pickup",      "path": "audio/gem_pickup.ogg"         },
-        { "key": "powerup_pickup",  "path": "audio/powerup_pickup.ogg"     },
-        { "key": "powerup_expire",  "path": "audio/powerup_expire.ogg"     },
+        { "key": "coin_pickup",        "path": "audio/coin_pickup.ogg"            },
+        { "key": "powerup_pickup",     "path": "audio/powerup_pickup.ogg"         },
+        { "key": "powerup_expire",     "path": "audio/powerup_expire.ogg"         },
+        { "key": "one_up",             "path": "audio/one_up.ogg"                 },
 
-        { "key": "enemy_stomp",     "path": "audio/enemy_stomp.ogg"        },
-        { "key": "enemy_shoot",     "path": "audio/enemy_shoot.ogg"        },
-        { "key": "player_hurt",     "path": "audio/player_hurt.ogg"        },
-        { "key": "player_death",    "path": "audio/player_death.ogg"       },
+        { "key": "enemy_stomp",        "path": "audio/enemy_stomp.ogg"            },
+        { "key": "enemy_shoot",        "path": "audio/enemy_shoot.ogg"            },
+        { "key": "kick",               "path": "audio/kick.ogg"                   },
+        { "key": "fireball",           "path": "audio/fireball.ogg"               },
 
-        { "key": "block_break",     "path": "audio/block_break.ogg"        },
-        { "key": "level_complete",  "path": "audio/level_complete.ogg"     },
-        { "key": "game_over",       "path": "audio/game_over.ogg"          },
+        { "key": "player_hurt",        "path": "audio/player_hurt.ogg"            },
+        { "key": "player_death",       "path": "audio/player_death.ogg"           },
 
-        { "key": "menu_select",     "path": "audio/menu_select.ogg"        },
-        { "key": "menu_confirm",    "path": "audio/menu_confirm.ogg"       },
-        { "key": "pause",           "path": "audio/pause.ogg"              }
+        { "key": "block_hit",          "path": "audio/block_hit.ogg"              },
+        { "key": "block_break",        "path": "audio/block_break.ogg"            },
+        { "key": "pipe_enter",         "path": "audio/pipe_enter.ogg"             },
+        { "key": "flagpole",           "path": "audio/flagpole.ogg"               },
+        { "key": "level_complete",     "path": "audio/level_complete.ogg"         },
+        { "key": "game_over",          "path": "audio/game_over.ogg"              },
+
+        { "key": "menu_select",        "path": "audio/menu_select.ogg"            },
+        { "key": "menu_confirm",       "path": "audio/menu_confirm.ogg"           },
+        { "key": "pause",              "path": "audio/pause.ogg"                  }
     ],
     "music": [
-        { "key": "ruins_theme",     "path": "audio/ruins_theme.ogg"        },
-        { "key": "menu_theme",      "path": "audio/menu_theme.ogg"         },
-        { "key": "boss_theme",      "path": "audio/boss_theme.ogg"         }
+        { "key": "overworld_theme",    "path": "audio/overworld_theme.ogg"        },
+        { "key": "underground_theme",  "path": "audio/underground_theme.ogg"      },
+        { "key": "castle_theme",       "path": "audio/castle_theme.ogg"           },
+        { "key": "star_theme",         "path": "audio/star_theme.ogg"             },
+        { "key": "menu_theme",         "path": "audio/menu_theme.ogg"             }
     ],
     "fonts": [
-        { "key": "main",            "path": "fonts/main.ttf"               }
+        { "key": "main",               "path": "fonts/main.ttf"                   }
     ]
 }

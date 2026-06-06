@@ -107,16 +107,24 @@ struct AnimationComponent {
 // Player
 // =============================================================================
 
+/// @brief Mario power-up state — determines sprite set and abilities.
+enum class MarioPowerState {
+    Small,    ///< Default — one hit = death
+    Big,      ///< After mushroom — can break bricks, one hit = shrink to Small
+    Fire      ///< After fire flower — can shoot fireballs, one hit = shrink to Small
+};
+
 /// @brief All possible player states for the player state machine.
 enum class PlayerState {
     Idle,
     Running,
     Jumping,
-    DoubleJumping,
     Falling,
-    Dashing,
-    WallSliding,
-    WallJumping,
+    Skidding,     ///< Turning around while running
+    Growing,      ///< Power-up grow animation (brief invulnerable)
+    Shrinking,    ///< Losing power (Big/Fire → Small)
+    FlagPole,     ///< Sliding down flagpole
+    EnteringPipe, ///< Entering a pipe
     Hurt,
     Dead
 };
@@ -124,30 +132,34 @@ enum class PlayerState {
 /// @brief Player-specific gameplay data.
 struct PlayerComponent {
     PlayerState state       = PlayerState::Idle;
-    int   jumpCount         = 0;      ///< 0 = grounded, 1 = single jumped, 2 = double jumped
-    float dashCooldownTimer = 0.0f;   ///< Seconds remaining before dash is available
-    float dashTimer         = 0.0f;   ///< Seconds remaining in current dash
+    MarioPowerState power   = MarioPowerState::Small;
+    int   jumpCount         = 0;      ///< 0 = grounded, 1 = jumped
     bool  isGrounded        = false;
-    bool  isTouchingWallLeft  = false;
-    bool  isTouchingWallRight = false;
     int   facing            = 1;      ///< 1 = right, -1 = left
     float coyoteTimer       = 0.0f;   ///< Brief grace period after leaving ledge
     float jumpBufferTimer   = 0.0f;   ///< Pre-land jump buffer
+    bool  isRunning         = false;  ///< Run button held
+    float growTimer         = 0.0f;   ///< Timer for grow/shrink animation
+    float pipeTimer         = 0.0f;   ///< Timer for pipe enter animation
+    Vec2f pipeTarget;                 ///< Where pipe teleports player to
+    int   playerIndex       = 0;      ///< 0 = Player 1 (Mario), 1 = Player 2 (Luigi)
 
-    static constexpr float COYOTE_TIME    = 0.08f;  ///< seconds
+    static constexpr float COYOTE_TIME    = 0.06f;  ///< seconds
     static constexpr float JUMP_BUFFER    = 0.1f;   ///< seconds
+    static constexpr float GROW_DURATION  = 0.5f;   ///< seconds
+    static constexpr float PIPE_DURATION  = 0.8f;   ///< seconds
 };
 
 // =============================================================================
 // Enemies
 // =============================================================================
 
-/// @brief Enemy type variants.
+/// @brief Enemy type variants — Mario style.
 enum class EnemyType {
-    Walker,     ///< Patrols edge-to-edge on a platform
-    Jumper,     ///< Bounces, gravity-affected
-    Shooter,    ///< Fires projectiles at player on sight
-    Guardian    ///< Armored, requires 2 hits, flashes on first hit
+    Goomba,       ///< Walks, dies on stomp
+    Koopa,        ///< Walks, becomes shell on stomp (can be kicked)
+    PiranhaPlant, ///< Bobs up/down from pipe, can't be stomped
+    Bowser        ///< Boss — shoots fire, takes multiple hits
 };
 
 /// @brief All possible enemy states.
@@ -156,29 +168,39 @@ enum class EnemyState {
     Patrol,
     Chase,
     Attack,
+    Shell,      ///< Koopa shell state (stationary or sliding)
     Hurt,
     Dead
 };
 
 /// @brief Enemy-specific gameplay data.
 struct EnemyComponent {
-    EnemyType  type          = EnemyType::Walker;
+    EnemyType  type          = EnemyType::Goomba;
     EnemyState state         = EnemyState::Patrol;
     float patrolLeft         = 0.0f;   ///< Left bound of patrol area (world x)
     float patrolRight        = 0.0f;   ///< Right bound of patrol area (world x)
     int   facing             = 1;      ///< 1 = right, -1 = left
     bool  isAlerted          = false;  ///< Has spotted the player
 
-    // Shooter-specific
+    // Bowser-specific
     float shootCooldown      = 0.0f;   ///< Seconds until next shot
-    float shootInterval      = 2.0f;   ///< Time between shots
+    float shootInterval      = 2.5f;   ///< Time between fire breaths
+    int   hitsToKill         = 5;      ///< Bowser takes multiple hits
 
-    // Jumper-specific
-    float bounceForce        = -500.0f; ///< Vertical velocity on bounce
+    // PiranhaPlant-specific
+    float bobTimer           = 0.0f;
+    float bobPhase           = 0.0f;   ///< 0..1 = position in bob cycle
+    float bobBaseY           = 0.0f;   ///< Resting Y position (inside pipe)
+
+    // Koopa-specific
+    bool  isShell            = false;  ///< True when stomped into shell
+    bool  shellMoving        = false;  ///< True when shell is sliding
+    float shellSpeed         = 400.0f; ///< Shell slide speed
+
+    // Unused legacy fields kept for compatibility
+    float bounceForce        = -500.0f;
     float bounceTimer        = 0.0f;
-
-    // Guardian-specific
-    bool  isArmored          = true;   ///< If true, takes reduced damage / flashes
+    bool  isArmored          = false;
 };
 
 // =============================================================================
@@ -193,13 +215,15 @@ struct HealthComponent {
     bool isDead              = false;
 };
 
-/// @brief A projectile fired by an enemy (or player power-up).
+/// @brief A projectile fired by an enemy (or player fireball).
 struct ProjectileComponent {
     uint32_t ownerId     = 0;      ///< EnTT entity id of the shooter (to prevent self-hit)
     int   damage         = 1;
     float lifetime       = 3.0f;   ///< Seconds remaining before auto-destroy
     float speed          = 300.0f; ///< Pixels/second
     Vec2f direction      = {1.0f, 0.0f};
+    bool  isFireball     = false;  ///< Player fireball (bounces, affected by gravity)
+    bool  isBowserFire   = false;  ///< Bowser fire breath
 };
 
 // =============================================================================
@@ -208,39 +232,63 @@ struct ProjectileComponent {
 
 /// @brief Types of collectibles.
 enum class CollectibleType {
-    Coin,         ///< Standard score pickup
-    GemShard,     ///< Rare, unlocks secret level
-    PowerCrystal  ///< Grants invincibility + speed boost
+    Coin,         ///< Standard coin — 100 coins = 1-up
+    Mushroom,     ///< Makes Small Mario → Big Mario
+    FireFlower,   ///< Makes Big Mario → Fire Mario (Small → Big)
+    Star,         ///< Grants invincibility for a duration
+    OneUp         ///< Extra life
 };
 
 /// @brief Marks an entity as a collectible that the player can pick up.
 struct CollectibleComponent {
     CollectibleType type  = CollectibleType::Coin;
-    int   value           = 100;   ///< Score value or special meaning
+    int   value           = 200;   ///< Score value
     bool  collected       = false;  ///< Set to true on pickup, entity destroyed next frame
+    bool  fromBlock       = false;  ///< Spawned from question block (has upward velocity)
 };
 
-/// @brief Active power-up effect on the player.
+/// @brief Active power-up effect on the player (Star invincibility).
 enum class PowerUpType {
-    Invincibility,  ///< Cannot take damage
-    SpeedBoost      ///< Increased movement speed
+    StarInvincibility  ///< Cannot take damage, kills enemies on contact
 };
 
 /// @brief Tracks an active power-up buff with a countdown timer.
 struct PowerUpComponent {
-    PowerUpType type         = PowerUpType::Invincibility;
+    PowerUpType type         = PowerUpType::StarInvincibility;
     float durationRemaining  = 0.0f;  ///< Seconds left
-    float speedMultiplier    = 1.5f;  ///< Only used for SpeedBoost
+    float speedMultiplier    = 1.0f;
 };
 
 // =============================================================================
 // World interaction
 // =============================================================================
 
-/// @brief Marks a tile as destructible (can be dashed through).
+/// @brief Marks a tile as destructible (Big Mario can break bricks).
 struct DestructibleComponent {
     int  hitsRemaining  = 1;    ///< Hits required to destroy
     bool destroyed      = false;
+};
+
+/// @brief Question block — hit from below to spawn an item.
+struct QuestionBlockComponent {
+    CollectibleType contents = CollectibleType::Coin; ///< What to spawn
+    bool  isHit          = false;  ///< Already been hit
+    float bumpTimer      = 0.0f;   ///< Bump animation timer
+    float bumpOffset     = 0.0f;   ///< Visual offset during bump
+};
+
+/// @brief Pipe — player can enter by pressing down on top.
+struct PipeComponent {
+    bool  isEnterable    = false;  ///< Can the player enter this pipe?
+    Vec2f destination;             ///< Where it teleports to (world coords)
+    bool  isVertical     = true;   ///< true = enter from top, false = enter from side
+};
+
+/// @brief Flagpole end-of-level trigger.
+struct FlagPoleComponent {
+    float topY           = 0.0f;   ///< Y position of the top of the pole
+    float bottomY        = 0.0f;   ///< Y position of the base
+    bool  activated      = false;
 };
 
 // =============================================================================
@@ -271,13 +319,14 @@ struct GoalComponent {
     bool reached = false;
 };
 
-/// @brief Particle effect burst (e.g. double-jump puff, dash afterimage).
+/// @brief Particle effect burst.
 struct ParticleEmitterComponent {
     enum class Effect {
-        DoubleJumpBurst,
-        DashAfterimage,
         CoinSparkle,
-        DestructionDebris,
+        BrickDebris,
+        StompPoof,
+        FireballBurst,
+        PowerUpSparkle,
         DeathPoof
     };
 

@@ -99,6 +99,7 @@ set(MARIO_SCENE_SOURCES
     src/scenes/PauseScene.cpp
     src/scenes/HUDScene.cpp
     src/scenes/GameOverScene.cpp
+    src/scenes/GetReadyScene.cpp
 )
 
 set(MARIO_ENTITY_SOURCES
