@@ -61,6 +61,8 @@ void GameScene::onEnter() {
         [this](const BlockHitEvent& e) { onBlockHit(e); });
     m_subFlagPole      = bus.subscribe<FlagPoleGrabbedEvent>(
         [this](const FlagPoleGrabbedEvent& e) { onFlagPoleGrabbed(e); });
+    m_subPowerUp       = bus.subscribe<PlayerPowerUpEvent>(
+        [this](const PlayerPowerUpEvent& e) { onPlayerPowerUp(e); });
 
     // Load current level
     const auto& levelPath = GameState::LEVEL_PATHS[static_cast<size_t>(m_state->currentLevel)];
@@ -99,6 +101,7 @@ void GameScene::onExit() {
     bus.unsubscribe<LevelCompleteEvent>(m_subLevelComplete);
     bus.unsubscribe<BlockHitEvent>(m_subBlockHit);
     bus.unsubscribe<FlagPoleGrabbedEvent>(m_subFlagPole);
+    bus.unsubscribe<PlayerPowerUpEvent>(m_subPowerUp);
 
     m_registry.clear();
     LOG_INFO("GameScene: exited");
@@ -452,6 +455,14 @@ void GameScene::onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event) {
             {pos.x, pos.y - 20.0f},
             "+" + std::to_string(finalScore),
             Color{255, 220, 50, 255});
+    }
+}
+
+void GameScene::onPlayerPowerUp(const PlayerPowerUpEvent& event) {
+    if (event.powerType == "1up") {
+        auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
+        ++ps.lives;
+        AudioManager::instance().playSound("one_up");
     }
 }
 

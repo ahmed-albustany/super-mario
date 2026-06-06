@@ -31,6 +31,21 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         // ================================================================
         if (health.isDead) {
             player.state = PlayerState::Dead;
+            // First frame of death: collider is still non-trigger
+            if (reg.all_of<ColliderComponent>(entity) &&
+                !reg.get<ColliderComponent>(entity).isTrigger) {
+                // Initiate death hop animation
+                vel.velocity.x = 0.0f;
+                vel.velocity.y = -350.0f; // Small hop upward
+                // Disable collision so player falls through everything
+                reg.get<ColliderComponent>(entity).isTrigger = true;
+                // Flip sprite upside down
+                if (reg.all_of<TransformComponent>(entity)) {
+                    reg.get<TransformComponent>(entity).rotation = 180.0f;
+                }
+            }
+            // During death: gravity pulls player down (handled by PhysicsSystem)
+            // No horizontal movement
             vel.velocity.x = 0.0f;
             continue;
         }
@@ -124,7 +139,12 @@ void PlayerSystem::update(entt::registry& reg, float dt,
 
         if (canGroundJump && player.jumpBufferTimer > 0.0f && player.jumpCount == 0) {
             player.state = PlayerState::Jumping;
-            vel.velocity.y = Config::PLAYER_JUMP_FORCE;
+            // Running jump gives extra height (like original Mario)
+            float jumpForce = Config::PLAYER_JUMP_FORCE;
+            if (player.isRunning && std::abs(vel.velocity.x) > Config::PLAYER_WALK_SPEED * 0.8f) {
+                jumpForce *= 1.15f; // 15% higher jump when running at near-full speed
+            }
+            vel.velocity.y = jumpForce;
             player.jumpCount = 1;
             player.jumpBufferTimer = 0.0f;
             player.coyoteTimer = 0.0f;

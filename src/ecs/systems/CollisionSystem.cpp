@@ -104,20 +104,24 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
                     reg.emplace_or_replace<DestroyFlag>(enemyEnt);
                 }
             } else {
-                // Goomba — instant kill
+                // Goomba — play flat death animation for 0.5s then despawn
                 if (reg.all_of<HealthComponent>(enemyEnt)) {
                     auto& eH = reg.get<HealthComponent>(enemyEnt);
                     eH.hp = 0;
                     eH.isDead = true;
                 }
                 ec.state = EnemyState::Dead;
+                ec.deathTimer = 0.5f; // Show flat animation before despawning
+                // Disable collider so dead goomba doesn't block anything
+                if (reg.all_of<ColliderComponent>(enemyEnt)) {
+                    reg.get<ColliderComponent>(enemyEnt).isTrigger = true;
+                }
                 EntityFactory::createFloatingText(reg,
                     {stompPos.x, stompPos.y - 16.0f},
                     "+" + std::to_string(Config::ENEMY_STOMP_VALUE),
                     Color{255, 255, 255, 255});
                 events.publish(EnemyKilledEvent{"goomba",
                     stompPos, Config::ENEMY_STOMP_VALUE});
-                reg.emplace_or_replace<DestroyFlag>(enemyEnt);
             }
             return;
         }
@@ -126,12 +130,12 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
 take_damage:
     // Side/below contact — player takes damage based on power state
     if (player.power == MarioPowerState::Small) {
-        // Small Mario — die
+        // Small Mario — die (PlayerSystem handles death hop animation)
         pHealth.isDead = true;
         player.state = PlayerState::Dead;
         events.publish(PlayerDiedEvent{0, player.playerIndex});
     } else {
-        // Big/Fire Mario — shrink to Small
+        // Big/Fire Mario — shrink to Small with knockback
         player.power = MarioPowerState::Small;
         player.state = PlayerState::Shrinking;
         player.growTimer = PlayerComponent::GROW_DURATION;
@@ -141,12 +145,12 @@ take_damage:
         auto& coll = reg.get<ColliderComponent>(playerEnt);
         coll.size = {14.0f, 16.0f};
 
+        float knockDir = (playerRect.center().x < enemyRect.center().x) ? -1.0f : 1.0f;
+        pVel.velocity.x = knockDir * 150.0f;
+        pVel.velocity.y = -200.0f;
+
         events.publish(PlayerHurtEvent{1, player.playerIndex});
     }
-
-    float knockDir = (playerRect.center().x < enemyRect.center().x) ? -1.0f : 1.0f;
-    pVel.velocity.x = knockDir * 150.0f;
-    pVel.velocity.y = -200.0f;
 }
 
 void handlePlayerCollectible(entt::registry& reg, EventBus& events,

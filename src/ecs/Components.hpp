@@ -144,7 +144,7 @@ struct PlayerComponent {
     Vec2f pipeTarget;                 ///< Where pipe teleports player to
     int   playerIndex       = 0;      ///< 0 = Player 1 (Mario), 1 = Player 2 (Luigi)
 
-    static constexpr float COYOTE_TIME    = 0.06f;  ///< seconds
+    static constexpr float COYOTE_TIME    = 0.1f;   ///< ~6 frames at 60fps
     static constexpr float JUMP_BUFFER    = 0.1f;   ///< seconds
     static constexpr float GROW_DURATION  = 0.5f;   ///< seconds
     static constexpr float PIPE_DURATION  = 0.8f;   ///< seconds
@@ -196,6 +196,9 @@ struct EnemyComponent {
     bool  isShell            = false;  ///< True when stomped into shell
     bool  shellMoving        = false;  ///< True when shell is sliding
     float shellSpeed         = 400.0f; ///< Shell slide speed
+
+    // Death animation timer (e.g. Goomba flat for 0.5s before despawning)
+    float deathTimer         = 0.0f;
 
     // Unused legacy fields kept for compatibility
     float bounceForce        = -500.0f;

@@ -46,6 +46,7 @@ private:
     void onLevelComplete(const LevelCompleteEvent& event);
     void onBlockHit(const BlockHitEvent& event);
     void onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event);
+    void onPlayerPowerUp(const PlayerPowerUpEvent& event);
 
     /// @brief Alternating mode: switch to the other player's turn.
     void switchTurn();
@@ -91,4 +92,5 @@ private:
     SubscriberID m_subLevelComplete = 0;
     SubscriberID m_subBlockHit     = 0;
     SubscriberID m_subFlagPole     = 0;
+    SubscriberID m_subPowerUp     = 0;
 };

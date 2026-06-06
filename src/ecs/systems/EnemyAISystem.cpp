@@ -43,9 +43,15 @@ void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
         auto& vel       = view.get<VelocityComponent>(entity);
         auto& health    = view.get<HealthComponent>(entity);
 
-        // Dead enemy — no AI
+        // Dead enemy — count down death animation timer, then destroy
         if (health.isDead || enemy.state == EnemyState::Dead) {
             vel.velocity.x = 0.0f;
+            if (enemy.deathTimer > 0.0f) {
+                enemy.deathTimer -= dt;
+                if (enemy.deathTimer <= 0.0f) {
+                    reg.emplace_or_replace<DestroyFlag>(entity);
+                }
+            }
             continue;
         }
 
@@ -115,27 +121,42 @@ void EnemyAISystem::update(entt::registry& reg, float dt, EventBus& events) {
             enemy.state = EnemyState::Idle;
             vel.velocity.x = 0.0f;
 
-            // Bob cycle: 0..1 over ~3 seconds
-            enemy.bobTimer += dt;
-            float cycle = 3.0f;
-            enemy.bobPhase = std::fmod(enemy.bobTimer, cycle) / cycle;
-
-            // Rise up for first half, retreat for second half
-            float bobHeight = 32.0f;
-            float offset;
-            if (enemy.bobPhase < 0.3f) {
-                // Rising
-                offset = -bobHeight * (enemy.bobPhase / 0.3f);
-            } else if (enemy.bobPhase < 0.7f) {
-                // Fully out
-                offset = -bobHeight;
-            } else {
-                // Retreating
-                offset = -bobHeight * (1.0f - (enemy.bobPhase - 0.7f) / 0.3f);
+            // Classic behavior: don't emerge if player is standing near the pipe
+            bool suppressBob = false;
+            if (playerAlive) {
+                float dx = std::abs(playerPos.x - transform.position.x);
+                float dy = playerPos.y - enemy.bobBaseY;
+                // Suppress if player is within ~2 tiles horizontally and at or above pipe top
+                if (dx < 48.0f && dy <= 0.0f) {
+                    suppressBob = true;
+                }
             }
-            transform.position.y = enemy.bobBaseY + offset;
 
-            // Don't alert if player is very close to pipe top (classic behavior)
+            if (suppressBob) {
+                // Stay hidden inside pipe
+                transform.position.y = enemy.bobBaseY;
+                // Don't advance bob timer so it resumes naturally when player leaves
+            } else {
+                // Bob cycle: 0..1 over ~3 seconds
+                enemy.bobTimer += dt;
+                float cycle = 3.0f;
+                enemy.bobPhase = std::fmod(enemy.bobTimer, cycle) / cycle;
+
+                // Rise up for first half, retreat for second half
+                float bobHeight = 32.0f;
+                float offset;
+                if (enemy.bobPhase < 0.3f) {
+                    // Rising
+                    offset = -bobHeight * (enemy.bobPhase / 0.3f);
+                } else if (enemy.bobPhase < 0.7f) {
+                    // Fully out
+                    offset = -bobHeight;
+                } else {
+                    // Retreating
+                    offset = -bobHeight * (1.0f - (enemy.bobPhase - 0.7f) / 0.3f);
+                }
+                transform.position.y = enemy.bobBaseY + offset;
+            }
             break;
         }
 
