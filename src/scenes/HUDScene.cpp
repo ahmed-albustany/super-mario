@@ -12,30 +12,13 @@ HUDScene::HUDScene(Game& game, GameStatePtr state)
     , m_state(std::move(state))
 {}
 
-void HUDScene::onEnter() {
-    m_subPowerUp = m_game.events().subscribe<PowerUpActivatedEvent>(
-        [this](const PowerUpActivatedEvent& e) {
-            m_powerUpDuration = e.duration;
-            m_powerUpTimer    = e.duration;
-            m_powerUpActive   = true;
-        });
-}
+void HUDScene::onEnter() {}
 
-void HUDScene::onExit() {
-    m_game.events().unsubscribe<PowerUpActivatedEvent>(m_subPowerUp);
-}
+void HUDScene::onExit() {}
 
 void HUDScene::handleInput(const InputManager& /*input*/) {}
 
-void HUDScene::update(float dt) {
-    if (m_powerUpActive) {
-        m_powerUpTimer -= dt;
-        if (m_powerUpTimer <= 0.0f) {
-            m_powerUpTimer  = 0.0f;
-            m_powerUpActive = false;
-        }
-    }
-}
+void HUDScene::update(float /*dt*/) {}
 
 void HUDScene::render(IPlatform& platform) {
     if (!m_state) return;
@@ -46,76 +29,153 @@ void HUDScene::render(IPlatform& platform) {
     FontHandle f = *font;
     float pad = 16.0f;
     float screenW = static_cast<float>(Config::WINDOW_WIDTH);
+    float screenH = static_cast<float>(Config::WINDOW_HEIGHT);
     const auto& gs = *m_state;
 
-    // ---- P1: MARIO / SCORE (top-left) ----
-    // Highlight active player in alternating mode
-    bool p1Active = (gs.currentPlayer == 0);
-    Color p1Label = p1Active ? Color{255, 255, 255, 255} : Color{160, 160, 160, 180};
-    platform.drawText(f, "MARIO", {pad, pad}, 14, p1Label);
-    std::string scoreStr = std::to_string(gs.p1.score);
-    while (scoreStr.size() < 6) scoreStr = "0" + scoreStr;
-    platform.drawText(f, scoreStr, {pad, pad + 18.0f}, 22, p1Label);
+    int numActive = gs.numActivePlayers();
+    bool simultaneous = gs.isSimultaneous();
 
-    // ---- COINS (top-center-left) ----
-    float coinX = 280.0f;
-    std::string coinStr = "x" + std::to_string(gs.current().coins);
-    platform.drawText(f, coinStr, {coinX, pad + 18.0f}, 22, Color{255, 220, 50, 255});
+    // Character labels
+    static const char* CHAR_NAMES[] = {"MASK DUDE", "NINJA FROG", "PINK MAN", "VIRTUAL GUY"};
+    // Player colors for HUD elements
+    static const Color PLAYER_COLORS[] = {
+        {78, 205, 196, 255},    // P1: Teal
+        {255, 107, 107, 255},   // P2: Red
+        {255, 182, 193, 255},   // P3: Pink
+        {130, 130, 255, 255}    // P4: Blue
+    };
 
-    // ---- WORLD (top-center) ----
-    float worldX = screenW * 0.5f - 40.0f;
-    platform.drawText(f, "WORLD", {worldX, pad}, 14, Color{255, 255, 255, 255});
-    platform.drawText(f, gs.worldDisplay, {worldX + 8.0f, pad + 18.0f}, 22, Color{255, 255, 255, 255});
+    if (numActive == 1 || gs.mode == GameMode::Alt2P) {
+        // ---- Single player / Alternating HUD ----
+        int activeIdx = gs.currentPlayer;
+        const auto& ps = gs.players[static_cast<size_t>(activeIdx)];
 
-    // ---- TIME (top-right area) ----
-    float timeX = (gs.numPlayers == 2) ? screenW * 0.5f + 60.0f : screenW - 200.0f;
-    int seconds = static_cast<int>(std::ceil(gs.levelTimer));
-    std::string timeStr = std::to_string(seconds);
-    Color timerColor = (gs.levelTimer < 100.0f) ? Color{255, 80, 80, 255} : Color{255, 255, 255, 255};
-    platform.drawText(f, "TIME", {timeX, pad}, 14, Color{255, 255, 255, 255});
-    platform.drawText(f, timeStr, {timeX + 10.0f, pad + 18.0f}, 22, timerColor);
+        // Player name (top-left)
+        Color labelColor = PLAYER_COLORS[static_cast<size_t>(activeIdx)];
+        platform.drawText(f, CHAR_NAMES[static_cast<size_t>(activeIdx)],
+                          {pad, pad}, 14, labelColor);
 
-    // ---- P2: LUIGI / SCORE (top-right, only in 2-player) ----
-    if (gs.numPlayers == 2) {
-        bool p2Active = (gs.currentPlayer == 1);
-        Color p2Label = p2Active ? Color{255, 255, 255, 255} : Color{160, 160, 160, 180};
-        float p2X = screenW - 120.0f;
-        platform.drawText(f, "LUIGI", {p2X, pad}, 14, p2Label);
-        std::string p2Score = std::to_string(gs.p2.score);
-        while (p2Score.size() < 6) p2Score = "0" + p2Score;
-        platform.drawText(f, p2Score, {p2X, pad + 18.0f}, 22, p2Label);
-    }
+        // Score (top-left, under name)
+        std::string scoreStr = std::to_string(ps.score);
+        while (scoreStr.size() < 6) scoreStr = "0" + scoreStr;
+        platform.drawText(f, scoreStr, {pad, pad + 18.0f}, 22, {255, 255, 255, 255});
 
-    // ---- LIVES (bottom-left) ----
-    std::string livesLabel = (gs.currentPlayer == 0) ? "MARIOx" : "LUIGIx";
-    platform.drawText(f, livesLabel + std::to_string(gs.current().lives),
-                      {pad, static_cast<float>(Config::WINDOW_HEIGHT) - 36.0f}, 16,
-                      Color{255, 255, 255, 200});
+        // Fruits collected (top-center-left)
+        std::string fruitStr = "FRUITS x" + std::to_string(ps.fruitsCollected);
+        platform.drawText(f, fruitStr, {280.0f, pad + 18.0f}, 18, {255, 220, 50, 255});
 
-    // In co-op, also show P2 lives on the right
-    if (gs.numPlayers == 2 && gs.coopMode) {
-        std::string p2Lives = "LUIGIx" + std::to_string(gs.p2.lives);
-        platform.drawText(f, p2Lives,
-                          {screenW - 140.0f, static_cast<float>(Config::WINDOW_HEIGHT) - 36.0f}, 16,
-                          Color{255, 255, 255, 200});
-    }
+        // WORLD (top-center)
+        float worldX = screenW * 0.5f - 40.0f;
+        platform.drawText(f, "WORLD", {worldX, pad}, 14, {255, 255, 255, 255});
+        platform.drawText(f, gs.worldDisplay, {worldX + 8.0f, pad + 18.0f}, 22, {255, 255, 255, 255});
 
-    // ---- Star power bar (bottom-center) ----
-    if (m_powerUpActive && m_powerUpDuration > 0.0f) {
-        float barW = 300.0f;
-        float barH = 12.0f;
-        float barX = (screenW - barW) * 0.5f;
-        float barY = static_cast<float>(Config::WINDOW_HEIGHT) - 50.0f;
-        float fill = m_powerUpTimer / m_powerUpDuration;
+        // TIME (top-right)
+        float timeX = screenW - 200.0f;
+        int seconds = static_cast<int>(std::ceil(gs.levelTimer));
+        std::string timeStr = std::to_string(seconds);
+        Color timerColor = (gs.levelTimer < 100.0f) ? Color{255, 80, 80, 255} : Color{255, 255, 255, 255};
+        platform.drawText(f, "TIME", {timeX, pad}, 14, {255, 255, 255, 255});
+        platform.drawText(f, timeStr, {timeX + 10.0f, pad + 18.0f}, 22, timerColor);
 
-        platform.drawRect({barX, barY, barW, barH},
-                          Color{30, 30, 50, 200}, Color{255, 220, 50, 255}, 1.0f);
+        // Lives (bottom-left)
+        std::string livesStr = std::string(CHAR_NAMES[static_cast<size_t>(activeIdx)]) + " x" + std::to_string(ps.lives);
+        platform.drawText(f, livesStr, {pad, screenH - 36.0f}, 16, {255, 255, 255, 200});
 
-        float fillW = (barW - 2.0f) * fill;
-        Color barColor = (fill > 0.3f) ? Color{255, 220, 50, 255} : Color{255, 100, 80, 255};
-        platform.drawRect({barX + 1.0f, barY + 1.0f, fillW, barH - 2.0f}, barColor);
+        // In alternating mode, show the other player's status dimmed on the right
+        if (gs.mode == GameMode::Alt2P) {
+            int otherIdx = 1 - activeIdx;
+            const auto& otherPs = gs.players[static_cast<size_t>(otherIdx)];
+            Color dimColor = {160, 160, 160, 140};
+            float p2X = screenW - 160.0f;
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(otherIdx)],
+                              {p2X, pad}, 12, dimColor);
+            std::string p2Score = std::to_string(otherPs.score);
+            while (p2Score.size() < 6) p2Score = "0" + p2Score;
+            platform.drawText(f, p2Score, {p2X, pad + 16.0f}, 16, dimColor);
+        }
+    } else {
+        // ---- Multi-player simultaneous HUD (2P co-op / 4P co-op / 4P VS) ----
 
-        platform.drawText(f, "STAR", {barX, barY - 18.0f}, 12,
-                          Color{255, 220, 50, 200});
+        // TIME (top-center)
+        float worldX = screenW * 0.5f - 40.0f;
+        int seconds = static_cast<int>(std::ceil(gs.levelTimer));
+        std::string timeStr = std::to_string(seconds);
+        Color timerColor = (gs.levelTimer < 100.0f) ? Color{255, 80, 80, 255} : Color{255, 255, 255, 255};
+        platform.drawText(f, "TIME", {worldX, pad}, 14, {255, 255, 255, 255});
+        platform.drawText(f, timeStr, {worldX + 10.0f, pad + 18.0f}, 22, timerColor);
+
+        // WORLD (just below time, centered)
+        platform.drawText(f, gs.worldDisplay, {worldX + 8.0f, pad + 44.0f}, 14, {255, 255, 255, 180});
+
+        // VS label
+        if (gs.isVSMode()) {
+            platform.drawText(f, "VS MODE", {screenW * 0.5f - 40.0f, pad + 62.0f}, 12, {255, 107, 107, 200});
+        }
+
+        // Player panels — spread across the bottom of the screen
+        float panelW = screenW / static_cast<float>(numActive);
+        float panelY = screenH - 54.0f;
+
+        for (int i = 0; i < numActive; ++i) {
+            const auto& ps = gs.players[static_cast<size_t>(i)];
+            float px = static_cast<float>(i) * panelW + 8.0f;
+            Color pColor = PLAYER_COLORS[static_cast<size_t>(i)];
+
+            // Dim dead players
+            if (!ps.isAlive || ps.lives <= 0) {
+                pColor.a = 100;
+            }
+
+            // Player name
+            std::string pLabel = "P" + std::to_string(i + 1);
+            platform.drawText(f, pLabel, {px, panelY}, 12, pColor);
+
+            // Score
+            std::string pScore = std::to_string(ps.score);
+            platform.drawText(f, pScore, {px, panelY + 14.0f}, 14, pColor);
+
+            // Lives
+            std::string pLives = "x" + std::to_string(ps.lives);
+            platform.drawText(f, pLives, {px + 80.0f, panelY + 14.0f}, 14, {255, 255, 255, 200});
+
+            // Fruits
+            std::string pFruits = std::to_string(ps.fruitsCollected);
+            platform.drawText(f, pFruits, {px + 110.0f, panelY + 14.0f}, 14, {255, 220, 50, 200});
+        }
+
+        // Also show each player's score at the top in their corner
+        if (numActive >= 2) {
+            // P1 top-left
+            const auto& p1 = gs.players[0];
+            platform.drawText(f, "P1", {pad, pad}, 12, PLAYER_COLORS[0]);
+            std::string s1 = std::to_string(p1.score);
+            while (s1.size() < 6) s1 = "0" + s1;
+            platform.drawText(f, s1, {pad, pad + 14.0f}, 16, PLAYER_COLORS[0]);
+
+            // P2 top-right
+            const auto& p2 = gs.players[1];
+            float p2X = screenW - 120.0f;
+            platform.drawText(f, "P2", {p2X, pad}, 12, PLAYER_COLORS[1]);
+            std::string s2 = std::to_string(p2.score);
+            while (s2.size() < 6) s2 = "0" + s2;
+            platform.drawText(f, s2, {p2X, pad + 14.0f}, 16, PLAYER_COLORS[1]);
+        }
+
+        if (numActive >= 4) {
+            // P3 below P1
+            const auto& p3 = gs.players[2];
+            platform.drawText(f, "P3", {pad, pad + 36.0f}, 12, PLAYER_COLORS[2]);
+            std::string s3 = std::to_string(p3.score);
+            while (s3.size() < 6) s3 = "0" + s3;
+            platform.drawText(f, s3, {pad, pad + 50.0f}, 16, PLAYER_COLORS[2]);
+
+            // P4 below P2
+            const auto& p4 = gs.players[3];
+            float p4X = screenW - 120.0f;
+            platform.drawText(f, "P4", {p4X, pad + 36.0f}, 12, PLAYER_COLORS[3]);
+            std::string s4 = std::to_string(p4.score);
+            while (s4.size() < 6) s4 = "0" + s4;
+            platform.drawText(f, s4, {p4X, pad + 50.0f}, 16, PLAYER_COLORS[3]);
+        }
     }
 }

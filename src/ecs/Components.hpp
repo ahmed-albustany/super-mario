@@ -14,35 +14,30 @@
 // Spatial
 // =============================================================================
 
-/// @brief Position, scale, and rotation in world space.
 struct TransformComponent {
     Vec2f position;
     Vec2f scale    = {1.0f, 1.0f};
     float rotation = 0.0f;
 };
 
-/// @brief Current velocity in pixels/second.
 struct VelocityComponent {
     Vec2f velocity;
 };
 
-/// @brief Marks an entity as affected by gravity.
 struct GravityComponent {
-    float multiplier = 1.0f;  ///< Scale factor (e.g. 0.0 = no gravity, 0.5 = half)
+    float multiplier = 1.0f;
 };
 
 // =============================================================================
 // Collision
 // =============================================================================
 
-/// @brief Axis-aligned bounding box collider, relative to TransformComponent position.
 struct ColliderComponent {
-    Vec2f offset;       ///< Offset from entity position to collider top-left
-    Vec2f size;         ///< Width and height of the collider
-    bool  isTrigger  = false;  ///< Triggers fire events but don't block movement
-    bool  isStatic   = false;  ///< Static colliders never move (tiles, walls)
+    Vec2f offset;
+    Vec2f size;
+    bool  isTrigger  = false;
+    bool  isStatic   = false;
 
-    /// @brief Build the world-space AABB given the entity's position.
     [[nodiscard]] Rect toRect(const Vec2f& entityPos) const {
         return {entityPos.x + offset.x, entityPos.y + offset.y, size.x, size.y};
     }
@@ -52,34 +47,37 @@ struct ColliderComponent {
 // Rendering
 // =============================================================================
 
-/// @brief Sprite rendering data — references a loaded texture via handle.
 struct SpriteComponent {
     TextureHandle texture;
-    Rect  srcRect;           ///< Current frame rectangle in the spritesheet
-    int   zOrder     = 0;    ///< Higher z-order renders on top
+    Rect  srcRect;
+    int   zOrder     = 0;
     bool  flipX      = false;
     bool  visible    = true;
     Color tint       = Color::White();
 };
 
-/// @brief Frame-based sprite animation.
+/// @brief Frame-based sprite animation with sprite sheet support.
 struct AnimationComponent {
-    /// @brief A single animation clip (e.g. "run", "idle", "jump").
     struct Clip {
         std::string name;
-        std::vector<Rect> frames;   ///< Source rects for each frame
+        std::vector<Rect> frames;
         float fps        = 10.0f;
         bool  loop       = true;
-        TextureHandle texture;       ///< If valid, sets sprite texture when this clip plays
+        TextureHandle texture;
     };
 
-    std::vector<Clip> clips;         ///< All animation clips for this entity
-    int   currentClip   = 0;         ///< Index into clips[]
-    int   currentFrame  = 0;         ///< Current frame within the active clip
-    float frameTimer    = 0.0f;      ///< Accumulator for frame advance
-    bool  finished      = false;     ///< True if non-looping clip has ended
+    std::vector<Clip> clips;
+    int   currentClip   = 0;
+    int   currentFrame  = 0;
+    float frameTimer    = 0.0f;
+    bool  finished      = false;
 
-    /// @brief Set the active clip by name. Resets frame to 0.
+    // Sprite sheet extraction parameters
+    int   frameWidth    = 32;   ///< Width of each frame in the sprite sheet
+    int   frameHeight   = 32;   ///< Height of each frame in the sprite sheet
+    int   frameCount    = 1;    ///< Total frames in the sprite sheet row
+    float frameDuration = 0.1f; ///< Seconds per frame (alternative to fps)
+
     void play(const std::string& clipName) {
         for (int i = 0; i < static_cast<int>(clips.size()); ++i) {
             if (clips[static_cast<size_t>(i)].name == clipName) {
@@ -94,7 +92,6 @@ struct AnimationComponent {
         }
     }
 
-    /// @brief Get the source rect for the current frame of the active clip.
     [[nodiscard]] Rect currentSrcRect() const {
         if (clips.empty()) return {};
         const auto& clip = clips[static_cast<size_t>(currentClip)];
@@ -107,190 +104,278 @@ struct AnimationComponent {
 // Player
 // =============================================================================
 
-/// @brief Mario power-up state — determines sprite set and abilities.
-enum class MarioPowerState {
-    Small,    ///< Default — one hit = death
-    Big,      ///< After mushroom — can break bricks, one hit = shrink to Small
-    Fire      ///< After fire flower — can shoot fireballs, one hit = shrink to Small
-};
-
 /// @brief All possible player states for the player state machine.
 enum class PlayerState {
     Idle,
     Running,
     Jumping,
+    DoubleJumping,
     Falling,
-    Skidding,     ///< Turning around while running
-    Growing,      ///< Power-up grow animation (brief invulnerable)
-    Shrinking,    ///< Losing power (Big/Fire → Small)
-    FlagPole,     ///< Sliding down flagpole
-    EnteringPipe, ///< Entering a pipe
-    Hurt,
-    Dead
+    WallJumping,
+    Hit,
+    Dead,
+    Appearing,
+    Disappearing
 };
 
 /// @brief Player-specific gameplay data.
 struct PlayerComponent {
     PlayerState state       = PlayerState::Idle;
-    MarioPowerState power   = MarioPowerState::Small;
-    int   jumpCount         = 0;      ///< 0 = grounded, 1 = jumped
+    int   jumpCount         = 0;      ///< 0 = grounded, 1 = jumped, 2 = double jumped
     bool  isGrounded        = false;
     int   facing            = 1;      ///< 1 = right, -1 = left
-    float coyoteTimer       = 0.0f;   ///< Brief grace period after leaving ledge
-    float jumpBufferTimer   = 0.0f;   ///< Pre-land jump buffer
-    bool  isRunning         = false;  ///< Run button held
-    float growTimer         = 0.0f;   ///< Timer for grow/shrink animation
-    float pipeTimer         = 0.0f;   ///< Timer for pipe enter animation
-    Vec2f pipeTarget;                 ///< Where pipe teleports player to
-    int   playerIndex       = 0;      ///< 0 = Player 1 (Mario), 1 = Player 2 (Luigi)
+    float coyoteTimer       = 0.0f;
+    float jumpBufferTimer   = 0.0f;
+    int   playerIndex       = 0;      ///< 0-3
+
+    // Death animation
+    float deathTimer        = 0.0f;   ///< Countdown to respawn
+    bool  deathAnimStarted  = false;
 
     static constexpr float COYOTE_TIME    = 0.1f;   ///< ~6 frames at 60fps
-    static constexpr float JUMP_BUFFER    = 0.1f;   ///< seconds
-    static constexpr float GROW_DURATION  = 0.5f;   ///< seconds
-    static constexpr float PIPE_DURATION  = 0.8f;   ///< seconds
+    static constexpr float JUMP_BUFFER    = 0.1f;
+
+    // Legacy compatibility fields (unused but kept for compile)
+    float growTimer         = 0.0f;
+    float pipeTimer         = 0.0f;
+    Vec2f pipeTarget;
+    bool  isRunning         = false;
+};
+
+/// @brief Identifies which player index (0-3) an entity belongs to.
+struct PlayerIndexComponent {
+    int index = 0;
 };
 
 // =============================================================================
-// Enemies
+// Fruits (replaces collectibles)
 // =============================================================================
 
-/// @brief Enemy type variants — Mario style.
+/// @brief Fruit types from Pixel Adventure pack.
+enum class FruitType {
+    Cherry,
+    Apple,
+    Orange,
+    Pineapple,
+    Melon,
+    Strawberry,
+    Kiwi,
+    Banana
+};
+
+/// @brief Marks an entity as a collectible fruit.
+struct FruitComponent {
+    FruitType type    = FruitType::Cherry;
+    int   value       = 100;
+    bool  collected   = false;
+};
+
+// =============================================================================
+// Traps
+// =============================================================================
+
+/// @brief Trap type variants from Pixel Adventure.
+enum class TrapType {
+    Saw,
+    SpikeHead,
+    RockHead,
+    Fire,
+    Arrow,
+    FallingPlatform,
+    MovingPlatform,
+    Fan,
+    SpikedBall,
+    Spikes,
+    Trampoline,
+    Blocks
+};
+
+/// @brief Trap-specific gameplay data.
+struct TrapComponent {
+    TrapType trapType       = TrapType::Spikes;
+    bool  isActive          = true;
+    float timer             = 0.0f;
+    float speed             = 1.0f;
+
+    // Fire-specific
+    float onTime            = 2.0f;
+    float offTime           = 1.0f;
+
+    // Falling platform
+    float shakeTimer        = 0.0f;
+    bool  isFalling         = false;
+    bool  playerOnTop       = false;
+
+    // Arrow
+    std::string direction   = "right";
+
+    // Spiked ball
+    float chainLength       = 8.0f;
+    float swingAngle        = 0.0f;
+    Vec2f anchorPos;
+
+    // Fan
+    float fanStrength       = 400.0f;
+
+    // Moving platform path
+    std::vector<Vec2f> path;
+    int   pathIndex         = 0;
+    bool  pathForward       = true;
+};
+
+// =============================================================================
+// Checkpoints
+// =============================================================================
+
+/// @brief Checkpoint flag that saves player position on activation.
+struct CheckpointComponent {
+    bool  activated     = false;
+    Vec2f respawnPos;
+};
+
+// =============================================================================
+// Moving/Falling Platforms
+// =============================================================================
+
+/// @brief Platform behavior component.
+enum class PlatformType {
+    Moving,
+    Falling
+};
+
+struct PlatformComponent {
+    PlatformType type     = PlatformType::Moving;
+    std::vector<Vec2f> path;
+    int   pathIndex       = 0;
+    float speed           = 60.0f;
+    bool  forward         = true;
+
+    // Falling-specific
+    float shakeTimer      = 0.0f;
+    bool  isFalling       = false;
+    bool  playerOnTop     = false;
+    Vec2f originalPos;
+};
+
+// =============================================================================
+// Boxes (replaces question blocks)
+// =============================================================================
+
+/// @brief Box that spawns fruit when hit from below.
+struct BoxComponent {
+    int   hitsRemaining   = 3;
+    bool  isHit           = false;
+    bool  isBroken        = false;
+    float bumpTimer       = 0.0f;
+    float bumpOffset      = 0.0f;
+    std::string boxType   = "box1"; ///< "box1", "box2", "box3"
+};
+
+// =============================================================================
+// Combat (kept for compatibility)
+// =============================================================================
+
+struct HealthComponent {
+    int hp                   = 1;
+    int maxHP                = 1;
+    int invincibilityFrames  = 0;
+    bool isDead              = false;
+};
+
+struct ProjectileComponent {
+    uint32_t ownerId     = 0;
+    int   damage         = 1;
+    float lifetime       = 3.0f;
+    float speed          = 300.0f;
+    Vec2f direction      = {1.0f, 0.0f};
+    bool  isFireball     = false;
+    bool  isBowserFire   = false;
+};
+
+// =============================================================================
+// Enemies (kept for compatibility, not used in PIXEL RUSH)
+// =============================================================================
+
 enum class EnemyType {
-    Goomba,       ///< Walks, dies on stomp
-    Koopa,        ///< Walks, becomes shell on stomp (can be kicked)
-    PiranhaPlant, ///< Bobs up/down from pipe, can't be stomped
-    Bowser        ///< Boss — shoots fire, takes multiple hits
+    Goomba, Koopa, PiranhaPlant, Bowser
 };
 
-/// @brief All possible enemy states.
 enum class EnemyState {
-    Idle,
-    Patrol,
-    Chase,
-    Attack,
-    Shell,      ///< Koopa shell state (stationary or sliding)
-    Hurt,
-    Dead
+    Idle, Patrol, Chase, Attack, Shell, Hurt, Dead
 };
 
-/// @brief Enemy-specific gameplay data.
 struct EnemyComponent {
     EnemyType  type          = EnemyType::Goomba;
     EnemyState state         = EnemyState::Patrol;
-    float patrolLeft         = 0.0f;   ///< Left bound of patrol area (world x)
-    float patrolRight        = 0.0f;   ///< Right bound of patrol area (world x)
-    int   facing             = 1;      ///< 1 = right, -1 = left
-    bool  isAlerted          = false;  ///< Has spotted the player
-
-    // Bowser-specific
-    float shootCooldown      = 0.0f;   ///< Seconds until next shot
-    float shootInterval      = 2.5f;   ///< Time between fire breaths
-    int   hitsToKill         = 5;      ///< Bowser takes multiple hits
-
-    // PiranhaPlant-specific
+    float patrolLeft         = 0.0f;
+    float patrolRight        = 0.0f;
+    int   facing             = 1;
+    bool  isAlerted          = false;
+    float shootCooldown      = 0.0f;
+    float shootInterval      = 2.5f;
+    int   hitsToKill         = 5;
     float bobTimer           = 0.0f;
-    float bobPhase           = 0.0f;   ///< 0..1 = position in bob cycle
-    float bobBaseY           = 0.0f;   ///< Resting Y position (inside pipe)
-
-    // Koopa-specific
-    bool  isShell            = false;  ///< True when stomped into shell
-    bool  shellMoving        = false;  ///< True when shell is sliding
-    float shellSpeed         = 400.0f; ///< Shell slide speed
-
-    // Death animation timer (e.g. Goomba flat for 0.5s before despawning)
+    float bobPhase           = 0.0f;
+    float bobBaseY           = 0.0f;
+    bool  isShell            = false;
+    bool  shellMoving        = false;
+    float shellSpeed         = 400.0f;
     float deathTimer         = 0.0f;
-
-    // Unused legacy fields kept for compatibility
     float bounceForce        = -500.0f;
     float bounceTimer        = 0.0f;
     bool  isArmored          = false;
 };
 
 // =============================================================================
-// Combat
+// Legacy collectibles (kept for compatibility)
 // =============================================================================
 
-/// @brief Health and invincibility tracking.
-struct HealthComponent {
-    int hp                   = 1;
-    int maxHP                = 1;
-    int invincibilityFrames  = 0;     ///< Remaining i-frames (counts down each tick)
-    bool isDead              = false;
-};
-
-/// @brief A projectile fired by an enemy (or player fireball).
-struct ProjectileComponent {
-    uint32_t ownerId     = 0;      ///< EnTT entity id of the shooter (to prevent self-hit)
-    int   damage         = 1;
-    float lifetime       = 3.0f;   ///< Seconds remaining before auto-destroy
-    float speed          = 300.0f; ///< Pixels/second
-    Vec2f direction      = {1.0f, 0.0f};
-    bool  isFireball     = false;  ///< Player fireball (bounces, affected by gravity)
-    bool  isBowserFire   = false;  ///< Bowser fire breath
-};
-
-// =============================================================================
-// Collectibles & Power-ups
-// =============================================================================
-
-/// @brief Types of collectibles.
 enum class CollectibleType {
-    Coin,         ///< Standard coin — 100 coins = 1-up
-    Mushroom,     ///< Makes Small Mario → Big Mario
-    FireFlower,   ///< Makes Big Mario → Fire Mario (Small → Big)
-    Star,         ///< Grants invincibility for a duration
-    OneUp         ///< Extra life
+    Coin, Mushroom, FireFlower, Star, OneUp
 };
 
-/// @brief Marks an entity as a collectible that the player can pick up.
 struct CollectibleComponent {
     CollectibleType type  = CollectibleType::Coin;
-    int   value           = 200;   ///< Score value
-    bool  collected       = false;  ///< Set to true on pickup, entity destroyed next frame
-    bool  fromBlock       = false;  ///< Spawned from question block (has upward velocity)
+    int   value           = 200;
+    bool  collected       = false;
+    bool  fromBlock       = false;
 };
 
-/// @brief Active power-up effect on the player (Star invincibility).
+enum class MarioPowerState {
+    Small, Big, Fire
+};
+
 enum class PowerUpType {
-    StarInvincibility  ///< Cannot take damage, kills enemies on contact
+    StarInvincibility
 };
 
-/// @brief Tracks an active power-up buff with a countdown timer.
 struct PowerUpComponent {
     PowerUpType type         = PowerUpType::StarInvincibility;
-    float durationRemaining  = 0.0f;  ///< Seconds left
+    float durationRemaining  = 0.0f;
     float speedMultiplier    = 1.0f;
 };
 
-// =============================================================================
-// World interaction
-// =============================================================================
-
-/// @brief Marks a tile as destructible (Big Mario can break bricks).
 struct DestructibleComponent {
-    int  hitsRemaining  = 1;    ///< Hits required to destroy
+    int  hitsRemaining  = 1;
     bool destroyed      = false;
 };
 
-/// @brief Question block — hit from below to spawn an item.
 struct QuestionBlockComponent {
-    CollectibleType contents = CollectibleType::Coin; ///< What to spawn
-    bool  isHit          = false;  ///< Already been hit
-    float bumpTimer      = 0.0f;   ///< Bump animation timer
-    float bumpOffset     = 0.0f;   ///< Visual offset during bump
+    CollectibleType contents = CollectibleType::Coin;
+    bool  isHit          = false;
+    float bumpTimer      = 0.0f;
+    float bumpOffset     = 0.0f;
 };
 
-/// @brief Pipe — player can enter by pressing down on top.
 struct PipeComponent {
-    bool  isEnterable    = false;  ///< Can the player enter this pipe?
-    Vec2f destination;             ///< Where it teleports to (world coords)
-    bool  isVertical     = true;   ///< true = enter from top, false = enter from side
+    bool  isEnterable    = false;
+    Vec2f destination;
+    bool  isVertical     = true;
 };
 
-/// @brief Flagpole end-of-level trigger.
 struct FlagPoleComponent {
-    float topY           = 0.0f;   ///< Y position of the top of the pole
-    float bottomY        = 0.0f;   ///< Y position of the base
+    float topY           = 0.0f;
+    float bottomY        = 0.0f;
     bool  activated      = false;
 };
 
@@ -298,10 +383,9 @@ struct FlagPoleComponent {
 // Audio
 // =============================================================================
 
-/// @brief Triggers a sound effect when a condition is met.
 struct AudioTriggerComponent {
     SoundHandle sound;
-    bool triggerOnce    = true;  ///< If true, fires only the first time
+    bool triggerOnce    = true;
     bool hasTriggered   = false;
 };
 
@@ -309,30 +393,25 @@ struct AudioTriggerComponent {
 // Tags & metadata
 // =============================================================================
 
-/// @brief String tag for debugging / editor identification.
 struct TagComponent {
     std::string tag;
 };
 
-/// @brief Marks an entity for deferred destruction at end of frame.
 struct DestroyFlag {};
 
-/// @brief Marks the level goal (flagpole / exit portal).
 struct GoalComponent {
     bool reached = false;
 };
 
-/// @brief Floating score text that rises and fades out (e.g. "+100").
 struct FloatingTextComponent {
     std::string text;
-    float lifetime    = 0.8f;   ///< Total duration
+    float lifetime    = 0.8f;
     float elapsed     = 0.0f;
-    float riseSpeed   = 80.0f;  ///< Pixels/second upward
+    float riseSpeed   = 80.0f;
     Color color       = Color{255, 255, 255, 255};
     int   fontSize    = 14;
 };
 
-/// @brief Particle effect burst.
 struct ParticleEmitterComponent {
     enum class Effect {
         CoinSparkle,
@@ -340,11 +419,12 @@ struct ParticleEmitterComponent {
         StompPoof,
         FireballBurst,
         PowerUpSparkle,
-        DeathPoof
+        DeathPoof,
+        FruitCollect
     };
 
     Effect effect        = Effect::CoinSparkle;
-    float  lifetime      = 0.5f;   ///< Total effect duration
+    float  lifetime      = 0.5f;
     float  elapsed       = 0.0f;
     int    particleCount = 8;
     Color  color         = Color::White();

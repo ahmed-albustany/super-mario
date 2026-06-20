@@ -11,3 +11,5 @@
 #include "ecs/systems/EnemyAISystem.hpp"
 #include "ecs/systems/RenderSystem.hpp"
 #include "ecs/systems/PowerUpSystem.hpp"
+#include "ecs/systems/TrapSystem.hpp"
+#include "ecs/systems/FruitSystem.hpp"

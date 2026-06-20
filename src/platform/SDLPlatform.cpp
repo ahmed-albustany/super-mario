@@ -117,6 +117,22 @@ void SDLPlatform::initKeyMap() {
     m_keyMap[static_cast<int>(KeyCode::P2Right)]  = {SDL_SCANCODE_D,       SDL_SCANCODE_UNKNOWN};
     m_keyMap[static_cast<int>(KeyCode::P2Jump)]   = {SDL_SCANCODE_J,       SDL_SCANCODE_UNKNOWN};
     m_keyMap[static_cast<int>(KeyCode::P2Run)]    = {SDL_SCANCODE_K,       SDL_SCANCODE_UNKNOWN};
+
+    // Player 3: IJKL + N (jump) + M (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P3Up)]     = {SDL_SCANCODE_I,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P3Down)]   = {SDL_SCANCODE_K,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P3Left)]   = {SDL_SCANCODE_J,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P3Right)]  = {SDL_SCANCODE_L,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P3Jump)]   = {SDL_SCANCODE_N,       SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P3Run)]    = {SDL_SCANCODE_M,       SDL_SCANCODE_UNKNOWN};
+
+    // Player 4: Numpad 8456 + Numpad1 (jump) + Numpad2 (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P4Up)]     = {SDL_SCANCODE_KP_8,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P4Down)]   = {SDL_SCANCODE_KP_5,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P4Left)]   = {SDL_SCANCODE_KP_4,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P4Right)]  = {SDL_SCANCODE_KP_6,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P4Jump)]   = {SDL_SCANCODE_KP_1,    SDL_SCANCODE_UNKNOWN};
+    m_keyMap[static_cast<int>(KeyCode::P4Run)]    = {SDL_SCANCODE_KP_2,    SDL_SCANCODE_UNKNOWN};
 }
 
 // =============================================================================

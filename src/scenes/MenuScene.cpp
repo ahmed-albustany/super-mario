@@ -12,7 +12,7 @@
 MenuScene::MenuScene(Game& game) : m_game(game) {}
 
 void MenuScene::onEnter() {
-    m_selectedItem = MENU_1P;
+    m_selectedItem = MENU_SOLO;
     m_elapsed = 0.0f;
     m_confirmed = false;
     AudioManager::instance().playMusic("menu_theme", true);
@@ -38,14 +38,14 @@ void MenuScene::handleInput(const InputManager& input) {
     if (input.isPointerDown()) {
         Vec2f pos = input.getPointerPosition();
         float screenW = static_cast<float>(Config::WINDOW_WIDTH);
-        float baseY = 340.0f;
-        float itemH = 52.0f;
-        float btnW = 280.0f;
+        float baseY = 280.0f;
+        float itemH = 48.0f;
+        float btnW = 300.0f;
         float btnX = (screenW - btnW) * 0.5f;
 
         for (int i = 0; i < MENU_COUNT; ++i) {
             float btnY = baseY + static_cast<float>(i) * itemH;
-            Rect btnRect = {btnX, btnY, btnW, 44.0f};
+            Rect btnRect = {btnX, btnY, btnW, 40.0f};
             if (btnRect.contains(pos)) {
                 m_selectedItem = i;
                 confirmSelection();
@@ -61,7 +61,7 @@ void MenuScene::update(float dt) {
 }
 
 void MenuScene::render(IPlatform& platform) {
-    platform.clear(Color{92, 148, 252, 255}); // Mario sky blue
+    platform.clear(Color{40, 44, 52, 255}); // Dark pixel-art background
 
     float screenW = static_cast<float>(Config::WINDOW_WIDTH);
 
@@ -69,62 +69,61 @@ void MenuScene::render(IPlatform& platform) {
 
     // Animated title
     if (font) {
-        float titleX = screenW * 0.5f - 200.0f;
-        float titleY = 120.0f + m_titleBob;
+        float titleX = screenW * 0.5f - 180.0f;
+        float titleY = 80.0f + m_titleBob;
         platform.drawText(*font, Config::GAME_TITLE,
                           {titleX, titleY}, 48,
-                          Color{228, 0, 8, 255}); // Mario red
+                          Color{78, 205, 196, 255}); // Teal
 
         // Subtitle
-        platform.drawText(*font, "Classic Platformer",
-                          {titleX + 40.0f, titleY + 60.0f}, 18,
-                          Color{255, 255, 255, 200});
+        platform.drawText(*font, "Pixel Adventure Platformer",
+                          {titleX + 10.0f, titleY + 60.0f}, 16,
+                          Color{255, 255, 255, 180});
     }
 
     // Menu items
     const char* labels[MENU_COUNT] = {
-        "1 Player",
-        "2 Players Alternating",
-        "2 Players Co-op",
+        "Solo",
+        "2 Player Alternating",
+        "2 Player Co-op",
+        "4 Player Co-op",
+        "4 Player VS",
         "Quit"
     };
-    float baseY = 340.0f;
-    float itemH = 52.0f;
-    float btnW = 280.0f;
+    float baseY = 280.0f;
+    float itemH = 48.0f;
+    float btnW = 300.0f;
     float btnX = (screenW - btnW) * 0.5f;
 
     for (int i = 0; i < MENU_COUNT; ++i) {
         float btnY = baseY + static_cast<float>(i) * itemH;
         bool selected = (i == m_selectedItem);
 
-        // Button background
-        Color bgColor = selected ? Color{200, 76, 12, 255} : Color{139, 69, 19, 200};
-        Color borderColor = selected ? Color{255, 200, 50, 255} : Color{100, 60, 30, 200};
+        Color bgColor = selected ? Color{78, 205, 196, 255} : Color{60, 64, 72, 200};
+        Color borderColor = selected ? Color{255, 255, 255, 255} : Color{100, 104, 112, 200};
 
-        platform.drawRect({btnX, btnY, btnW, 44.0f}, bgColor, borderColor, 2.0f);
+        platform.drawRect({btnX, btnY, btnW, 40.0f}, bgColor, borderColor, 2.0f);
 
-        // Button label
         if (font) {
-            Color textColor = selected ? Color{255, 255, 255, 255} : Color{200, 190, 170, 255};
+            Color textColor = selected ? Color{40, 44, 52, 255} : Color{200, 200, 210, 255};
             platform.drawText(*font, labels[i],
-                              {btnX + 20.0f, btnY + 12.0f}, 18,
+                              {btnX + 20.0f, btnY + 10.0f}, 16,
                               textColor);
         }
 
-        // Selection coin indicator
         if (selected && font) {
             float coinBob = std::sin(m_elapsed * 4.0f) * 4.0f;
             platform.drawText(*font, ">",
-                              {btnX - 28.0f + coinBob, btnY + 12.0f}, 18,
-                              Color{255, 220, 50, 255});
+                              {btnX - 28.0f + coinBob, btnY + 10.0f}, 18,
+                              Color{255, 107, 107, 255});
         }
     }
 
     // Controls hint
     if (font) {
-        platform.drawText(*font, "P1: Arrows + Z/X  |  P2: WASD + J/K",
-                          {screenW * 0.5f - 200.0f, 570.0f}, 14,
-                          Color{255, 255, 255, 120});
+        platform.drawText(*font, "P1: Arrows+Z/X | P2: WASD+J/K | P3: IJKL+N/M | P4: Numpad",
+                          {screenW * 0.5f - 340.0f, 590.0f}, 11,
+                          Color{255, 255, 255, 100});
         platform.drawText(*font, "v" + Config::GAME_VERSION,
                           {screenW - 80.0f, 690.0f}, 12,
                           Color{255, 255, 255, 80});
@@ -144,27 +143,18 @@ void MenuScene::confirmSelection() {
     m_confirmed = true;
     AudioManager::instance().playSound("menu_confirm");
 
+    auto createScene = [this](GameMode mode) {
+        auto scene = std::make_unique<GameScene>(m_game);
+        scene->setGameMode(mode);
+        m_game.scenes().replace(std::move(scene));
+    };
+
     switch (m_selectedItem) {
-        case MENU_1P: {
-            auto scene = std::make_unique<GameScene>(m_game);
-            scene->setPlayerMode(1, false);
-            m_game.scenes().replace(std::move(scene));
-            break;
-        }
-        case MENU_2P_ALT: {
-            auto scene = std::make_unique<GameScene>(m_game);
-            scene->setPlayerMode(2, false);
-            m_game.scenes().replace(std::move(scene));
-            break;
-        }
-        case MENU_2P_COOP: {
-            auto scene = std::make_unique<GameScene>(m_game);
-            scene->setPlayerMode(2, true);
-            m_game.scenes().replace(std::move(scene));
-            break;
-        }
-        case MENU_QUIT:
-            m_game.platform().close();
-            break;
+        case MENU_SOLO:     createScene(GameMode::Solo);   break;
+        case MENU_2P_ALT:   createScene(GameMode::Alt2P);  break;
+        case MENU_2P_COOP:  createScene(GameMode::Coop2P); break;
+        case MENU_4P_COOP:  createScene(GameMode::Coop4P); break;
+        case MENU_4P_VS:    createScene(GameMode::VS4P);   break;
+        case MENU_QUIT:     m_game.platform().close();     break;
     }
 }

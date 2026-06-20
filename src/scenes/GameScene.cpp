@@ -16,9 +16,8 @@
 
 GameScene::GameScene(Game& game) : m_game(game) {}
 
-void GameScene::setPlayerMode(int numPlayers, bool coop) {
-    m_state->numPlayers    = numPlayers;
-    m_state->coopMode      = coop;
+void GameScene::setGameMode(GameMode mode) {
+    m_state->mode = mode;
     m_state->currentPlayer = 0;
 }
 
@@ -27,42 +26,72 @@ void GameScene::setPlayerMode(int numPlayers, bool coop) {
 // =============================================================================
 
 void GameScene::onEnter() {
-    LOG_INFO("GameScene: entering (" << m_state->numPlayers << "P"
-             << (m_state->coopMode ? " co-op" : "") << ")");
+    LOG_INFO("GameScene: entering (mode=" << static_cast<int>(m_state->mode) << ")");
 
-    // Reset gameplay state (preserve mode settings and level index)
-    int np = m_state->numPlayers;
-    bool coop = m_state->coopMode;
+    // Preserve mode and level index across state reset
+    GameMode mode = m_state->mode;
     int startLevel = m_state->currentLevel;
     m_state = std::make_shared<GameState>();
-    m_state->numPlayers    = np;
-    m_state->coopMode      = coop;
+    m_state->mode = mode;
     m_state->currentPlayer = 0;
-    m_state->currentLevel  = startLevel;
-    m_state->worldDisplay  = GameState::WORLD_NAMES[static_cast<size_t>(startLevel)];
-    m_state->p1.lives       = Config::DEFAULT_LIVES;
-    m_state->p1.playerIndex = 0;
-    m_state->p2.lives       = Config::DEFAULT_LIVES;
-    m_state->p2.playerIndex = 1;
+    m_state->currentLevel = startLevel;
+    m_state->worldDisplay = GameState::WORLD_NAMES[static_cast<size_t>(startLevel)];
+
+    // Initialize lives for active players
+    int numActive = m_state->numActivePlayers();
+    for (int i = 0; i < numActive; ++i) {
+        m_state->players[static_cast<size_t>(i)].lives = Config::DEFAULT_LIVES;
+    }
 
     // Subscribe to events
     auto& bus = m_game.events();
-    m_subPlayerDied    = bus.subscribe<PlayerDiedEvent>(
+    m_subPlayerDied = bus.subscribe<PlayerDiedEvent>(
         [this](const PlayerDiedEvent& e) { onPlayerDied(e); });
-    m_subPlayerHurt    = bus.subscribe<PlayerHurtEvent>(
-        [this](const PlayerHurtEvent& e) { onPlayerHurt(e); });
-    m_subCoin          = bus.subscribe<CoinCollectedEvent>(
-        [this](const CoinCollectedEvent& e) { onCoinCollected(e); });
-    m_subEnemyKilled   = bus.subscribe<EnemyKilledEvent>(
-        [this](const EnemyKilledEvent& e) { onEnemyKilled(e); });
+    m_subFruitCollected = bus.subscribe<FruitCollectedEvent>(
+        [this](const FruitCollectedEvent& e) { onFruitCollected(e); });
+    m_subBoxHit = bus.subscribe<BoxHitEvent>(
+        [this](const BoxHitEvent& e) { onBoxHit(e); });
+    m_subBoxBreak = bus.subscribe<BoxBreakEvent>(
+        [this](const BoxBreakEvent& e) { onBoxBreak(e); });
+    m_subTrapDeath = bus.subscribe<TrapDeathEvent>(
+        [this](const TrapDeathEvent& e) { onTrapDeath(e); });
+    m_subCheckpoint = bus.subscribe<CheckpointActivatedEvent>(
+        [this](const CheckpointActivatedEvent& e) { onCheckpointActivated(e); });
     m_subLevelComplete = bus.subscribe<LevelCompleteEvent>(
         [this](const LevelCompleteEvent& e) { onLevelComplete(e); });
-    m_subBlockHit      = bus.subscribe<BlockHitEvent>(
-        [this](const BlockHitEvent& e) { onBlockHit(e); });
-    m_subFlagPole      = bus.subscribe<FlagPoleGrabbedEvent>(
-        [this](const FlagPoleGrabbedEvent& e) { onFlagPoleGrabbed(e); });
-    m_subPowerUp       = bus.subscribe<PlayerPowerUpEvent>(
-        [this](const PlayerPowerUpEvent& e) { onPlayerPowerUp(e); });
+
+    // Legacy event subscriptions (kept for backward compatibility)
+    m_subCoin = bus.subscribe<CoinCollectedEvent>(
+        [this](const CoinCollectedEvent& e) {
+            auto& ps = m_state->players[static_cast<size_t>(e.playerIndex)];
+            ps.score = Math::safeAdd(ps.score, e.value);
+        });
+    m_subEnemyKilled = bus.subscribe<EnemyKilledEvent>(
+        [this](const EnemyKilledEvent& e) {
+            auto& ps = m_state->current();
+            ps.score = Math::safeAdd(ps.score, e.scoreValue > 0 ? e.scoreValue : Config::ENEMY_STOMP_VALUE);
+        });
+    m_subBlockHit = bus.subscribe<BlockHitEvent>(
+        [this](const BlockHitEvent& e) {
+            auto& ps = m_state->players[static_cast<size_t>(e.playerIndex)];
+            ps.score = Math::safeAdd(ps.score, Config::BLOCK_HIT_VALUE);
+        });
+    m_subFlagPole = bus.subscribe<FlagPoleGrabbedEvent>(
+        [this](const FlagPoleGrabbedEvent& e) {
+            int flagScore = std::max(100, static_cast<int>(e.grabHeight * static_cast<float>(Config::FLAGPOLE_BASE_SCORE)));
+            auto& ps = m_state->players[static_cast<size_t>(e.playerIndex)];
+            ps.score = Math::safeAdd(ps.score, flagScore);
+        });
+    m_subPowerUp = bus.subscribe<PlayerPowerUpEvent>(
+        [this](const PlayerPowerUpEvent& e) {
+            if (e.powerType == "1up") {
+                auto& ps = m_state->players[static_cast<size_t>(e.playerIndex)];
+                ++ps.lives;
+                AudioManager::instance().playSound("one_up");
+            }
+        });
+    m_subPlayerHurt = bus.subscribe<PlayerHurtEvent>(
+        [this](const PlayerHurtEvent&) { m_camera.addShake(6.0f); });
 
     // Load current level
     const auto& levelPath = GameState::LEVEL_PATHS[static_cast<size_t>(m_state->currentLevel)];
@@ -71,10 +100,9 @@ void GameScene::onEnter() {
     // Push HUD as overlay on top of us
     m_game.scenes().push(std::make_unique<HUDScene>(m_game, m_state));
 
-    // Start music based on level theme
+    // Start music
     const std::string& music = m_levelData.music;
     if (!music.empty()) {
-        // Strip .ogg extension to get the audio key
         std::string musicKey = music;
         auto dotPos = musicKey.rfind('.');
         if (dotPos != std::string::npos) musicKey = musicKey.substr(0, dotPos);
@@ -87,7 +115,7 @@ void GameScene::onEnter() {
 void GameScene::onExit() {
     AudioManager::instance().stopMusic();
 
-    // Pop the HUD overlay that we pushed in onEnter
+    // Pop the HUD overlay
     auto& sm = m_game.scenes();
     if (sm.current() && sm.current()->name() == "HUDScene") {
         sm.pop();
@@ -95,13 +123,18 @@ void GameScene::onExit() {
 
     auto& bus = m_game.events();
     bus.unsubscribe<PlayerDiedEvent>(m_subPlayerDied);
-    bus.unsubscribe<PlayerHurtEvent>(m_subPlayerHurt);
+    bus.unsubscribe<FruitCollectedEvent>(m_subFruitCollected);
+    bus.unsubscribe<BoxHitEvent>(m_subBoxHit);
+    bus.unsubscribe<BoxBreakEvent>(m_subBoxBreak);
+    bus.unsubscribe<TrapDeathEvent>(m_subTrapDeath);
+    bus.unsubscribe<CheckpointActivatedEvent>(m_subCheckpoint);
+    bus.unsubscribe<LevelCompleteEvent>(m_subLevelComplete);
     bus.unsubscribe<CoinCollectedEvent>(m_subCoin);
     bus.unsubscribe<EnemyKilledEvent>(m_subEnemyKilled);
-    bus.unsubscribe<LevelCompleteEvent>(m_subLevelComplete);
     bus.unsubscribe<BlockHitEvent>(m_subBlockHit);
     bus.unsubscribe<FlagPoleGrabbedEvent>(m_subFlagPole);
     bus.unsubscribe<PlayerPowerUpEvent>(m_subPowerUp);
+    bus.unsubscribe<PlayerHurtEvent>(m_subPlayerHurt);
 
     m_registry.clear();
     LOG_INFO("GameScene: exited");
@@ -134,21 +167,37 @@ void GameScene::loadLevel(const std::string& levelPath) {
     // Camera
     m_camera.setBounds(m_tileMap.getPixelWidth(), m_tileMap.getPixelHeight());
 
-    // Parallax backgrounds
+    // Parallax backgrounds — try Pixel Adventure backgrounds first, then legacy
     m_parallax.clear();
     auto& rm = ResourceManager::instance();
-    auto bgFar  = rm.getTexture("bg_sky");
-    auto bgMid  = rm.getTexture("bg_hills");
-    auto bgNear = rm.getTexture("bg_bushes");
-    if (bgFar && bgMid && bgNear) {
-        m_parallax.addDefaultLayers(
-            *bgFar,  1280.0f, 720.0f,
-            *bgMid,  1280.0f, 720.0f,
-            *bgNear, 1280.0f, 720.0f
-        );
+
+    // Try loading the level-specific background, then fall back to legacy
+    bool bgLoaded = false;
+    if (!m_levelData.background.empty()) {
+        auto bg = rm.getTexture(m_levelData.background);
+        if (bg) {
+            m_parallax.addDefaultLayers(
+                *bg, 1280.0f, 720.0f,
+                *bg, 1280.0f, 720.0f,
+                *bg, 1280.0f, 720.0f
+            );
+            bgLoaded = true;
+        }
     }
 
-    // Data-driven entity spawning from level file
+    if (!bgLoaded) {
+        auto bgFar  = rm.getTexture("bg_sky");
+        auto bgMid  = rm.getTexture("bg_hills");
+        auto bgNear = rm.getTexture("bg_bushes");
+        if (bgFar && bgMid && bgNear) {
+            m_parallax.addDefaultLayers(
+                *bgFar,  1280.0f, 720.0f,
+                *bgMid,  1280.0f, 720.0f,
+                *bgNear, 1280.0f, 720.0f
+            );
+        }
+    }
+
     m_spawnPoint = m_levelData.playerSpawn;
     spawnEntities();
 
@@ -156,81 +205,161 @@ void GameScene::loadLevel(const std::string& levelPath) {
 }
 
 void GameScene::spawnEntities() {
-    // ---- Player(s) ----
-    if (m_state->coopMode && m_state->numPlayers == 2) {
-        // Co-op: spawn both players simultaneously
-        m_player1.spawn(m_registry, m_spawnPoint, 0);
-        Vec2f p2Spawn = {m_spawnPoint.x + 24.0f, m_spawnPoint.y};
-        m_player2.spawn(m_registry, p2Spawn, 1);
-    } else {
-        // Single player or alternating: spawn only current player
-        spawnCurrentPlayer();
+    // ---- Players ----
+    spawnPlayers();
+
+    // ---- Fruits ----
+    for (const auto& fsd : m_levelData.fruits) {
+        Vec2f pos{fsd.x, fsd.y};
+        EntityFactory::createFruitByName(m_registry, pos, fsd.type);
     }
 
-    // ---- Enemies ----
+    // ---- Traps ----
+    for (const auto& tsd : m_levelData.traps) {
+        Vec2f pos{tsd.x, tsd.y};
+
+        if (tsd.type == "moving_platform" && !tsd.path.empty()) {
+            EntityFactory::createMovingPlatform(m_registry, pos, tsd.path, tsd.speed);
+        } else if (tsd.type == "falling_platform") {
+            EntityFactory::createFallingPlatform(m_registry, pos);
+        } else if (tsd.type == "spiked_ball") {
+            EntityFactory::createSpikedBall(m_registry, pos, tsd.chainLength);
+        } else if (tsd.type == "fan") {
+            EntityFactory::createFan(m_registry, pos, tsd.strength);
+        } else if (tsd.type == "arrow") {
+            EntityFactory::createArrow(m_registry, pos, tsd.direction);
+        } else if (tsd.type == "fire") {
+            EntityFactory::createFire(m_registry, pos, tsd.onTime, tsd.offTime);
+        } else if (tsd.type == "saw") {
+            auto e = EntityFactory::createTrap(m_registry, pos, TrapType::Saw, tsd.speed);
+            // If saw has a path, set it up
+            if (!tsd.path.empty() && m_registry.all_of<TrapComponent>(e)) {
+                auto& tc = m_registry.get<TrapComponent>(e);
+                tc.path = tsd.path;
+            }
+        } else if (tsd.type == "spike_head") {
+            EntityFactory::createTrap(m_registry, pos, TrapType::SpikeHead, tsd.speed);
+        } else if (tsd.type == "rock_head") {
+            EntityFactory::createTrap(m_registry, pos, TrapType::RockHead, tsd.speed);
+        } else if (tsd.type == "spikes") {
+            EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
+        } else if (tsd.type == "trampoline") {
+            EntityFactory::createTrap(m_registry, pos, TrapType::Trampoline);
+        } else {
+            // Generic trap
+            EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
+        }
+    }
+
+    // ---- Boxes ----
+    for (const auto& bsd : m_levelData.boxes) {
+        Vec2f pos{bsd.x, bsd.y};
+        EntityFactory::createBox(m_registry, pos, bsd.type, bsd.hits);
+    }
+
+    // ---- Checkpoints ----
+    for (const auto& csd : m_levelData.checkpoints) {
+        Vec2f pos{csd.x, csd.y};
+        EntityFactory::createCheckpoint(m_registry, pos);
+    }
+
+    // ---- Goal (trophy) ----
+    if (m_levelData.goalType == "trophy") {
+        EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
+    } else if (m_levelData.goalType == "flagpole") {
+        EntityFactory::createFlagPole(m_registry, m_levelData.goalPosition,
+                                      m_levelData.flagPoleHeight);
+    } else {
+        EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
+    }
+
+    // ---- Legacy: enemies ----
     for (const auto& esd : m_levelData.enemies) {
         Vec2f pos{esd.x, esd.y};
-
         if (esd.type == "koopa") {
-            (void)EntityFactory::createKoopa(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            EntityFactory::createKoopa(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else if (esd.type == "piranha_plant") {
-            (void)EntityFactory::createPiranhaPlant(m_registry, pos);
+            EntityFactory::createPiranhaPlant(m_registry, pos);
         } else if (esd.type == "bowser") {
-            (void)EntityFactory::createBowser(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            EntityFactory::createBowser(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else {
-            (void)EntityFactory::createGoomba(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            EntityFactory::createGoomba(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         }
     }
 
-    // ---- Collectibles ----
+    // ---- Legacy: collectibles ----
     for (const auto& csd : m_levelData.collectibles) {
         Vec2f pos{csd.x, csd.y};
-
-        if (csd.type == "mushroom") {
-            (void)EntityFactory::createMushroom(m_registry, pos);
-        } else if (csd.type == "fire_flower") {
-            (void)EntityFactory::createFireFlower(m_registry, pos);
-        } else if (csd.type == "star") {
-            (void)EntityFactory::createStar(m_registry, pos);
-        } else if (csd.type == "1up") {
-            (void)EntityFactory::createOneUp(m_registry, pos);
-        } else {
-            (void)EntityFactory::createCoin(m_registry, pos);
-        }
+        if (csd.type == "mushroom")           EntityFactory::createMushroom(m_registry, pos);
+        else if (csd.type == "fire_flower")   EntityFactory::createFireFlower(m_registry, pos);
+        else if (csd.type == "star")          EntityFactory::createStar(m_registry, pos);
+        else if (csd.type == "1up")           EntityFactory::createOneUp(m_registry, pos);
+        else                                  EntityFactory::createCoin(m_registry, pos);
     }
 
-    // ---- Question Blocks ----
+    // ---- Legacy: question blocks ----
     for (const auto& qsd : m_levelData.questionBlocks) {
         Vec2f pos{qsd.x, qsd.y};
         CollectibleType contents = CollectibleType::Coin;
-        if (qsd.contents == "mushroom")      contents = CollectibleType::Mushroom;
+        if (qsd.contents == "mushroom")         contents = CollectibleType::Mushroom;
         else if (qsd.contents == "fire_flower") contents = CollectibleType::FireFlower;
-        else if (qsd.contents == "star")     contents = CollectibleType::Star;
-        else if (qsd.contents == "1up")      contents = CollectibleType::OneUp;
-
-        (void)EntityFactory::createQuestionBlock(m_registry, pos, contents);
+        else if (qsd.contents == "star")        contents = CollectibleType::Star;
+        else if (qsd.contents == "1up")         contents = CollectibleType::OneUp;
+        EntityFactory::createQuestionBlock(m_registry, pos, contents);
     }
 
-    // ---- Pipes ----
+    // ---- Legacy: pipes ----
     for (const auto& psd : m_levelData.pipes) {
         Vec2f pos{psd.x, psd.y};
         Vec2f dest{psd.destX, psd.destY};
-        (void)EntityFactory::createPipe(m_registry, pos, psd.enterable, dest);
-    }
-
-    // ---- Goal (Flagpole) ----
-    if (m_levelData.goalType == "flagpole") {
-        (void)EntityFactory::createFlagPole(m_registry, m_levelData.goalPosition,
-                                            m_levelData.flagPoleHeight);
-    } else {
-        (void)EntityFactory::createGoal(m_registry, m_levelData.goalPosition);
+        EntityFactory::createPipe(m_registry, pos, psd.enterable, dest);
     }
 }
 
-void GameScene::spawnCurrentPlayer() {
-    int idx = m_state->currentPlayer;
-    Player& player = (idx == 0) ? m_player1 : m_player2;
-    player.spawn(m_registry, m_spawnPoint, idx);
+void GameScene::spawnPlayers() {
+    int numSim = numSimultaneousPlayers();
+    float spacing = 24.0f;
+
+    for (int i = 0; i < numSim; ++i) {
+        Vec2f spawnPos = m_spawnPoint;
+
+        // In simultaneous modes, offset players horizontally
+        if (numSim > 1) {
+            spawnPos.x += static_cast<float>(i) * spacing;
+        }
+
+        // Use checkpoint position if available
+        auto& ps = m_state->players[static_cast<size_t>(i)];
+        if (ps.checkpointPos.x > 0.0f || ps.checkpointPos.y > 0.0f) {
+            spawnPos = ps.checkpointPos;
+            if (numSim > 1) {
+                spawnPos.x += static_cast<float>(i) * spacing;
+            }
+        }
+
+        if (ps.isAlive && ps.lives > 0) {
+            m_players[static_cast<size_t>(i)].spawn(m_registry, spawnPos, i);
+        }
+    }
+}
+
+void GameScene::respawnPlayer(int playerIndex) {
+    auto& ps = m_state->players[static_cast<size_t>(playerIndex)];
+    Vec2f respawnPos = (ps.checkpointPos.x > 0.0f || ps.checkpointPos.y > 0.0f)
+                       ? ps.checkpointPos : m_spawnPoint;
+
+    m_players[static_cast<size_t>(playerIndex)].respawn(m_registry, respawnPos, playerIndex);
+}
+
+int GameScene::numSimultaneousPlayers() const {
+    switch (m_state->mode) {
+        case GameMode::Solo:   return 1;
+        case GameMode::Alt2P:  return 1; // only one on screen at a time
+        case GameMode::Coop2P: return 2;
+        case GameMode::Coop4P: return 4;
+        case GameMode::VS4P:   return 4;
+    }
+    return 1;
 }
 
 // =============================================================================
@@ -251,102 +380,103 @@ void GameScene::update(float dt) {
     if (m_state->levelTimer <= 0.0f) {
         m_state->levelTimer = 0.0f;
         m_state->gameOver = true;
-        m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, m_state->p1.score));
+        int totalScore = 0;
+        for (int i = 0; i < m_state->numActivePlayers(); ++i) {
+            totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(i)].score);
+        }
+        m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
         return;
     }
 
     // ---- System tick order ----
     m_playerSystem.update(m_registry, dt, m_game.input(), m_game.events());
     m_enemyAISystem.update(m_registry, dt, m_game.events());
+    m_trapSystem.update(m_registry, dt, m_game.events());
+    m_fruitSystem.update(m_registry, dt, m_game.events());
     m_physicsSystem.update(m_registry, dt);
     m_movementSystem.update(m_registry, dt);
     m_collisionSystem.update(m_registry, dt, m_game.events());
     m_powerUpSystem.update(m_registry, dt, m_game.events());
     m_animationSystem.update(m_registry, dt);
 
-    // Sync power state from ECS entities to shared GameState
-    auto syncPower = [&](Player& player, PlayerGameState& ps) {
-        if (player.isValid(m_registry)) {
-            auto& pc = m_registry.get<PlayerComponent>(player.getEntity());
-            ps.powerState = static_cast<int>(pc.power);
-        }
-    };
-    syncPower(m_player1, m_state->p1);
-    if (m_state->coopMode) {
-        syncPower(m_player2, m_state->p2);
-    }
-
-    // Update camera to follow the active player (or P1 in co-op)
-    Player* cameraTarget = &m_player1;
-    if (!m_state->coopMode && m_state->currentPlayer == 1) {
-        cameraTarget = &m_player2;
-    }
-
-    if (cameraTarget->isValid(m_registry)) {
-        const auto& pTransform = m_registry.get<TransformComponent>(cameraTarget->getEntity());
+    // Update camera to follow P1 (or the active player in alternating mode)
+    int cameraPlayerIdx = (m_state->mode == GameMode::Alt2P) ? m_state->currentPlayer : 0;
+    auto& cameraPlayer = m_players[static_cast<size_t>(cameraPlayerIdx)];
+    if (cameraPlayer.isValid(m_registry)) {
+        const auto& pTransform = m_registry.get<TransformComponent>(cameraPlayer.getEntity());
         m_camera.setTarget(pTransform.position);
     }
     m_camera.update(dt);
-
-    // Apply camera offset to platform
     m_game.platform().setCameraOffset(m_camera.getViewOffset());
 
     // Check for player(s) falling into pit
-    auto checkPit = [&](Player& player, int playerIdx) {
-        if (!player.isValid(m_registry)) return;
-        const auto& pos = m_registry.get<TransformComponent>(player.getEntity()).position;
-        if (pos.y <= m_tileMap.getPixelHeight() + 100.0f) return;
+    int numSim = numSimultaneousPlayers();
+    for (int i = 0; i < numSim; ++i) {
+        int playerIdx = (m_state->mode == GameMode::Alt2P) ? m_state->currentPlayer : i;
+        auto& player = m_players[static_cast<size_t>(playerIdx)];
+        if (!player.isValid(m_registry)) continue;
 
-        auto& ps = (playerIdx == 0) ? m_state->p1 : m_state->p2;
+        const auto& pos = m_registry.get<TransformComponent>(player.getEntity()).position;
+        if (pos.y <= m_tileMap.getPixelHeight() + 100.0f) continue;
+
+        // Player fell into pit
+        auto& ps = m_state->players[static_cast<size_t>(playerIdx)];
         --ps.lives;
 
-        if (m_state->coopMode) {
-            // Co-op: check if both players are out of lives
-            if (m_state->p1.lives <= 0 && m_state->p2.lives <= 0) {
+        // VS mode death penalty
+        if (m_state->isVSMode()) {
+            ps.score = std::max(0, ps.score - Config::VS_DEATH_PENALTY);
+        }
+
+        if (m_state->isSimultaneous()) {
+            // Check if all simultaneous players are out
+            bool allDead = true;
+            for (int j = 0; j < numSim; ++j) {
+                if (m_state->players[static_cast<size_t>(j)].lives > 0) {
+                    allDead = false;
+                    break;
+                }
+            }
+            if (allDead) {
                 m_state->gameOver = true;
-                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-                    m_state->p1.score + m_state->p2.score));
+                int totalScore = 0;
+                for (int j = 0; j < numSim; ++j) {
+                    totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(j)].score);
+                }
+                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
             } else if (ps.lives > 0) {
-                player.respawn(m_registry, m_spawnPoint, playerIdx);
+                respawnPlayer(playerIdx);
             } else {
-                // This player is out — destroy entity
+                ps.isAlive = false;
                 if (player.isValid(m_registry)) {
                     m_registry.destroy(player.getEntity());
                 }
             }
-        } else if (m_state->numPlayers == 2) {
-            // Alternating: player dies → switch to other player
-            if (ps.lives <= 0) {
-                // Check if both players are out
-                if (m_state->p1.lives <= 0 && m_state->p2.lives <= 0) {
-                    m_state->gameOver = true;
-                    m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-                        m_state->p1.score + m_state->p2.score));
-                } else {
-                    switchTurn();
-                }
+        } else if (m_state->mode == GameMode::Alt2P) {
+            // Check if both alternating players are out
+            if (m_state->players[0].lives <= 0 && m_state->players[1].lives <= 0) {
+                m_state->gameOver = true;
+                int totalScore = m_state->players[0].score + m_state->players[1].score;
+                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+            } else if (ps.lives <= 0) {
+                switchTurn();
             } else {
-                player.respawn(m_registry, m_spawnPoint, playerIdx);
+                respawnPlayer(playerIdx);
                 m_camera.setTarget(m_spawnPoint);
             }
         } else {
-            // 1P mode
+            // Solo
             if (ps.lives <= 0) {
                 m_state->gameOver = true;
                 m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score));
             } else {
-                player.respawn(m_registry, m_spawnPoint, playerIdx);
+                respawnPlayer(playerIdx);
                 m_camera.setTarget(m_spawnPoint);
             }
         }
-    };
 
-    if (m_state->coopMode) {
-        checkPit(m_player1, 0);
-        checkPit(m_player2, 1);
-    } else {
-        Player& activePlayer = (m_state->currentPlayer == 0) ? m_player1 : m_player2;
-        checkPit(activePlayer, m_state->currentPlayer);
+        // Only process one pit death per frame in alternating mode
+        if (m_state->mode == GameMode::Alt2P) break;
     }
 }
 
@@ -366,104 +496,130 @@ void GameScene::render(IPlatform& platform) {
 // =============================================================================
 
 void GameScene::onPlayerDied(const PlayerDiedEvent& event) {
-    auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
+    int idx = event.playerIndex;
+    auto& ps = m_state->players[static_cast<size_t>(idx)];
     --ps.lives;
 
-    if (m_state->coopMode) {
-        if (m_state->p1.lives <= 0 && m_state->p2.lives <= 0) {
-            m_state->gameOver = true;
-            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-                m_state->p1.score + m_state->p2.score));
-        } else if (ps.lives > 0) {
-            Player& player = (event.playerIndex == 0) ? m_player1 : m_player2;
-            player.respawn(m_registry, m_spawnPoint, event.playerIndex);
+    // VS mode death penalty
+    if (m_state->isVSMode()) {
+        ps.score = std::max(0, ps.score - Config::VS_DEATH_PENALTY);
+    }
+
+    if (m_state->isSimultaneous()) {
+        bool allDead = true;
+        int numSim = numSimultaneousPlayers();
+        for (int j = 0; j < numSim; ++j) {
+            if (m_state->players[static_cast<size_t>(j)].lives > 0) {
+                allDead = false;
+                break;
+            }
         }
-    } else if (m_state->numPlayers == 2) {
-        // Alternating mode
-        if (m_state->p1.lives <= 0 && m_state->p2.lives <= 0) {
+        if (allDead) {
+            m_state->gameOver = true;
+            int totalScore = 0;
+            for (int j = 0; j < numSim; ++j) {
+                totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(j)].score);
+            }
+            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+        } else if (ps.lives > 0) {
+            respawnPlayer(idx);
+        } else {
+            ps.isAlive = false;
+        }
+    } else if (m_state->mode == GameMode::Alt2P) {
+        if (m_state->players[0].lives <= 0 && m_state->players[1].lives <= 0) {
             m_state->gameOver = true;
             m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-                m_state->p1.score + m_state->p2.score));
+                m_state->players[0].score + m_state->players[1].score));
         } else if (ps.lives <= 0) {
-            // This player is out, switch to other
             switchTurn();
         } else {
-            Player& player = (m_state->currentPlayer == 0) ? m_player1 : m_player2;
-            player.respawn(m_registry, m_spawnPoint, m_state->currentPlayer);
+            respawnPlayer(idx);
             m_camera.setTarget(m_spawnPoint);
         }
     } else {
+        // Solo
         if (ps.lives <= 0) {
             m_state->gameOver = true;
             m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score));
         } else {
-            m_player1.respawn(m_registry, m_spawnPoint, 0);
+            respawnPlayer(idx);
             m_camera.setTarget(m_spawnPoint);
         }
     }
 }
 
-void GameScene::onPlayerHurt(const PlayerHurtEvent& /*event*/) {
-    m_camera.addShake(6.0f);
-}
-
-void GameScene::onCoinCollected(const CoinCollectedEvent& event) {
-    auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
+void GameScene::onFruitCollected(const FruitCollectedEvent& event) {
+    auto& ps = m_state->players[static_cast<size_t>(event.playerIndex)];
     ps.score = Math::safeAdd(ps.score, event.value);
-    ++ps.coins;
+    ++ps.fruitsCollected;
 
-    // 100 coins = extra life
-    if (ps.coins >= Config::COIN_EXTRA_LIFE) {
-        ps.coins -= Config::COIN_EXTRA_LIFE;
+    // Extra life every EXTRA_LIFE_SCORE points
+    int prevLives = ps.score - event.value;
+    if (ps.score / Config::EXTRA_LIFE_SCORE > prevLives / Config::EXTRA_LIFE_SCORE) {
         ++ps.lives;
         AudioManager::instance().playSound("one_up");
     }
+
+    AudioManager::instance().playSound("fruit_collect");
 }
 
-void GameScene::onEnemyKilled(const EnemyKilledEvent& event) {
-    auto& ps = m_state->current();
-    ps.score = Math::safeAdd(ps.score, event.scoreValue > 0 ? event.scoreValue : Config::ENEMY_STOMP_VALUE);
+void GameScene::onBoxHit(const BoxHitEvent& event) {
+    AudioManager::instance().playSound("block_hit");
+    m_camera.addShake(3.0f);
+    (void)event;
 }
 
-void GameScene::onLevelComplete(const LevelCompleteEvent& /*event*/) {
-    auto& ps = m_state->current();
+void GameScene::onBoxBreak(const BoxBreakEvent& event) {
+    // Spawn the fruit at the box position
+    if (!event.fruitSpawned.empty()) {
+        EntityFactory::createFruitByName(m_registry, event.position, event.fruitSpawned);
+    }
+    AudioManager::instance().playSound("block_break");
+}
+
+void GameScene::onTrapDeath(const TrapDeathEvent& event) {
+    // Death is handled via PlayerDiedEvent — this is for visual feedback
+    m_camera.addShake(8.0f);
+    (void)event;
+}
+
+void GameScene::onCheckpointActivated(const CheckpointActivatedEvent& event) {
+    // Update checkpoint for the player who activated it
+    auto& ps = m_state->players[static_cast<size_t>(event.playerIndex)];
+    ps.checkpointPos = event.position;
+
+    // In co-op modes, all players share the checkpoint
+    if (m_state->isSimultaneous()) {
+        int numSim = numSimultaneousPlayers();
+        for (int i = 0; i < numSim; ++i) {
+            m_state->players[static_cast<size_t>(i)].checkpointPos = event.position;
+        }
+    }
+
+    AudioManager::instance().playSound("checkpoint");
+}
+
+void GameScene::onLevelComplete(const LevelCompleteEvent& event) {
     // Time bonus: remaining seconds * 50 points
     int timeBonus = static_cast<int>(m_state->levelTimer) * 50;
-    ps.score = Math::safeAdd(ps.score, timeBonus);
+
+    if (m_state->isSimultaneous()) {
+        // In co-op, the completing player gets the time bonus
+        // In VS, the first player to reach the trophy gets 2x score multiplier
+        auto& ps = m_state->players[static_cast<size_t>(event.playerIndex)];
+        ps.score = Math::safeAdd(ps.score, timeBonus);
+
+        if (m_state->isVSMode()) {
+            ps.score *= Config::TROPHY_SCORE_MULTIPLIER;
+        }
+    } else {
+        auto& ps = m_state->current();
+        ps.score = Math::safeAdd(ps.score, timeBonus);
+    }
+
     m_state->levelWon = true;
-
     advanceLevel();
-}
-
-void GameScene::onBlockHit(const BlockHitEvent& event) {
-    auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
-    ps.score = Math::safeAdd(ps.score, Config::BLOCK_HIT_VALUE);
-    AudioManager::instance().playSound("block_hit");
-}
-
-void GameScene::onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event) {
-    int flagScore = static_cast<int>(event.grabHeight * static_cast<float>(Config::FLAGPOLE_BASE_SCORE));
-    int finalScore = std::max(100, flagScore);
-    auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
-    ps.score = Math::safeAdd(ps.score, finalScore);
-
-    // Floating score popup at flagpole
-    Player& player = (event.playerIndex == 0) ? m_player1 : m_player2;
-    if (player.isValid(m_registry)) {
-        Vec2f pos = m_registry.get<TransformComponent>(player.getEntity()).position;
-        EntityFactory::createFloatingText(m_registry,
-            {pos.x, pos.y - 20.0f},
-            "+" + std::to_string(finalScore),
-            Color{255, 220, 50, 255});
-    }
-}
-
-void GameScene::onPlayerPowerUp(const PlayerPowerUpEvent& event) {
-    if (event.powerType == "1up") {
-        auto& ps = (event.playerIndex == 0) ? m_state->p1 : m_state->p2;
-        ++ps.lives;
-        AudioManager::instance().playSound("one_up");
-    }
 }
 
 // =============================================================================
@@ -472,24 +628,24 @@ void GameScene::onPlayerPowerUp(const PlayerPowerUpEvent& event) {
 
 void GameScene::advanceLevel() {
     if (m_state->hasNextLevel()) {
-        // Move to next level
         ++m_state->currentLevel;
-        m_state->worldDisplay = GameState::WORLD_NAMES[m_state->currentLevel];
+        m_state->worldDisplay = GameState::WORLD_NAMES[static_cast<size_t>(m_state->currentLevel)];
         m_state->levelWon = false;
         m_state->levelTimer = 300.0f;
 
-        // Clear old entities and reload
-        m_registry.clear();
-        loadLevel(GameState::LEVEL_PATHS[m_state->currentLevel]);
-        spawnEntities();
+        // Reset checkpoints for new level
+        for (auto& ps : m_state->players) {
+            ps.checkpointPos = {0.0f, 0.0f};
+        }
 
-        // Switch music
+        m_registry.clear();
+        loadLevel(GameState::LEVEL_PATHS[static_cast<size_t>(m_state->currentLevel)]);
+
         std::string musicKey = m_levelData.music;
         if (musicKey.size() > 4 && musicKey.substr(musicKey.size() - 4) == ".ogg")
             musicKey = musicKey.substr(0, musicKey.size() - 4);
         AudioManager::instance().playMusic(musicKey);
     } else {
-        // All levels complete — show victory screen
         m_game.scenes().push(std::make_unique<VictoryScene>(m_game, m_state));
     }
 }
@@ -500,7 +656,7 @@ void GameScene::advanceLevel() {
 
 void GameScene::switchTurn() {
     // Destroy current player entity
-    Player& current = (m_state->currentPlayer == 0) ? m_player1 : m_player2;
+    auto& current = m_players[static_cast<size_t>(m_state->currentPlayer)];
     if (current.isValid(m_registry)) {
         m_registry.destroy(current.getEntity());
     }
@@ -508,17 +664,17 @@ void GameScene::switchTurn() {
     // Toggle to the other player
     m_state->currentPlayer = 1 - m_state->currentPlayer;
 
-    // If the new player is also out of lives, skip to game over
+    // If the new player is also out of lives, game over
     auto& newPs = m_state->current();
     if (newPs.lives <= 0) {
         m_state->gameOver = true;
         m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-            m_state->p1.score + m_state->p2.score));
+            m_state->players[0].score + m_state->players[1].score));
         return;
     }
 
     // Spawn the new current player
-    spawnCurrentPlayer();
+    respawnPlayer(m_state->currentPlayer);
     m_camera.setTarget(m_spawnPoint);
 
     // Show "Get Ready!" interstitial

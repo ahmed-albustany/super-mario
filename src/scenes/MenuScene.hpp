@@ -5,8 +5,8 @@
 
 class Game;
 
-/// @brief Main menu — animated title, 1 Player / 2P Alternating / 2P Co-op / Quit.
-///        Navigable via keyboard (Up/Down + Confirm) and mouse/touch.
+/// @brief Main menu — PIXEL RUSH with mode selection.
+///        Solo, 2P Alternating, 2P Co-op, 4P Co-op, 4P VS, Quit.
 class MenuScene final : public IScene {
 public:
     explicit MenuScene(Game& game);
@@ -25,11 +25,13 @@ private:
     float m_elapsed      = 0.0f;
     bool  m_confirmed    = false;
 
-    static constexpr int MENU_1P        = 0;
+    static constexpr int MENU_SOLO      = 0;
     static constexpr int MENU_2P_ALT    = 1;
     static constexpr int MENU_2P_COOP   = 2;
-    static constexpr int MENU_QUIT      = 3;
-    static constexpr int MENU_COUNT     = 4;
+    static constexpr int MENU_4P_COOP   = 3;
+    static constexpr int MENU_4P_VS     = 4;
+    static constexpr int MENU_QUIT      = 5;
+    static constexpr int MENU_COUNT     = 6;
 
     void selectItem(int index);
     void confirmSelection();

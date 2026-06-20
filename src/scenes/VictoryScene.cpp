@@ -52,35 +52,42 @@ void VictoryScene::render(IPlatform& platform) {
                       {screenW * 0.5f - 180.0f, titleY}, 36,
                       Color{255, 220, 50, 255});
 
-    platform.drawText(f, "You defeated Bowser!",
+    platform.drawText(f, "All levels complete!",
                       {screenW * 0.5f - 120.0f, titleY + 60.0f}, 18,
                       Color{255, 255, 255, 220});
 
     // Score summary
     float sumY = 280.0f;
     if (m_state) {
-        platform.drawText(f, "MARIO",
-                          {screenW * 0.5f - 160.0f, sumY}, 16,
-                          Color{228, 0, 8, 255});
-        platform.drawText(f, std::to_string(m_state->p1.score),
-                          {screenW * 0.5f - 160.0f, sumY + 24.0f}, 22,
-                          Color{255, 255, 255, 255});
+        static const char* CHAR_NAMES[] = {"MASK DUDE", "NINJA FROG", "PINK MAN", "VIRTUAL GUY"};
+        static const Color CHAR_COLORS[] = {
+            {78, 205, 196, 255}, {255, 107, 107, 255},
+            {255, 182, 193, 255}, {130, 130, 255, 255}
+        };
 
-        if (m_state->numPlayers == 2) {
-            platform.drawText(f, "LUIGI",
-                              {screenW * 0.5f + 40.0f, sumY}, 16,
-                              Color{0, 148, 0, 255});
-            platform.drawText(f, std::to_string(m_state->p2.score),
-                              {screenW * 0.5f + 40.0f, sumY + 24.0f}, 22,
+        int numActive = m_state->numActivePlayers();
+        float colWidth = 160.0f;
+        float startX = screenW * 0.5f - (static_cast<float>(numActive) * colWidth) * 0.5f;
+
+        int totalScore = 0;
+        for (int i = 0; i < numActive; ++i) {
+            float colX = startX + static_cast<float>(i) * colWidth;
+            const auto& ps = m_state->players[static_cast<size_t>(i)];
+            totalScore += ps.score;
+
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(i)],
+                              {colX, sumY}, 14,
+                              CHAR_COLORS[static_cast<size_t>(i)]);
+            platform.drawText(f, std::to_string(ps.score),
+                              {colX, sumY + 20.0f}, 20,
                               Color{255, 255, 255, 255});
         }
 
-        int totalScore = m_state->p1.score + m_state->p2.score;
         platform.drawText(f, "TOTAL SCORE",
-                          {screenW * 0.5f - 80.0f, sumY + 70.0f}, 16,
+                          {screenW * 0.5f - 80.0f, sumY + 60.0f}, 16,
                           Color{255, 220, 50, 200});
         platform.drawText(f, std::to_string(totalScore),
-                          {screenW * 0.5f - 60.0f, sumY + 96.0f}, 32,
+                          {screenW * 0.5f - 60.0f, sumY + 86.0f}, 32,
                           Color{255, 220, 50, 255});
     }
 

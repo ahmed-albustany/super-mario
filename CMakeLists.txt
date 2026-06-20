@@ -82,6 +82,8 @@ set(MARIO_ECS_SOURCES
     src/ecs/systems/EnemyAISystem.cpp
     src/ecs/systems/RenderSystem.cpp
     src/ecs/systems/PowerUpSystem.cpp
+    src/ecs/systems/TrapSystem.cpp
+    src/ecs/systems/FruitSystem.cpp
 )
 
 set(MARIO_WORLD_SOURCES

@@ -11,7 +11,7 @@
 
 struct PlayerDiedEvent {
     int livesRemaining = 0;
-    int playerIndex    = 0;   ///< 0 = P1, 1 = P2
+    int playerIndex    = 0;   ///< 0-3
 };
 
 struct PlayerHurtEvent {
@@ -19,68 +19,70 @@ struct PlayerHurtEvent {
     int playerIndex = 0;
 };
 
-/// @brief Fired when player jumps.
 struct PlayerJumpEvent {
-    int jumpNumber = 1;
+    int jumpNumber = 1;       ///< 1 = first jump, 2 = double jump
     int playerIndex = 0;
 };
 
-/// @brief Fired when player lands on ground after being airborne.
 struct PlayerLandedEvent {
     int playerIndex = 0;
 };
 
-/// @brief Fired when player's power state changes.
 struct PlayerPowerUpEvent {
-    std::string powerType; ///< "mushroom", "fire_flower", "star"
+    std::string powerType;
     int playerIndex = 0;
 };
 
-/// @brief Fired when player shoots a fireball.
 struct FireballEvent {
     Vec2f position;
     int playerIndex = 0;
 };
 
 // =============================================================================
-// Collectible events
+// Fruit events (replaces coin)
 // =============================================================================
 
-struct CoinCollectedEvent {
+struct FruitCollectedEvent {
+    std::string fruitType;    ///< "cherry", "apple", etc.
     int value = 0;
     Vec2f position;
     int playerIndex = 0;
 };
 
 // =============================================================================
-// Block events
+// Box events (replaces block)
 // =============================================================================
 
-/// @brief Fired when a question block or brick is hit from below.
-struct BlockHitEvent {
+struct BoxHitEvent {
     Vec2f position;
-    std::string contents;  ///< "coin", "mushroom", "fire_flower", "star", "1up"
+    int hitsRemaining = 0;
+    int playerIndex = 0;
+};
+
+struct BoxBreakEvent {
+    Vec2f position;
+    std::string fruitSpawned; ///< fruit type spawned
     int playerIndex = 0;
 };
 
 // =============================================================================
-// Enemy events
+// Trap events
 // =============================================================================
 
-struct EnemyKilledEvent {
-    std::string type;
+struct TrapDeathEvent {
+    std::string trapType;
     Vec2f position;
-    int scoreValue = 0;
-};
-
-/// @brief Fired when a shooter enemy fires a projectile.
-struct EnemyShootEvent {
-    Vec2f position;
+    int playerIndex = 0;
 };
 
 // =============================================================================
-// Level events
+// Checkpoint / Level events
 // =============================================================================
+
+struct CheckpointActivatedEvent {
+    Vec2f position;
+    int playerIndex = 0;
+};
 
 struct LevelCompleteEvent {
     int score = 0;
@@ -92,9 +94,8 @@ struct GameOverEvent {
     int playerIndex = 0;
 };
 
-/// @brief Fired when player grabs the flagpole.
 struct FlagPoleGrabbedEvent {
-    float grabHeight = 0.0f; ///< 0.0 = bottom, 1.0 = top (affects score)
+    float grabHeight = 0.0f;
     int playerIndex = 0;
 };
 
@@ -108,14 +109,39 @@ struct PowerUpActivatedEvent {
     int playerIndex = 0;
 };
 
-/// @brief Fired when a power-up expires.
 struct PowerUpExpiredEvent {
     std::string type;
     int playerIndex = 0;
 };
 
 // =============================================================================
+// Enemy events (kept for compatibility)
+// =============================================================================
+
+struct EnemyKilledEvent {
+    std::string type;
+    Vec2f position;
+    int scoreValue = 0;
+};
+
+struct EnemyShootEvent {
+    Vec2f position;
+};
+
+// =============================================================================
 // Backward compatibility aliases
 // =============================================================================
 
+struct CoinCollectedEvent {
+    int value = 0;
+    Vec2f position;
+    int playerIndex = 0;
+};
+
 using GemCollectedEvent = CoinCollectedEvent;
+
+struct BlockHitEvent {
+    Vec2f position;
+    std::string contents;
+    int playerIndex = 0;
+};

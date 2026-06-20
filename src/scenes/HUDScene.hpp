@@ -7,8 +7,8 @@
 
 class Game;
 
-/// @brief Transparent overlay — draws Mario-style HUD on top of GameScene.
-///        Uses shared_ptr to GameState, so no dangling references if GameScene dies.
+/// @brief Transparent overlay — draws PIXEL RUSH HUD on top of GameScene.
+///        Supports 1-4 player display based on GameMode.
 class HUDScene final : public IScene {
 public:
     HUDScene(Game& game, GameStatePtr state);
@@ -25,10 +25,4 @@ public:
 private:
     Game& m_game;
     GameStatePtr m_state;
-
-    // Star power display
-    float m_powerUpTimer    = 0.0f;
-    float m_powerUpDuration = 0.0f;
-    bool  m_powerUpActive   = false;
-    SubscriberID m_subPowerUp = 0;
 };

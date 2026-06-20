@@ -57,6 +57,22 @@ void SFMLPlatform::initKeyMap() {
     m_keyMap[static_cast<int>(KeyCode::P2Right)]  = {sf::Keyboard::D,      sf::Keyboard::Unknown};
     m_keyMap[static_cast<int>(KeyCode::P2Jump)]   = {sf::Keyboard::J,      sf::Keyboard::Unknown};
     m_keyMap[static_cast<int>(KeyCode::P2Run)]    = {sf::Keyboard::K,      sf::Keyboard::Unknown};
+
+    // Player 3: IJKL + N (jump) + M (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P3Up)]     = {sf::Keyboard::I,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P3Down)]   = {sf::Keyboard::K,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P3Left)]   = {sf::Keyboard::J,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P3Right)]  = {sf::Keyboard::L,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P3Jump)]   = {sf::Keyboard::N,      sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P3Run)]    = {sf::Keyboard::M,      sf::Keyboard::Unknown};
+
+    // Player 4: Numpad 8456 + Numpad1 (jump) + Numpad2 (run/fire)
+    m_keyMap[static_cast<int>(KeyCode::P4Up)]     = {sf::Keyboard::Numpad8, sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P4Down)]   = {sf::Keyboard::Numpad5, sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P4Left)]   = {sf::Keyboard::Numpad4, sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P4Right)]  = {sf::Keyboard::Numpad6, sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P4Jump)]   = {sf::Keyboard::Numpad1, sf::Keyboard::Unknown};
+    m_keyMap[static_cast<int>(KeyCode::P4Run)]    = {sf::Keyboard::Numpad2, sf::Keyboard::Unknown};
 }
 
 sf::Color SFMLPlatform::toSFColor(const Color& c) {

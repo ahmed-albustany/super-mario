@@ -13,20 +13,19 @@
 #include "ecs/Systems.hpp"
 
 #include <entt/entt.hpp>
+#include <array>
 #include <string>
 
 class Game;
 
 /// @brief Core gameplay scene — owns the ECS registry, all systems, tilemap, camera.
-///        Supports 1P, 2P alternating, and 2P co-op modes.
+///        Supports Solo, 2P Alt, 2P Co-op, 4P Co-op, 4P VS modes.
 class GameScene final : public IScene {
 public:
     explicit GameScene(Game& game);
 
-    /// @brief Configure player mode before onEnter(). Call from MenuScene.
-    /// @param numPlayers 1 or 2
-    /// @param coop       true = co-op (simultaneous), false = alternating (if 2P)
-    void setPlayerMode(int numPlayers, bool coop);
+    /// @brief Configure game mode before onEnter(). Call from MenuScene.
+    void setGameMode(GameMode mode);
 
     void onEnter() override;
     void onExit() override;
@@ -38,15 +37,15 @@ public:
 private:
     void loadLevel(const std::string& levelPath);
     void spawnEntities();
-    void spawnCurrentPlayer();
+    void spawnPlayers();
+    void respawnPlayer(int playerIndex);
     void onPlayerDied(const PlayerDiedEvent& event);
-    void onPlayerHurt(const PlayerHurtEvent& event);
-    void onCoinCollected(const CoinCollectedEvent& event);
-    void onEnemyKilled(const EnemyKilledEvent& event);
+    void onFruitCollected(const FruitCollectedEvent& event);
+    void onBoxHit(const BoxHitEvent& event);
+    void onBoxBreak(const BoxBreakEvent& event);
+    void onTrapDeath(const TrapDeathEvent& event);
+    void onCheckpointActivated(const CheckpointActivatedEvent& event);
     void onLevelComplete(const LevelCompleteEvent& event);
-    void onBlockHit(const BlockHitEvent& event);
-    void onFlagPoleGrabbed(const FlagPoleGrabbedEvent& event);
-    void onPlayerPowerUp(const PlayerPowerUpEvent& event);
 
     /// @brief Alternating mode: switch to the other player's turn.
     void switchTurn();
@@ -54,14 +53,16 @@ private:
     /// @brief Load the next level, or show VictoryScene if all levels completed.
     void advanceLevel();
 
+    /// @brief Number of players simultaneously on screen.
+    int numSimultaneousPlayers() const;
+
     Game& m_game;
 
     // ECS
     entt::registry m_registry;
 
-    // Players (P2 only used in co-op mode)
-    Player m_player1;
-    Player m_player2;
+    // Players (up to 4)
+    std::array<Player, 4> m_players;
 
     // Systems
     PlayerSystem    m_playerSystem;
@@ -72,6 +73,8 @@ private:
     PowerUpSystem   m_powerUpSystem;
     AnimationSystem m_animationSystem;
     RenderSystem    m_renderSystem;
+    TrapSystem      m_trapSystem;
+    FruitSystem     m_fruitSystem;
 
     // World
     PhysicsWorld m_physicsWorld;
@@ -85,12 +88,19 @@ private:
     Vec2f m_spawnPoint;
 
     // Event subscriber IDs
-    SubscriberID m_subPlayerDied    = 0;
-    SubscriberID m_subPlayerHurt   = 0;
-    SubscriberID m_subCoin         = 0;
-    SubscriberID m_subEnemyKilled  = 0;
-    SubscriberID m_subLevelComplete = 0;
-    SubscriberID m_subBlockHit     = 0;
-    SubscriberID m_subFlagPole     = 0;
-    SubscriberID m_subPowerUp     = 0;
+    SubscriberID m_subPlayerDied       = 0;
+    SubscriberID m_subFruitCollected   = 0;
+    SubscriberID m_subBoxHit           = 0;
+    SubscriberID m_subBoxBreak         = 0;
+    SubscriberID m_subTrapDeath        = 0;
+    SubscriberID m_subCheckpoint       = 0;
+    SubscriberID m_subLevelComplete    = 0;
+
+    // Legacy compatibility subscriber IDs
+    SubscriberID m_subCoin             = 0;
+    SubscriberID m_subEnemyKilled      = 0;
+    SubscriberID m_subBlockHit         = 0;
+    SubscriberID m_subFlagPole         = 0;
+    SubscriberID m_subPowerUp          = 0;
+    SubscriberID m_subPlayerHurt       = 0;
 };

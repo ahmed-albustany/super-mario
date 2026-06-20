@@ -145,6 +145,6 @@ void BootScene::render(IPlatform& platform) {
     if (font) {
         platform.drawText(*font, Config::GAME_TITLE,
                           {screenW * 0.5f - 140.0f, screenH * 0.3f}, 36,
-                          Color{220, 180, 100, 255});
+                          Color{78, 205, 196, 255});
     }
 }

@@ -63,6 +63,16 @@ enum class KeyCode {
     P2Jump,  // J
     P2Run,   // K
 
+    // Player 3 keys (IJKL + N/M)
+    P3Up, P3Down, P3Left, P3Right,
+    P3Jump,  // N
+    P3Run,   // M
+
+    // Player 4 keys (Numpad 8456 + Numpad1/Numpad2)
+    P4Up, P4Down, P4Left, P4Right,
+    P4Jump,  // Numpad1
+    P4Run,   // Numpad2
+
     COUNT    // sentinel — must be last
 };
 

@@ -18,16 +18,16 @@ struct TileData {
 };
 
 struct EnemySpawnData {
-    std::string type;       ///< "goomba", "koopa", "piranha_plant", "bowser"
+    std::string type;
     float x = 0.0f;
     float y = 0.0f;
     float patrolLeft  = 0.0f;
     float patrolRight = 0.0f;
-    int   facing = 1;       ///< 1 = right, -1 = left
+    int   facing = 1;
 };
 
 struct CollectibleSpawnData {
-    std::string type;       ///< "coin", "mushroom", "fire_flower", "star", "1up"
+    std::string type;
     float x = 0.0f;
     float y = 0.0f;
 };
@@ -35,7 +35,7 @@ struct CollectibleSpawnData {
 struct QuestionBlockSpawnData {
     float x = 0.0f;
     float y = 0.0f;
-    std::string contents;   ///< "coin", "mushroom", "fire_flower", "star", "1up"
+    std::string contents;
 };
 
 struct PipeSpawnData {
@@ -46,6 +46,43 @@ struct PipeSpawnData {
     float destY = 0.0f;
 };
 
+/// @brief Fruit spawn data for Pixel Adventure.
+struct FruitSpawnData {
+    std::string type;  ///< "cherry", "apple", "orange", etc.
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
+/// @brief Trap spawn data for all trap types.
+struct TrapSpawnData {
+    std::string type;  ///< "saw", "spike_head", "rock_head", "fire", "arrow",
+                       ///< "falling_platform", "moving_platform", "fan",
+                       ///< "spiked_ball", "spikes", "trampoline"
+    float x = 0.0f;
+    float y = 0.0f;
+    float speed = 1.0f;
+    float onTime  = 2.0f;
+    float offTime = 1.0f;
+    float strength = 400.0f;       ///< Fan strength
+    float chainLength = 8.0f;      ///< Spiked ball chain
+    std::string direction = "right"; ///< Arrow direction
+    std::vector<Vec2f> path;       ///< Moving platform path
+};
+
+/// @brief Box spawn data.
+struct BoxSpawnData {
+    std::string type;  ///< "box1", "box2", "box3"
+    float x = 0.0f;
+    float y = 0.0f;
+    int   hits = 3;
+};
+
+/// @brief Checkpoint spawn data.
+struct CheckpointSpawnData {
+    float x = 0.0f;
+    float y = 0.0f;
+};
+
 /// @brief Complete level description parsed from JSON.
 struct LevelData {
     std::string name;
@@ -53,17 +90,27 @@ struct LevelData {
     int   widthTiles  = 0;
     int   heightTiles = 0;
     std::string music;
-    float gravity   = 0.0f;   ///< 0 = use default Config::GRAVITY
+    float gravity   = 0.0f;
     float timeLimit = 300.0f;
-    std::vector<std::string> backgroundLayers; ///< Filenames for parallax layers
+    std::string background;  ///< Background texture key
+    std::vector<std::string> backgroundLayers;
     std::vector<TileData> tiles;
     Vec2f playerSpawn;
+
+    // Legacy spawn data
     std::vector<EnemySpawnData>          enemies;
     std::vector<CollectibleSpawnData>    collectibles;
     std::vector<QuestionBlockSpawnData>  questionBlocks;
     std::vector<PipeSpawnData>           pipes;
+
+    // Pixel Adventure spawn data
+    std::vector<FruitSpawnData>      fruits;
+    std::vector<TrapSpawnData>       traps;
+    std::vector<BoxSpawnData>        boxes;
+    std::vector<CheckpointSpawnData> checkpoints;
+
     Vec2f goalPosition;
-    std::string goalType = "flagpole";
+    std::string goalType = "trophy";
     float flagPoleHeight = 288.0f;
 };
 
@@ -71,12 +118,7 @@ struct LevelData {
 // Loader
 // =============================================================================
 
-/// @brief Safe JSON level loader.
-///        Reads via SafeFileIO, validates all required fields, returns nullopt
-///        on any malformed input. Never crashes on bad JSON.
 class LevelLoader {
 public:
-    /// @brief Load a level from a JSON file (path relative to SafeIO root).
-    /// @return Parsed LevelData on success, std::nullopt on any error.
     [[nodiscard]] static std::optional<LevelData> load(const std::string& relativePath);
 };

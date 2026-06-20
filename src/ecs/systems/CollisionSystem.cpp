@@ -18,6 +18,191 @@
 
 namespace {
 
+/// @brief Handle player touching a trap — instant death for most traps.
+void handlePlayerTrapCollision(entt::registry& reg, EventBus& events,
+                                entt::entity playerEnt, entt::entity trapEnt) {
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+    auto& health = reg.get<HealthComponent>(playerEnt);
+    auto& trap   = reg.get<TrapComponent>(trapEnt);
+
+    if (health.isDead || health.invincibilityFrames > 0) return;
+
+    switch (trap.trapType) {
+        case TrapType::Trampoline: {
+            // Bounce player upward (3x normal jump)
+            auto& vel = reg.get<VelocityComponent>(playerEnt);
+            vel.velocity.y = Config::TRAMPOLINE_FORCE;
+            player.jumpCount = 1; // Allow double jump after trampoline
+            return;
+        }
+
+        case TrapType::Fan: {
+            // Apply upward force
+            if (reg.all_of<VelocityComponent>(playerEnt)) {
+                auto& vel = reg.get<VelocityComponent>(playerEnt);
+                vel.velocity.y -= trap.fanStrength * 0.016f; // per-frame force
+            }
+            return;
+        }
+
+        case TrapType::MovingPlatform: {
+            // Carry player (handled by static collision resolution)
+            return;
+        }
+
+        case TrapType::FallingPlatform: {
+            // Mark that player is on top (triggers shake+fall)
+            trap.playerOnTop = true;
+            return;
+        }
+
+        case TrapType::Fire: {
+            if (!trap.isActive) return; // Fire is off, safe to touch
+            break; // Fall through to death
+        }
+
+        case TrapType::Blocks: {
+            if (!trap.isActive) return; // Blocks are off, passthrough
+            break; // Fall through to death
+        }
+
+        default:
+            break;
+    }
+
+    // All other traps = instant death
+    health.isDead = true;
+    player.state = PlayerState::Dead;
+    events.publish(TrapDeathEvent{"trap",
+        reg.get<TransformComponent>(trapEnt).position, player.playerIndex});
+    events.publish(PlayerDiedEvent{0, player.playerIndex});
+}
+
+/// @brief Handle player collecting a fruit.
+void handlePlayerFruit(entt::registry& reg, EventBus& events,
+                        entt::entity playerEnt, entt::entity fruitEnt) {
+    auto& fruit = reg.get<FruitComponent>(fruitEnt);
+    if (fruit.collected) return;
+
+    fruit.collected = true;
+    Vec2f pos = reg.get<TransformComponent>(fruitEnt).position;
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+
+    // Spawn collection effect
+    EntityFactory::createParticleEffect(reg, pos,
+        ParticleEmitterComponent::Effect::FruitCollect);
+    EntityFactory::createFloatingText(reg,
+        {pos.x, pos.y - 16.0f},
+        "+" + std::to_string(fruit.value),
+        Color{255, 255, 100, 255});
+
+    events.publish(FruitCollectedEvent{
+        "fruit", fruit.value, pos, player.playerIndex});
+
+    reg.emplace_or_replace<DestroyFlag>(fruitEnt);
+}
+
+/// @brief Handle player hitting a box from below.
+void handlePlayerBox(entt::registry& reg, EventBus& events,
+                      entt::entity playerEnt, entt::entity boxEnt,
+                      const Rect& playerRect, const Rect& boxRect) {
+    // Only trigger when hitting from below
+    float playerTop = playerRect.top();
+    float boxBottom = boxRect.bottom();
+
+    if (playerTop > boxBottom - 4.0f) return;
+
+    auto& box = reg.get<BoxComponent>(boxEnt);
+    if (box.isBroken) return;
+
+    box.hitsRemaining--;
+    box.bumpTimer = Config::BLOCK_BUMP_DURATION;
+    box.isHit = true;
+
+    Vec2f boxPos = reg.get<TransformComponent>(boxEnt).position;
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+
+    events.publish(BoxHitEvent{boxPos, box.hitsRemaining, player.playerIndex});
+
+    if (box.hitsRemaining <= 0) {
+        box.isBroken = true;
+        // Switch to break animation
+        if (reg.all_of<AnimationComponent>(boxEnt)) {
+            reg.get<AnimationComponent>(boxEnt).play("break");
+        }
+
+        // Spawn a random fruit above the box
+        Vec2f spawnPos = {boxPos.x, boxPos.y - 32.0f};
+
+        // Pick a random fruit type based on position hash
+        int fruitIdx = static_cast<int>(boxPos.x + boxPos.y) % 8;
+        FruitType types[] = {
+            FruitType::Cherry, FruitType::Apple, FruitType::Orange,
+            FruitType::Pineapple, FruitType::Melon, FruitType::Strawberry,
+            FruitType::Kiwi, FruitType::Banana
+        };
+        int values[] = {
+            Config::FRUIT_CHERRY_VALUE, Config::FRUIT_APPLE_VALUE,
+            Config::FRUIT_ORANGE_VALUE, Config::FRUIT_PINEAPPLE_VALUE,
+            Config::FRUIT_MELON_VALUE, Config::FRUIT_STRAWBERRY_VALUE,
+            Config::FRUIT_KIWI_VALUE, Config::FRUIT_BANANA_VALUE
+        };
+
+        auto fruitEnt = reg.create();
+        reg.emplace<TransformComponent>(fruitEnt, TransformComponent{spawnPos});
+        reg.emplace<VelocityComponent>(fruitEnt, VelocityComponent{{0.0f, -150.0f}});
+        reg.emplace<GravityComponent>(fruitEnt);
+        reg.emplace<ColliderComponent>(fruitEnt, ColliderComponent{
+            {0.0f, 0.0f}, {16.0f, 16.0f}, true, false
+        });
+        SpriteComponent fruitSprite;
+        fruitSprite.srcRect = {0.0f, 0.0f, 32.0f, 32.0f};
+        fruitSprite.zOrder = 4;
+        reg.emplace<SpriteComponent>(fruitEnt, fruitSprite);
+        reg.emplace<FruitComponent>(fruitEnt, FruitComponent{
+            types[fruitIdx], values[fruitIdx], false
+        });
+        reg.emplace<TagComponent>(fruitEnt, TagComponent{"fruit"});
+
+        events.publish(BoxBreakEvent{boxPos, "fruit", player.playerIndex});
+    } else {
+        // Switch to hit animation briefly
+        if (reg.all_of<AnimationComponent>(boxEnt)) {
+            reg.get<AnimationComponent>(boxEnt).play("hit");
+        }
+    }
+}
+
+/// @brief Handle player reaching the trophy (end goal).
+void handlePlayerGoal(entt::registry& reg, EventBus& events,
+                       entt::entity playerEnt, entt::entity goalEnt) {
+    auto& goal = reg.get<GoalComponent>(goalEnt);
+    if (goal.reached) return;
+    goal.reached = true;
+
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+    events.publish(LevelCompleteEvent{0, 0.0f, player.playerIndex});
+}
+
+/// @brief Handle player activating a checkpoint.
+void handlePlayerCheckpoint(entt::registry& reg, EventBus& events,
+                              entt::entity playerEnt, entt::entity cpEnt) {
+    auto& checkpoint = reg.get<CheckpointComponent>(cpEnt);
+    if (checkpoint.activated) return;
+    checkpoint.activated = true;
+
+    auto& player = reg.get<PlayerComponent>(playerEnt);
+    Vec2f cpPos = reg.get<TransformComponent>(cpEnt).position;
+
+    // Update animation to flag out
+    if (reg.all_of<AnimationComponent>(cpEnt)) {
+        reg.get<AnimationComponent>(cpEnt).play("flag_out");
+    }
+
+    events.publish(CheckpointActivatedEvent{cpPos, player.playerIndex});
+}
+
+// Legacy handlers kept for backward compatibility
 void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
                                  entt::entity playerEnt, entt::entity enemyEnt,
                                  const Rect& playerRect, const Rect& enemyRect) {
@@ -25,132 +210,33 @@ void handlePlayerEnemyCollision(entt::registry& reg, EventBus& events,
     auto& pHealth = reg.get<HealthComponent>(playerEnt);
     auto& pVel    = reg.get<VelocityComponent>(playerEnt);
 
-    // Star invincibility — kill enemy on contact
-    if (reg.all_of<PowerUpComponent>(playerEnt)) {
-        auto& pu = reg.get<PowerUpComponent>(playerEnt);
-        if (pu.type == PowerUpType::StarInvincibility) {
-            if (reg.all_of<HealthComponent>(enemyEnt)) {
-                auto& eHealth = reg.get<HealthComponent>(enemyEnt);
-                eHealth.hp = 0;
-                eHealth.isDead = true;
-            }
-            if (reg.all_of<EnemyComponent>(enemyEnt)) {
-                reg.get<EnemyComponent>(enemyEnt).state = EnemyState::Dead;
-            }
-            events.publish(EnemyKilledEvent{"enemy",
-                reg.get<TransformComponent>(enemyEnt).position, Config::FIREBALL_KILL_VALUE});
-            reg.emplace_or_replace<DestroyFlag>(enemyEnt);
-            return;
-        }
-    }
-
-    // i-frames active — ignore contact
     if (pHealth.invincibilityFrames > 0) return;
+    if (pHealth.isDead) return;
 
     auto& ec = reg.get<EnemyComponent>(enemyEnt);
 
-    // Piranha Plant — can't be stomped, always hurts on contact
-    if (ec.type == EnemyType::PiranhaPlant) {
-        // Take damage
-        goto take_damage;
-    }
+    // Stomp detection
+    float playerBottom = playerRect.bottom();
+    float enemyTopZone = enemyRect.y + enemyRect.h * 0.4f;
 
-    // Koopa shell — special handling
-    if (ec.state == EnemyState::Shell) {
-        // Kick the shell
-        float kickDir = (playerRect.center().x < enemyRect.center().x) ? 1.0f : -1.0f;
-        ec.shellMoving = !ec.shellMoving;
-        ec.facing = (kickDir > 0.0f) ? 1 : -1;
+    if (playerBottom <= enemyTopZone && pVel.velocity.y > 0.0f) {
         pVel.velocity.y = Config::PLAYER_STOMP_BOUNCE;
+        if (reg.all_of<HealthComponent>(enemyEnt)) {
+            auto& eH = reg.get<HealthComponent>(enemyEnt);
+            eH.hp = 0;
+            eH.isDead = true;
+        }
+        ec.state = EnemyState::Dead;
+        reg.emplace_or_replace<DestroyFlag>(enemyEnt);
+        events.publish(EnemyKilledEvent{"enemy",
+            reg.get<TransformComponent>(enemyEnt).position, Config::ENEMY_STOMP_VALUE});
         return;
     }
 
-    // Stomp detection: player's bottom is above enemy's top 40%
-    {
-        float playerBottom = playerRect.bottom();
-        float enemyTopZone = enemyRect.y + enemyRect.h * 0.4f;
-
-        if (playerBottom <= enemyTopZone && pVel.velocity.y > 0.0f) {
-            // Stomp!
-            pVel.velocity.y = Config::PLAYER_STOMP_BOUNCE;
-            Vec2f stompPos = reg.get<TransformComponent>(enemyEnt).position;
-            EntityFactory::createParticleEffect(reg, stompPos,
-                ParticleEmitterComponent::Effect::StompPoof);
-
-            if (ec.type == EnemyType::Koopa) {
-                // Koopa → become shell
-                ec.state = EnemyState::Shell;
-                ec.isShell = true;
-                ec.shellMoving = false;
-                EntityFactory::createFloatingText(reg,
-                    {stompPos.x, stompPos.y - 16.0f},
-                    "+" + std::to_string(Config::ENEMY_STOMP_VALUE),
-                    Color{255, 255, 255, 255});
-                events.publish(EnemyKilledEvent{"koopa",
-                    stompPos, Config::ENEMY_STOMP_VALUE});
-            } else if (ec.type == EnemyType::Bowser) {
-                // Bowser — takes damage but doesn't die from one stomp
-                auto& eHealth = reg.get<HealthComponent>(enemyEnt);
-                eHealth.hp -= 1;
-                eHealth.invincibilityFrames = 60;
-                if (eHealth.hp <= 0) {
-                    eHealth.isDead = true;
-                    ec.state = EnemyState::Dead;
-                    EntityFactory::createFloatingText(reg,
-                        {stompPos.x, stompPos.y - 16.0f}, "+5000",
-                        Color{255, 220, 50, 255});
-                    events.publish(EnemyKilledEvent{"bowser",
-                        stompPos, 5000});
-                    reg.emplace_or_replace<DestroyFlag>(enemyEnt);
-                }
-            } else {
-                // Goomba — play flat death animation for 0.5s then despawn
-                if (reg.all_of<HealthComponent>(enemyEnt)) {
-                    auto& eH = reg.get<HealthComponent>(enemyEnt);
-                    eH.hp = 0;
-                    eH.isDead = true;
-                }
-                ec.state = EnemyState::Dead;
-                ec.deathTimer = 0.5f; // Show flat animation before despawning
-                // Disable collider so dead goomba doesn't block anything
-                if (reg.all_of<ColliderComponent>(enemyEnt)) {
-                    reg.get<ColliderComponent>(enemyEnt).isTrigger = true;
-                }
-                EntityFactory::createFloatingText(reg,
-                    {stompPos.x, stompPos.y - 16.0f},
-                    "+" + std::to_string(Config::ENEMY_STOMP_VALUE),
-                    Color{255, 255, 255, 255});
-                events.publish(EnemyKilledEvent{"goomba",
-                    stompPos, Config::ENEMY_STOMP_VALUE});
-            }
-            return;
-        }
-    }
-
-take_damage:
-    // Side/below contact — player takes damage based on power state
-    if (player.power == MarioPowerState::Small) {
-        // Small Mario — die (PlayerSystem handles death hop animation)
-        pHealth.isDead = true;
-        player.state = PlayerState::Dead;
-        events.publish(PlayerDiedEvent{0, player.playerIndex});
-    } else {
-        // Big/Fire Mario — shrink to Small with knockback
-        player.power = MarioPowerState::Small;
-        player.state = PlayerState::Shrinking;
-        player.growTimer = PlayerComponent::GROW_DURATION;
-        pHealth.invincibilityFrames = Config::INVINCIBILITY_FRAMES;
-
-        // Shrink collider
-        auto& coll = reg.get<ColliderComponent>(playerEnt);
-        coll.size = {14.0f, 16.0f};
-
-        float knockDir = (playerRect.center().x < enemyRect.center().x) ? -1.0f : 1.0f;
-        pVel.velocity.x = knockDir * 150.0f;
-        pVel.velocity.y = -200.0f;
-
-        events.publish(PlayerHurtEvent{1, player.playerIndex});
-    }
+    // Player takes damage — in PIXEL RUSH, all hits are instant death
+    pHealth.isDead = true;
+    player.state = PlayerState::Dead;
+    events.publish(PlayerDiedEvent{0, player.playerIndex});
 }
 
 void handlePlayerCollectible(entt::registry& reg, EventBus& events,
@@ -162,57 +248,9 @@ void handlePlayerCollectible(entt::registry& reg, EventBus& events,
     Vec2f pos = reg.get<TransformComponent>(collectEnt).position;
     auto& player = reg.get<PlayerComponent>(playerEnt);
 
-    switch (collectible.type) {
-        case CollectibleType::Coin:
-            EntityFactory::createParticleEffect(reg, pos,
-                ParticleEmitterComponent::Effect::CoinSparkle);
-            EntityFactory::createFloatingText(reg,
-                {pos.x, pos.y - 16.0f},
-                "+" + std::to_string(collectible.value),
-                Color{255, 220, 50, 255});
-            events.publish(CoinCollectedEvent{collectible.value, pos, player.playerIndex});
-            break;
-
-        case CollectibleType::Mushroom:
-            if (player.power == MarioPowerState::Small) {
-                player.power = MarioPowerState::Big;
-                player.state = PlayerState::Growing;
-                player.growTimer = PlayerComponent::GROW_DURATION;
-                // Grow collider
-                auto& coll = reg.get<ColliderComponent>(playerEnt);
-                coll.size = {14.0f, 30.0f};
-            }
-            events.publish(PlayerPowerUpEvent{"mushroom", player.playerIndex});
-            break;
-
-        case CollectibleType::FireFlower:
-            if (player.power == MarioPowerState::Small) {
-                // Small → Big first
-                player.power = MarioPowerState::Big;
-                player.state = PlayerState::Growing;
-                player.growTimer = PlayerComponent::GROW_DURATION;
-                auto& coll = reg.get<ColliderComponent>(playerEnt);
-                coll.size = {14.0f, 30.0f};
-            } else {
-                // Big → Fire
-                player.power = MarioPowerState::Fire;
-            }
-            events.publish(PlayerPowerUpEvent{"fire_flower", player.playerIndex});
-            break;
-
-        case CollectibleType::Star: {
-            PowerUpComponent pu{};
-            pu.type = PowerUpType::StarInvincibility;
-            pu.durationRemaining = Config::STAR_DURATION;
-            reg.emplace_or_replace<PowerUpComponent>(playerEnt, pu);
-            events.publish(PowerUpActivatedEvent{"star", Config::STAR_DURATION, player.playerIndex});
-            break;
-        }
-
-        case CollectibleType::OneUp:
-            events.publish(PlayerPowerUpEvent{"1up", player.playerIndex});
-            break;
-    }
+    EntityFactory::createParticleEffect(reg, pos,
+        ParticleEmitterComponent::Effect::CoinSparkle);
+    events.publish(CoinCollectedEvent{collectible.value, pos, player.playerIndex});
 
     reg.emplace_or_replace<DestroyFlag>(collectEnt);
 }
@@ -220,177 +258,54 @@ void handlePlayerCollectible(entt::registry& reg, EventBus& events,
 void handlePlayerQuestionBlock(entt::registry& reg, EventBus& events,
                                 entt::entity playerEnt, entt::entity blockEnt,
                                 const Rect& playerRect, const Rect& blockRect) {
-    // Only trigger when hitting from below
     float playerTop = playerRect.top();
     float blockBottom = blockRect.bottom();
 
-    if (playerTop > blockBottom - 4.0f) return; // Not hitting from below
+    if (playerTop > blockBottom - 4.0f) return;
 
     auto& qb = reg.get<QuestionBlockComponent>(blockEnt);
-    if (qb.isHit) return; // Already used
-
+    if (qb.isHit) return;
     qb.isHit = true;
     qb.bumpTimer = Config::BLOCK_BUMP_DURATION;
 
-    // Switch animation to "empty"
     if (reg.all_of<AnimationComponent>(blockEnt)) {
         reg.get<AnimationComponent>(blockEnt).play("empty");
     }
 
     Vec2f blockPos = reg.get<TransformComponent>(blockEnt).position;
-    Vec2f spawnPos = {blockPos.x, blockPos.y - 32.0f};
-
     auto& player = reg.get<PlayerComponent>(playerEnt);
-
-    // Spawn contents
-    switch (qb.contents) {
-        case CollectibleType::Coin:
-            EntityFactory::createParticleEffect(reg, spawnPos,
-                ParticleEmitterComponent::Effect::CoinSparkle);
-            EntityFactory::createFloatingText(reg,
-                {spawnPos.x, spawnPos.y - 16.0f},
-                "+" + std::to_string(Config::COIN_VALUE),
-                Color{255, 220, 50, 255});
-            events.publish(CoinCollectedEvent{Config::COIN_VALUE, spawnPos, player.playerIndex});
-            events.publish(BlockHitEvent{blockPos, "coin", player.playerIndex});
-            break;
-        case CollectibleType::Mushroom:
-            EntityFactory::createMushroom(reg, spawnPos, true);
-            events.publish(BlockHitEvent{blockPos, "mushroom", player.playerIndex});
-            break;
-        case CollectibleType::FireFlower:
-            // Spawn mushroom if Small, fire flower if Big/Fire
-            if (player.power == MarioPowerState::Small) {
-                EntityFactory::createMushroom(reg, spawnPos, true);
-            } else {
-                EntityFactory::createFireFlower(reg, spawnPos, true);
-            }
-            events.publish(BlockHitEvent{blockPos, "fire_flower", player.playerIndex});
-            break;
-        case CollectibleType::Star:
-            EntityFactory::createStar(reg, spawnPos, true);
-            events.publish(BlockHitEvent{blockPos, "star", player.playerIndex});
-            break;
-        case CollectibleType::OneUp:
-            EntityFactory::createOneUp(reg, spawnPos, true);
-            events.publish(BlockHitEvent{blockPos, "1up", player.playerIndex});
-            break;
-    }
+    events.publish(BlockHitEvent{blockPos, "coin", player.playerIndex});
 }
 
 void handlePlayerFlagPole(entt::registry& reg, EventBus& events,
                            entt::entity playerEnt, entt::entity flagEnt) {
-    auto& player = reg.get<PlayerComponent>(playerEnt);
-    auto& vel = reg.get<VelocityComponent>(playerEnt);
     auto& flagPole = reg.get<FlagPoleComponent>(flagEnt);
-
     if (flagPole.activated) return;
     flagPole.activated = true;
 
-    player.state = PlayerState::FlagPole;
-    vel.velocity.x = 0.0f;
-    vel.velocity.y = 200.0f; // slide down
-
-    // Calculate grab height for score
-    float playerY = reg.get<TransformComponent>(playerEnt).position.y;
-    float height = (flagPole.bottomY - playerY) / (flagPole.bottomY - flagPole.topY);
-    height = Math::clamp(height, 0.0f, 1.0f);
-
-    events.publish(FlagPoleGrabbedEvent{height, player.playerIndex});
-    events.publish(LevelCompleteEvent{0, 0.0f, player.playerIndex});
-}
-
-void handlePlayerPipe(entt::registry& reg,
-                       entt::entity playerEnt, entt::entity pipeEnt,
-                       const InputManager* /*input*/, bool moveDownHeld) {
-    auto& pipe = reg.get<PipeComponent>(pipeEnt);
-    if (!pipe.isEnterable) return;
-
     auto& player = reg.get<PlayerComponent>(playerEnt);
-    if (player.state == PlayerState::EnteringPipe) return;
-
-    // Player must be standing on top and pressing down
-    if (!player.isGrounded || !moveDownHeld) return;
-
-    player.state = PlayerState::EnteringPipe;
-    player.pipeTimer = PlayerComponent::PIPE_DURATION;
-    player.pipeTarget = pipe.destination;
+    events.publish(FlagPoleGrabbedEvent{1.0f, player.playerIndex});
+    events.publish(LevelCompleteEvent{0, 0.0f, player.playerIndex});
 }
 
 void handleProjectileHit(entt::registry& reg, EventBus& events,
                           entt::entity projEnt, entt::entity targetEnt) {
     const auto& proj = reg.get<ProjectileComponent>(projEnt);
-
     if (static_cast<uint32_t>(targetEnt) == proj.ownerId) return;
 
-    // Fireball kills enemies
-    if (proj.isFireball && reg.all_of<EnemyComponent>(targetEnt)) {
-        auto& ec = reg.get<EnemyComponent>(targetEnt);
-        if (ec.type != EnemyType::PiranhaPlant || true) { // fireballs can kill piranha
-            if (reg.all_of<HealthComponent>(targetEnt)) {
-                auto& eH = reg.get<HealthComponent>(targetEnt);
-                eH.hp -= proj.damage;
-                if (eH.hp <= 0) {
-                    eH.isDead = true;
-                    ec.state = EnemyState::Dead;
-                    events.publish(EnemyKilledEvent{"enemy",
-                        reg.get<TransformComponent>(targetEnt).position,
-                        Config::FIREBALL_KILL_VALUE});
-                    reg.emplace_or_replace<DestroyFlag>(targetEnt);
-                }
-            }
-        }
-        reg.emplace_or_replace<DestroyFlag>(projEnt);
-        return;
-    }
-
-    // Enemy projectile (Bowser fire) hitting player
-    if (proj.isBowserFire && reg.all_of<PlayerComponent>(targetEnt)) {
-        auto& player = reg.get<PlayerComponent>(targetEnt);
-        auto& health = reg.get<HealthComponent>(targetEnt);
-
-        if (health.invincibilityFrames > 0) {
-            reg.emplace_or_replace<DestroyFlag>(projEnt);
-            return;
-        }
-
-        if (player.power == MarioPowerState::Small) {
-            health.isDead = true;
-            player.state = PlayerState::Dead;
-            events.publish(PlayerDiedEvent{0, player.playerIndex});
-        } else {
-            player.power = MarioPowerState::Small;
-            player.state = PlayerState::Shrinking;
-            player.growTimer = PlayerComponent::GROW_DURATION;
-            health.invincibilityFrames = Config::INVINCIBILITY_FRAMES;
-            auto& coll = reg.get<ColliderComponent>(targetEnt);
-            coll.size = {14.0f, 16.0f};
-            events.publish(PlayerHurtEvent{1, player.playerIndex});
-        }
-        reg.emplace_or_replace<DestroyFlag>(projEnt);
-        return;
-    }
-
-    // Generic projectile hit
     if (reg.all_of<HealthComponent>(targetEnt)) {
         auto& health = reg.get<HealthComponent>(targetEnt);
-        if (health.invincibilityFrames > 0) {
-            reg.emplace_or_replace<DestroyFlag>(projEnt);
-            return;
-        }
-
         health.hp -= proj.damage;
-        health.invincibilityFrames = Config::INVINCIBILITY_FRAMES / 2;
-
-        if (reg.all_of<EnemyComponent>(targetEnt) && health.hp <= 0) {
+        if (health.hp <= 0) {
             health.isDead = true;
-            reg.get<EnemyComponent>(targetEnt).state = EnemyState::Dead;
-            events.publish(EnemyKilledEvent{"enemy",
-                reg.get<TransformComponent>(targetEnt).position, Config::ENEMY_STOMP_VALUE});
+            if (reg.all_of<EnemyComponent>(targetEnt)) {
+                reg.get<EnemyComponent>(targetEnt).state = EnemyState::Dead;
+                events.publish(EnemyKilledEvent{"enemy",
+                    reg.get<TransformComponent>(targetEnt).position, Config::ENEMY_STOMP_VALUE});
+            }
             reg.emplace_or_replace<DestroyFlag>(targetEnt);
         }
     }
-
     reg.emplace_or_replace<DestroyFlag>(projEnt);
 }
 
@@ -406,6 +321,15 @@ void CollisionSystem::update(entt::registry& reg, float /*dt*/, EventBus& events
     for (auto e : playerView) {
         auto& p = playerView.get<PlayerComponent>(e);
         p.isGrounded = false;
+    }
+
+    // Also reset falling platform playerOnTop flags
+    auto trapView = reg.view<TrapComponent>();
+    for (auto e : trapView) {
+        auto& t = trapView.get<TrapComponent>(e);
+        if (t.trapType == TrapType::FallingPlatform) {
+            t.playerOnTop = false;
+        }
     }
 
     // 2. Resolve dynamic-vs-static collisions (tiles, walls)
@@ -535,40 +459,58 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
 
                 bool aIsPlayer = reg.all_of<PlayerComponent>(a);
                 bool bIsPlayer = reg.all_of<PlayerComponent>(b);
-                bool aIsEnemy  = reg.all_of<EnemyComponent>(a);
-                bool bIsEnemy  = reg.all_of<EnemyComponent>(b);
 
-                // Player vs Enemy
-                if (aIsPlayer && bIsEnemy) {
-                    handlePlayerEnemyCollision(reg, events, a, b, rA, rB);
+                // Player vs Trap
+                if (aIsPlayer && reg.all_of<TrapComponent>(b)) {
+                    handlePlayerTrapCollision(reg, events, a, b);
                     continue;
                 }
-                if (bIsPlayer && aIsEnemy) {
-                    handlePlayerEnemyCollision(reg, events, b, a, rB, rA);
+                if (bIsPlayer && reg.all_of<TrapComponent>(a)) {
+                    handlePlayerTrapCollision(reg, events, b, a);
                     continue;
                 }
 
-                // Player vs Collectible
-                if (aIsPlayer && reg.all_of<CollectibleComponent>(b)) {
-                    handlePlayerCollectible(reg, events, a, b);
+                // Player vs Fruit
+                if (aIsPlayer && reg.all_of<FruitComponent>(b)) {
+                    handlePlayerFruit(reg, events, a, b);
                     continue;
                 }
-                if (bIsPlayer && reg.all_of<CollectibleComponent>(a)) {
-                    handlePlayerCollectible(reg, events, b, a);
-                    continue;
-                }
-
-                // Player vs QuestionBlock (hit from below)
-                if (aIsPlayer && reg.all_of<QuestionBlockComponent>(b)) {
-                    handlePlayerQuestionBlock(reg, events, a, b, rA, rB);
-                    continue;
-                }
-                if (bIsPlayer && reg.all_of<QuestionBlockComponent>(a)) {
-                    handlePlayerQuestionBlock(reg, events, b, a, rB, rA);
+                if (bIsPlayer && reg.all_of<FruitComponent>(a)) {
+                    handlePlayerFruit(reg, events, b, a);
                     continue;
                 }
 
-                // Player vs FlagPole
+                // Player vs Box (hit from below)
+                if (aIsPlayer && reg.all_of<BoxComponent>(b)) {
+                    handlePlayerBox(reg, events, a, b, rA, rB);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<BoxComponent>(a)) {
+                    handlePlayerBox(reg, events, b, a, rB, rA);
+                    continue;
+                }
+
+                // Player vs Checkpoint
+                if (aIsPlayer && reg.all_of<CheckpointComponent>(b)) {
+                    handlePlayerCheckpoint(reg, events, a, b);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<CheckpointComponent>(a)) {
+                    handlePlayerCheckpoint(reg, events, b, a);
+                    continue;
+                }
+
+                // Player vs Goal (trophy)
+                if (aIsPlayer && reg.all_of<GoalComponent>(b)) {
+                    handlePlayerGoal(reg, events, a, b);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<GoalComponent>(a)) {
+                    handlePlayerGoal(reg, events, b, a);
+                    continue;
+                }
+
+                // Player vs FlagPole (legacy)
                 if (aIsPlayer && reg.all_of<FlagPoleComponent>(b)) {
                     handlePlayerFlagPole(reg, events, a, b);
                     continue;
@@ -578,34 +520,41 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
                     continue;
                 }
 
-                // Player vs Goal (backward compat)
-                if ((aIsPlayer && reg.all_of<GoalComponent>(b) && !reg.all_of<FlagPoleComponent>(b)) ||
-                    (bIsPlayer && reg.all_of<GoalComponent>(a) && !reg.all_of<FlagPoleComponent>(a))) {
-                    auto goalEnt = aIsPlayer ? b : a;
-                    auto& goal = reg.get<GoalComponent>(goalEnt);
-                    if (!goal.reached) {
-                        goal.reached = true;
-                        events.publish(LevelCompleteEvent{0, 0.0f, 0});
-                    }
+                // Player vs Enemy (legacy)
+                bool aIsEnemy = reg.all_of<EnemyComponent>(a);
+                bool bIsEnemy = reg.all_of<EnemyComponent>(b);
+                if (aIsPlayer && bIsEnemy) {
+                    handlePlayerEnemyCollision(reg, events, a, b, rA, rB);
+                    continue;
+                }
+                if (bIsPlayer && aIsEnemy) {
+                    handlePlayerEnemyCollision(reg, events, b, a, rB, rA);
                     continue;
                 }
 
-                // Player vs Pipe
-                if (aIsPlayer && reg.all_of<PipeComponent>(b)) {
-                    auto& pl = reg.get<PlayerComponent>(a);
-                    handlePlayerPipe(reg, a, b, nullptr, pl.isGrounded);
+                // Player vs Collectible (legacy)
+                if (aIsPlayer && reg.all_of<CollectibleComponent>(b)) {
+                    handlePlayerCollectible(reg, events, a, b);
                     continue;
                 }
-                if (bIsPlayer && reg.all_of<PipeComponent>(a)) {
-                    auto& pl = reg.get<PlayerComponent>(b);
-                    handlePlayerPipe(reg, b, a, nullptr, pl.isGrounded);
+                if (bIsPlayer && reg.all_of<CollectibleComponent>(a)) {
+                    handlePlayerCollectible(reg, events, b, a);
                     continue;
                 }
 
-                // Projectile vs any target
+                // Player vs QuestionBlock (legacy)
+                if (aIsPlayer && reg.all_of<QuestionBlockComponent>(b)) {
+                    handlePlayerQuestionBlock(reg, events, a, b, rA, rB);
+                    continue;
+                }
+                if (bIsPlayer && reg.all_of<QuestionBlockComponent>(a)) {
+                    handlePlayerQuestionBlock(reg, events, b, a, rB, rA);
+                    continue;
+                }
+
+                // Projectile hits
                 bool aIsProj = reg.all_of<ProjectileComponent>(a);
                 bool bIsProj = reg.all_of<ProjectileComponent>(b);
-
                 if (aIsProj && (bIsPlayer || bIsEnemy)) {
                     handleProjectileHit(reg, events, a, b);
                     continue;
@@ -613,27 +562,6 @@ void CollisionSystem::resolveDynamicPairs(entt::registry& reg, EventBus& events)
                 if (bIsProj && (aIsPlayer || aIsEnemy)) {
                     handleProjectileHit(reg, events, b, a);
                     continue;
-                }
-
-                // Koopa shell hitting enemies
-                if (aIsEnemy && bIsEnemy) {
-                    auto& ecA = reg.get<EnemyComponent>(a);
-                    auto& ecB = reg.get<EnemyComponent>(b);
-                    if (ecA.state == EnemyState::Shell && ecA.shellMoving) {
-                        auto& hB = reg.get<HealthComponent>(b);
-                        hB.hp = 0; hB.isDead = true;
-                        ecB.state = EnemyState::Dead;
-                        reg.emplace_or_replace<DestroyFlag>(b);
-                        events.publish(EnemyKilledEvent{"enemy",
-                            reg.get<TransformComponent>(b).position, Config::ENEMY_STOMP_VALUE});
-                    } else if (ecB.state == EnemyState::Shell && ecB.shellMoving) {
-                        auto& hA = reg.get<HealthComponent>(a);
-                        hA.hp = 0; hA.isDead = true;
-                        ecA.state = EnemyState::Dead;
-                        reg.emplace_or_replace<DestroyFlag>(a);
-                        events.publish(EnemyKilledEvent{"enemy",
-                            reg.get<TransformComponent>(a).position, Config::ENEMY_STOMP_VALUE});
-                    }
                 }
             }
         }

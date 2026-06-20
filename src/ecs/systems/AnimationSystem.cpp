@@ -6,60 +6,24 @@
 
 namespace {
 
-/// @brief Base clip name for a player state (without power prefix).
-const char* playerStateBaseClip(PlayerState state) {
+/// @brief Map PlayerState to animation clip name for Pixel Adventure characters.
+const char* playerStateToClip(PlayerState state) {
     switch (state) {
         case PlayerState::Idle:           return "idle";
         case PlayerState::Running:        return "run";
         case PlayerState::Jumping:        return "jump";
+        case PlayerState::DoubleJumping:  return "double_jump";
         case PlayerState::Falling:        return "fall";
-        case PlayerState::Skidding:       return "skid";
-        case PlayerState::Growing:        return "grow";
-        case PlayerState::Shrinking:      return "shrink";
-        case PlayerState::FlagPole:       return "flagpole";
-        case PlayerState::EnteringPipe:   return "idle";
-        case PlayerState::Hurt:           return "hurt";
-        case PlayerState::Dead:           return "dead";
+        case PlayerState::WallJumping:    return "wall_jump";
+        case PlayerState::Hit:           return "hit";
+        case PlayerState::Dead:           return "hit";
+        case PlayerState::Appearing:      return "appearing";
+        case PlayerState::Disappearing:   return "disappearing";
     }
     return "idle";
 }
 
-/// @brief Power-state prefix for animation clips.
-const char* powerPrefix(MarioPowerState power) {
-    switch (power) {
-        case MarioPowerState::Small: return "";
-        case MarioPowerState::Big:   return "big_";
-        case MarioPowerState::Fire:  return "fire_";
-    }
-    return "";
-}
-
-/// @brief Build full clip name: e.g. "big_run", "fire_jump", "idle".
-///        Falls back to base clip if prefixed version doesn't exist.
-void playPlayerClip(AnimationComponent& anim, PlayerState state, MarioPowerState power) {
-    const char* base = playerStateBaseClip(state);
-
-    // Growing/Shrinking/Dead use the base clip regardless of power
-    if (state == PlayerState::Growing || state == PlayerState::Shrinking ||
-        state == PlayerState::Dead) {
-        anim.play(base);
-        return;
-    }
-
-    // Try prefixed clip first (e.g. "big_run")
-    std::string prefixed = std::string(powerPrefix(power)) + base;
-    // Check if clip exists by name
-    for (int i = 0; i < static_cast<int>(anim.clips.size()); ++i) {
-        if (anim.clips[static_cast<size_t>(i)].name == prefixed) {
-            anim.play(prefixed);
-            return;
-        }
-    }
-    // Fall back to unprefixed
-    anim.play(base);
-}
-
-/// @brief Map EnemyState enum to animation clip name.
+/// @brief Map EnemyState enum to animation clip name (legacy compat).
 const char* enemyStateToClip(EnemyState state) {
     switch (state) {
         case EnemyState::Idle:    return "idle";
@@ -76,9 +40,7 @@ const char* enemyStateToClip(EnemyState state) {
 } // anonymous namespace
 
 void AnimationSystem::update(entt::registry& reg, float dt) {
-    // ---- Map entity state to animation clip name ----
-
-    // Player animation selection
+    // ---- Map player state to animation clip ----
     {
         auto view = reg.view<PlayerComponent, AnimationComponent, SpriteComponent>();
         for (auto entity : view) {
@@ -86,15 +48,12 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
             auto& anim         = view.get<AnimationComponent>(entity);
             auto& sprite       = view.get<SpriteComponent>(entity);
 
-            // Set clip based on state + power level
-            playPlayerClip(anim, player.state, player.power);
-
-            // Flip sprite based on facing direction
+            anim.play(playerStateToClip(player.state));
             sprite.flipX = (player.facing < 0);
         }
     }
 
-    // Enemy animation selection
+    // ---- Enemy animation selection (legacy compat) ----
     {
         auto view = reg.view<EnemyComponent, AnimationComponent, SpriteComponent>();
         for (auto entity : view) {
@@ -124,7 +83,6 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
             if (clip.frames.empty()) continue;
 
             if (anim.finished && !clip.loop) {
-                // Non-looping clip has ended — stay on last frame
                 if (clip.texture.valid()) sprite.texture = clip.texture;
                 sprite.srcRect = clip.frames.back();
                 continue;
@@ -153,7 +111,7 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
                 sprite.texture = clip.texture;
             }
 
-            // Update sprite source rect to current animation frame (bounds-checked)
+            // Update sprite source rect to current animation frame
             size_t frameIdx = static_cast<size_t>(
                 std::max(0, std::min(anim.currentFrame, static_cast<int>(clip.frames.size()) - 1)));
             sprite.srcRect = clip.frames[frameIdx];
@@ -168,7 +126,6 @@ void AnimationSystem::update(entt::registry& reg, float dt) {
             auto& sprite       = view.get<SpriteComponent>(entity);
 
             if (health.invincibilityFrames > 0) {
-                // Blink: toggle visibility every 4 frames
                 sprite.visible = ((health.invincibilityFrames / 4) % 2 == 0);
             } else {
                 sprite.visible = true;

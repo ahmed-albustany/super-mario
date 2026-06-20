@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <unordered_map>
 #include <string>
 #include "platform/IPlatform.hpp"
 
@@ -9,9 +8,9 @@
 enum class Action {
     MoveLeft,
     MoveRight,
-    MoveDown,    ///< For entering pipes
-    Jump,
-    Run,         ///< Hold to run / fire fireballs
+    MoveDown,    ///< For entering pipes / crouching
+    Jump,        ///< First jump
+    DoubleJump,  ///< Second jump (separate key in PIXEL RUSH)
     Pause,
     Confirm,
     Back,
@@ -20,52 +19,36 @@ enum class Action {
 
 /// @brief Wraps IPlatform input with action mapping, input filtering,
 ///        and touch virtual button support.
-///
-///        Game code calls isHeld(Action) / isJustPressed(Action) — never
-///        checks raw key codes directly.
+///        Supports up to 4 players with independent key bindings.
 class InputManager {
 public:
+    static constexpr int MAX_PLAYERS = 4;
+
     InputManager();
 
-    /// @brief Bind the InputManager to a platform. Must be called before use.
     void init(IPlatform& platform);
-
-    /// @brief Call once per frame AFTER platform->pollEvents().
-    ///        Reads platform key state, merges touch input, and applies filters.
     void update();
 
-    // ---- Action queries (Player 1 by default) ----
+    // ---- Per-player action queries ----
 
-    /// @brief Is the action currently held down?
-    [[nodiscard]] bool isHeld(Action action) const;
+    [[nodiscard]] bool isHeld(Action action, int playerIndex = 0) const;
+    [[nodiscard]] bool isJustPressed(Action action, int playerIndex = 0) const;
+    [[nodiscard]] bool isJustReleased(Action action, int playerIndex = 0) const;
 
-    /// @brief Was the action just pressed this frame?
-    [[nodiscard]] bool isJustPressed(Action action) const;
+    // ---- Legacy P2-specific queries (backward compat) ----
 
-    /// @brief Was the action just released this frame?
-    [[nodiscard]] bool isJustReleased(Action action) const;
+    [[nodiscard]] bool isHeldP2(Action action) const { return isHeld(action, 1); }
+    [[nodiscard]] bool isJustPressedP2(Action action) const { return isJustPressed(action, 1); }
+    [[nodiscard]] bool isJustReleasedP2(Action action) const { return isJustReleased(action, 1); }
 
-    // ---- Player 2 queries ----
-
-    [[nodiscard]] bool isHeldP2(Action action) const;
-    [[nodiscard]] bool isJustPressedP2(Action action) const;
-    [[nodiscard]] bool isJustReleasedP2(Action action) const;
-
-    // ---- Touch virtual buttons (for WASM/mobile overlay) ----
-
-    /// @brief Set a virtual touch button state. Called by the web touch overlay JS.
+    // ---- Touch virtual buttons (for WASM/mobile overlay, P1 only) ----
     void setTouchButtonState(Action action, bool pressed);
 
     // ---- Key rebinding ----
-
-    /// @brief Rebind an action to a different key code.
-    void bind(Action action, KeyCode key);
-
-    /// @brief Get the current primary key bound to an action.
-    [[nodiscard]] KeyCode getBinding(Action action) const;
+    void bind(Action action, KeyCode key, int playerIndex = 0);
+    [[nodiscard]] KeyCode getBinding(Action action, int playerIndex = 0) const;
 
     // ---- Mouse / touch position ----
-
     [[nodiscard]] Vec2f getPointerPosition() const;
     [[nodiscard]] bool isPointerDown() const;
 
@@ -76,14 +59,15 @@ private:
 
     IPlatform* m_platform = nullptr;
 
-    // Player 1 state
-    std::array<bool, ACTION_COUNT> m_currState{};
-    std::array<bool, ACTION_COUNT> m_prevState{};
-    std::array<bool, ACTION_COUNT> m_touchState{};
-    std::array<KeyCode, ACTION_COUNT> m_bindings{};
+    // Per-player input state
+    struct PlayerInput {
+        std::array<bool, ACTION_COUNT> currState{};
+        std::array<bool, ACTION_COUNT> prevState{};
+        std::array<KeyCode, ACTION_COUNT> bindings{};
+    };
 
-    // Player 2 state
-    std::array<bool, ACTION_COUNT> m_currStateP2{};
-    std::array<bool, ACTION_COUNT> m_prevStateP2{};
-    std::array<KeyCode, ACTION_COUNT> m_bindingsP2{};
+    std::array<PlayerInput, MAX_PLAYERS> m_players;
+
+    // Touch state (P1 only)
+    std::array<bool, ACTION_COUNT> m_touchState{};
 };

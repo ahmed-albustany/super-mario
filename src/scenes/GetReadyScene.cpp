@@ -43,17 +43,23 @@ void GetReadyScene::render(IPlatform& platform) {
 
     FontHandle f = *font;
 
-    // "PLAYER X"
-    bool isMario = (m_state->currentPlayer == 0);
-    std::string playerName = isMario ? "MARIO" : "LUIGI";
-    Color nameColor = isMario ? Color{228, 0, 8, 255} : Color{0, 148, 0, 255};
+    // Player name based on character type
+    static const char* CHAR_NAMES[] = {"MASK DUDE", "NINJA FROG", "PINK MAN", "VIRTUAL GUY"};
+    static const Color CHAR_COLORS[] = {
+        {78, 205, 196, 255}, {255, 107, 107, 255},
+        {255, 182, 193, 255}, {130, 130, 255, 255}
+    };
 
-    platform.drawText(f, "WORLD 1-1",
+    int idx = m_state->currentPlayer;
+    const char* playerName = CHAR_NAMES[static_cast<size_t>(idx)];
+    Color nameColor = CHAR_COLORS[static_cast<size_t>(idx)];
+
+    platform.drawText(f, m_state->worldDisplay,
                       {screenW * 0.5f - 50.0f, screenH * 0.5f - 80.0f}, 20,
                       Color{255, 255, 255, 255});
 
     platform.drawText(f, playerName,
-                      {screenW * 0.5f - 50.0f, screenH * 0.5f - 30.0f}, 32,
+                      {screenW * 0.5f - 80.0f, screenH * 0.5f - 30.0f}, 32,
                       nameColor);
 
     // Lives display

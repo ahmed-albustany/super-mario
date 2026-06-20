@@ -5,7 +5,6 @@
 #include "core/EventBus.hpp"
 #include "core/Events.hpp"
 #include "core/GameConfig.hpp"
-#include "core/ResourceManager.hpp"
 #include "utils/Math.hpp"
 
 #include <cmath>
@@ -27,73 +26,50 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         }
 
         // ================================================================
-        // Dead — no input, no movement
+        // Dead — flip upside down, hop up, fall off screen, respawn delay
         // ================================================================
         if (health.isDead) {
             player.state = PlayerState::Dead;
-            // First frame of death: collider is still non-trigger
-            if (reg.all_of<ColliderComponent>(entity) &&
-                !reg.get<ColliderComponent>(entity).isTrigger) {
-                // Initiate death hop animation
+
+            if (!player.deathAnimStarted) {
+                // First frame of death: initiate death hop animation
+                player.deathAnimStarted = true;
+                player.deathTimer = Config::DEATH_RESPAWN_DELAY;
                 vel.velocity.x = 0.0f;
-                vel.velocity.y = -350.0f; // Small hop upward
+                vel.velocity.y = Config::DEATH_HOP_FORCE;
                 // Disable collision so player falls through everything
-                reg.get<ColliderComponent>(entity).isTrigger = true;
+                if (reg.all_of<ColliderComponent>(entity)) {
+                    reg.get<ColliderComponent>(entity).isTrigger = true;
+                }
                 // Flip sprite upside down
                 if (reg.all_of<TransformComponent>(entity)) {
                     reg.get<TransformComponent>(entity).rotation = 180.0f;
                 }
             }
+
             // During death: gravity pulls player down (handled by PhysicsSystem)
-            // No horizontal movement
             vel.velocity.x = 0.0f;
+
+            // Count down respawn timer
+            player.deathTimer -= dt;
             continue;
         }
 
         // ================================================================
-        // Growing / Shrinking animation — freeze movement
+        // Hit state — brief invulnerability
         // ================================================================
-        if (player.state == PlayerState::Growing || player.state == PlayerState::Shrinking) {
-            player.growTimer -= dt;
-            vel.velocity = {0.0f, 0.0f};
-            if (player.growTimer <= 0.0f) {
-                player.state = PlayerState::Idle;
-            }
-            continue;
-        }
-
-        // ================================================================
-        // FlagPole sliding — auto-controlled
-        // ================================================================
-        if (player.state == PlayerState::FlagPole) {
-            vel.velocity.x = 0.0f;
-            vel.velocity.y = 200.0f; // slide down
-            continue;
-        }
-
-        // ================================================================
-        // Entering pipe — auto-controlled
-        // ================================================================
-        if (player.state == PlayerState::EnteringPipe) {
-            player.pipeTimer -= dt;
-            vel.velocity.x = 0.0f;
-            vel.velocity.y = 60.0f; // sink into pipe
-            if (player.pipeTimer <= 0.0f) {
-                auto& transform = view.get<TransformComponent>(entity);
-                transform.position = player.pipeTarget;
-                player.state = PlayerState::Idle;
-                vel.velocity.y = 0.0f;
-            }
-            continue;
-        }
-
-        // ================================================================
-        // Hurt — wait for i-frames to expire before returning to normal
-        // ================================================================
-        if (player.state == PlayerState::Hurt) {
+        if (player.state == PlayerState::Hit) {
             if (health.invincibilityFrames <= 0) {
                 player.state = player.isGrounded ? PlayerState::Idle : PlayerState::Falling;
             }
+            continue;
+        }
+
+        // ================================================================
+        // Appearing animation — freeze movement
+        // ================================================================
+        if (player.state == PlayerState::Appearing) {
+            vel.velocity = {0.0f, 0.0f};
             continue;
         }
 
@@ -129,20 +105,19 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.facing = (pi.moveX() > 0.0f) ? 1 : -1;
         }
 
-        player.isRunning = pi.runHeld();
         bool wasGrounded = player.isGrounded;
 
         // ================================================================
-        // JUMP
+        // FIRST JUMP (ground jump + coyote time + jump buffer)
         // ================================================================
         bool canGroundJump = player.isGrounded || player.coyoteTimer > 0.0f;
 
         if (canGroundJump && player.jumpBufferTimer > 0.0f && player.jumpCount == 0) {
             player.state = PlayerState::Jumping;
-            // Running jump gives extra height (like original Mario)
+            // Running jump gives extra height
             float jumpForce = Config::PLAYER_JUMP_FORCE;
-            if (player.isRunning && std::abs(vel.velocity.x) > Config::PLAYER_WALK_SPEED * 0.8f) {
-                jumpForce *= 1.15f; // 15% higher jump when running at near-full speed
+            if (std::abs(vel.velocity.x) > Config::PLAYER_WALK_SPEED * 0.8f) {
+                jumpForce *= 1.15f;
             }
             vel.velocity.y = jumpForce;
             player.jumpCount = 1;
@@ -151,66 +126,33 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             events.publish(PlayerJumpEvent{1, player.playerIndex});
         }
 
+        // ================================================================
+        // DOUBLE JUMP (X key / separate button, while airborne after first jump)
+        // ================================================================
+        if (pi.doubleJumpPressed() && player.jumpCount == 1 && !player.isGrounded) {
+            player.state = PlayerState::DoubleJumping;
+            vel.velocity.y = Config::PLAYER_DOUBLE_JUMP_FORCE;
+            player.jumpCount = 2;
+            events.publish(PlayerJumpEvent{2, player.playerIndex});
+        }
+
         // Variable jump height: release jump early → cut upward velocity
         if (pi.jumpReleased() && vel.velocity.y < 0.0f) {
             vel.velocity.y *= Config::PLAYER_JUMP_CUT;
         }
 
         // ================================================================
-        // FIREBALL (Fire Mario only, on Run press)
+        // HORIZONTAL MOVEMENT (acceleration-based)
         // ================================================================
-        if (pi.runPressed() && player.power == MarioPowerState::Fire) {
-            // Spawn fireball
-            auto& transform = view.get<TransformComponent>(entity);
-            Vec2f fbPos = {
-                transform.position.x + static_cast<float>(player.facing) * 20.0f,
-                transform.position.y + 8.0f
-            };
-
-            auto fireball = reg.create();
-            reg.emplace<TransformComponent>(fireball, TransformComponent{fbPos});
-            reg.emplace<VelocityComponent>(fireball, VelocityComponent{
-                {static_cast<float>(player.facing) * Config::FIREBALL_SPEED, 0.0f}
-            });
-            reg.emplace<GravityComponent>(fireball, GravityComponent{
-                Config::FIREBALL_GRAVITY / Config::GRAVITY
-            });
-            reg.emplace<ColliderComponent>(fireball, ColliderComponent{
-                {0.0f, 0.0f}, {8.0f, 8.0f}, true, false
-            });
-            reg.emplace<ProjectileComponent>(fireball, ProjectileComponent{
-                static_cast<uint32_t>(entt::to_integral(entity)),
-                1, Config::FIREBALL_LIFETIME, Config::FIREBALL_SPEED,
-                {static_cast<float>(player.facing), 0.0f},
-                true, false
-            });
-
-            SpriteComponent fbSprite;
-            auto fbTex = ResourceManager::instance().getTexture("fireball");
-            fbSprite.texture = fbTex.value_or(TextureHandle{0});
-            fbSprite.srcRect = {0.0f, 0.0f, 8.0f, 8.0f};
-            fbSprite.zOrder = 8;
-            reg.emplace<SpriteComponent>(fireball, fbSprite);
-            reg.emplace<TagComponent>(fireball, TagComponent{"fireball"});
-
-            events.publish(FireballEvent{fbPos, player.playerIndex});
-        }
-
-        // ================================================================
-        // HORIZONTAL MOVEMENT (acceleration-based, Mario-style)
-        // ================================================================
-        float maxSpeed = player.isRunning ? Config::PLAYER_RUN_SPEED : Config::PLAYER_WALK_SPEED;
+        float maxSpeed = Config::PLAYER_WALK_SPEED;
         float accel = player.isGrounded ? Config::PLAYER_ACCEL : Config::PLAYER_AIR_ACCEL;
 
         if (pi.moveX() != 0.0f) {
             float targetSpeed = pi.moveX() * maxSpeed;
-            // Accelerate toward target
             vel.velocity.x = Math::approach(vel.velocity.x, targetSpeed, accel * dt);
         } else if (player.isGrounded) {
-            // Decelerate on ground when no input
             vel.velocity.x = Math::approach(vel.velocity.x, 0.0f, Config::PLAYER_DECEL * dt);
         }
-        // In air with no input: retain momentum (no air friction)
 
         // Clamp to max speed
         if (std::abs(vel.velocity.x) > maxSpeed) {
@@ -220,11 +162,9 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         // ================================================================
         // DETERMINE DISPLAY STATE
         // ================================================================
-        if (player.state != PlayerState::Hurt &&
-            player.state != PlayerState::Growing &&
-            player.state != PlayerState::Shrinking &&
-            player.state != PlayerState::FlagPole &&
-            player.state != PlayerState::EnteringPipe) {
+        if (player.state != PlayerState::Hit &&
+            player.state != PlayerState::Appearing &&
+            player.state != PlayerState::Disappearing) {
 
             if (player.isGrounded) {
                 player.jumpCount = 0;
@@ -233,20 +173,15 @@ void PlayerSystem::update(entt::registry& reg, float dt,
                     events.publish(PlayerLandedEvent{player.playerIndex});
                 }
 
-                // Skidding: moving one direction but facing the other with speed
-                bool skidding = (pi.moveX() != 0.0f) &&
-                    ((vel.velocity.x > 50.0f && pi.moveX() < 0.0f) ||
-                     (vel.velocity.x < -50.0f && pi.moveX() > 0.0f));
-
-                if (skidding) {
-                    player.state = PlayerState::Skidding;
-                } else if (std::abs(vel.velocity.x) > 10.0f) {
+                if (std::abs(vel.velocity.x) > 10.0f) {
                     player.state = PlayerState::Running;
                 } else {
                     player.state = PlayerState::Idle;
                 }
             } else {
-                if (vel.velocity.y < 0.0f) {
+                if (player.jumpCount >= 2) {
+                    player.state = PlayerState::DoubleJumping;
+                } else if (vel.velocity.y < 0.0f) {
                     player.state = PlayerState::Jumping;
                 } else {
                     player.state = PlayerState::Falling;

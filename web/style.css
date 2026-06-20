@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Super Mario Bros — WASM Web Shell Styles
+   PIXEL RUSH — WASM Web Shell Styles
    Responsive: desktop > tablet > phone. 16:9 aspect ratio preserved.
    ========================================================================== */
 
@@ -72,20 +72,20 @@ html, body {
     font-family: 'Press Start 2P', monospace;
     font-size: 26px;
     line-height: 1.6;
-    color: #d4a853;
+    color: #4ecdc4;
     margin-bottom: 6px;
     letter-spacing: 3px;
     text-transform: uppercase;
     text-shadow:
-        0 0 20px rgba(212, 168, 83, 0.4),
-        0 0 60px rgba(212, 168, 83, 0.15),
-        0 2px 0 #6b4a1e;
+        0 0 20px rgba(78, 205, 196, 0.4),
+        0 0 60px rgba(78, 205, 196, 0.15),
+        0 2px 0 #1a6b63;
     animation: titlePulse 4s ease-in-out infinite;
 }
 
 @keyframes titlePulse {
-    0%, 100% { text-shadow: 0 0 20px rgba(212, 168, 83, 0.4), 0 0 60px rgba(212, 168, 83, 0.15), 0 2px 0 #6b4a1e; }
-    50%      { text-shadow: 0 0 30px rgba(212, 168, 83, 0.6), 0 0 80px rgba(212, 168, 83, 0.25), 0 2px 0 #6b4a1e; }
+    0%, 100% { text-shadow: 0 0 20px rgba(78, 205, 196, 0.4), 0 0 60px rgba(78, 205, 196, 0.15), 0 2px 0 #1a6b63; }
+    50%      { text-shadow: 0 0 30px rgba(78, 205, 196, 0.6), 0 0 80px rgba(78, 205, 196, 0.25), 0 2px 0 #1a6b63; }
 }
 
 /* ---- Subtitle ---- */
@@ -111,7 +111,7 @@ html, body {
     width: 60%;
     height: 1px;
     margin: 0 auto 32px;
-    background: linear-gradient(90deg, transparent, #4a3a6a 30%, #d4a853 50%, #4a3a6a 70%, transparent);
+    background: linear-gradient(90deg, transparent, #4a3a6a 30%, #4ecdc4 50%, #4a3a6a 70%, transparent);
     opacity: 0.6;
 }
 
@@ -129,10 +129,10 @@ html, body {
 #progress-bar-inner {
     width: 0%;
     height: 100%;
-    background: linear-gradient(90deg, #6a3fcf, #d4a853);
+    background: linear-gradient(90deg, #ff6b6b, #4ecdc4);
     border-radius: 3px;
     transition: width 0.2s ease;
-    box-shadow: 0 0 12px rgba(212, 168, 83, 0.4);
+    box-shadow: 0 0 12px rgba(78, 205, 196, 0.4);
     position: relative;
 }
 
@@ -183,17 +183,17 @@ html, body {
     position: absolute;
     width: 4px;
     height: 4px;
-    background: rgba(212, 168, 83, 0.3);
+    background: rgba(78, 205, 196, 0.3);
     border-radius: 50%;
     top: 70%;
     left: 20%;
     box-shadow:
         60vw -20vh 2px rgba(106, 63, 207, 0.2),
-        30vw -40vh 1px rgba(212, 168, 83, 0.15),
+        30vw -40vh 1px rgba(78, 205, 196, 0.15),
         70vw -10vh 3px rgba(106, 63, 207, 0.15),
-        10vw -50vh 1px rgba(212, 168, 83, 0.2),
+        10vw -50vh 1px rgba(78, 205, 196, 0.2),
         80vw -30vh 2px rgba(180, 140, 220, 0.1),
-        40vw -60vh 1px rgba(212, 168, 83, 0.1),
+        40vw -60vh 1px rgba(78, 205, 196, 0.1),
         50vw -15vh 2px rgba(106, 63, 207, 0.2);
     animation: particleFloat 8s ease-in-out infinite;
     pointer-events: none;
