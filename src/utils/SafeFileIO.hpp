@@ -4,6 +4,7 @@
 #include <optional>
 #include <fstream>
 #include <sstream>
+#include <iostream>
 #include "utils/Logger.hpp"
 
 #ifndef MARIO_WASM
@@ -39,7 +40,7 @@ inline void setRoot(const std::string& absPath) {
         detail::rootPath() = fs::absolute(fs::path(absPath)).string();
     }
 #endif
-    LOG_INFO("SafeIO root set to: [REDACTED]");
+    std::cerr << "SafeIO root set to: " << detail::rootPath() << std::endl;
 }
 
 /// @brief Validate and resolve a relative path within the root.

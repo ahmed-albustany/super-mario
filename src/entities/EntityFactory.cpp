@@ -2,11 +2,15 @@
 #include "core/GameConfig.hpp"
 #include "core/ResourceManager.hpp"
 #include "utils/Logger.hpp"
+#include <iostream>
 
 namespace {
 
 TextureHandle tex(const std::string& key) {
     auto opt = ResourceManager::instance().getTexture(key);
+    if (!opt) {
+        std::cerr << "EntityFactory: texture key NOT FOUND: '" << key << "'" << std::endl;
+    }
     return opt.value_or(TextureHandle{0});
 }
 
@@ -97,11 +101,9 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     sprite.texture = tex(prefix + "_idle");
     sprite.srcRect = CHAR_RECT;
     sprite.zOrder  = 10;
-    if (!sprite.texture.valid()) {
-        LOG_ERROR("EntityFactory: FAILED to load texture '" << prefix << "_idle' for player " << playerIndex);
-    } else {
-        LOG_INFO("EntityFactory: player " << playerIndex << " texture '" << prefix << "_idle' handle=" << sprite.texture.id);
-    }
+    std::cerr << "EntityFactory: player " << playerIndex << " texture '"
+              << prefix << "_idle' handle=" << sprite.texture.id
+              << (sprite.texture.valid() ? " OK" : " INVALID") << std::endl;
     registry.emplace<SpriteComponent>(entity, sprite);
 
     // Animation clips from sprite sheets

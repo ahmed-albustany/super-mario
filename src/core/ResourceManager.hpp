@@ -3,6 +3,7 @@
 #include <string>
 #include <optional>
 #include <unordered_map>
+#include <iostream>
 #include "platform/IPlatform.hpp"
 
 /// @brief Singleton resource manager — maps string keys to platform handles.
@@ -31,10 +32,17 @@ public:
 
     /// @brief Load a texture from file. Returns true if successful.
     bool loadTexture(const std::string& key, const std::string& path) {
-        if (!m_platform) return false;
+        if (!m_platform) {
+            std::cerr << "ResourceManager: platform null for texture '" << key << "'" << std::endl;
+            return false;
+        }
         if (m_textures.count(key)) return true; // already loaded
         auto handle = m_platform->loadTexture(key, path);
-        if (!handle.valid()) return false;
+        if (!handle.valid()) {
+            std::cerr << "ResourceManager: FAILED to load texture '" << key
+                      << "' path=" << path << std::endl;
+            return false;
+        }
         m_textures[key] = handle;
         return true;
     }

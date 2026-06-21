@@ -6,6 +6,7 @@
 #include "utils/SafeFileIO.hpp"
 #include "utils/Logger.hpp"
 #include <nlohmann/json.hpp>
+#include <iostream>
 
 BootScene::BootScene(Game& game) : m_game(game) {}
 
@@ -14,7 +15,7 @@ void BootScene::onEnter() {
 
     auto content = SafeIO::readFile("manifest.json");
     if (!content) {
-        LOG_ERROR("BootScene: manifest.json not found — skipping preload");
+        std::cerr << "BootScene: manifest.json not found — skipping preload" << std::endl;
         m_loadDone = true;
         return;
     }
@@ -56,7 +57,7 @@ void BootScene::onEnter() {
         m_loadDone = true;
     }
 
-    LOG_INFO("BootScene: " << m_assets.size() << " assets to load");
+    std::cerr << "BootScene: " << m_assets.size() << " assets to load" << std::endl;
 }
 
 void BootScene::onExit() {}
@@ -73,7 +74,8 @@ void BootScene::update(float dt) {
         auto& rm = ResourceManager::instance();
         auto resolved = SafeIO::safePath(entry.path);
         if (!resolved) {
-            LOG_WARN("BootScene: failed to resolve path for '" << entry.key << "'");
+            std::cerr << "BootScene: FAILED to resolve path for '"
+                      << entry.key << "' (relative: " << entry.path << ")" << std::endl;
             ++m_failures;
             ++m_loadIndex;
             ++loaded;
@@ -91,7 +93,8 @@ void BootScene::update(float dt) {
         }
 
         if (!ok) {
-            LOG_WARN("BootScene: failed to load " << entry.type << " '" << entry.key << "'");
+            std::cerr << "BootScene: FAILED to load " << entry.type << " '"
+                      << entry.key << "' path=" << fullPath << std::endl;
             ++m_failures;
         }
 
@@ -105,7 +108,8 @@ void BootScene::update(float dt) {
 
     // Transition to menu after loading + minimum display time
     if (m_loadDone && m_elapsed >= m_minDisplayTime) {
-        LOG_INFO("BootScene: preload complete (" << m_failures << " failures)");
+        std::cerr << "BootScene: preload complete (" << m_failures << " failures, "
+                  << m_loadIndex << " assets)" << std::endl;
         m_game.scenes().replace(std::make_unique<MenuScene>(m_game));
     }
 }
