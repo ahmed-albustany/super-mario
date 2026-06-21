@@ -108,7 +108,7 @@
     {"x":54,"y":16,"id":2,"solid":true,"destructible":false}
   ],
   "spawn_points": {
-    "player": { "x": 2, "y": 17 },
+    "player": { "x": 2, "y": 16 },
     "fruits": [
       { "type": "cherry", "x": 6, "y": 17 },
       { "type": "cherry", "x": 8, "y": 17 },
@@ -145,6 +145,6 @@
   "goal": {
     "type": "trophy",
     "x": 57,
-    "y": 17
+    "y": 14
   }
 }
