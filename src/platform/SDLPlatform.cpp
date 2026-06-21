@@ -19,8 +19,12 @@ SDLPlatform::SDLPlatform() {
         LOG_FATAL("SDL_Init failed: " << SDL_GetError());
     }
 
-    if (IMG_Init(IMG_INIT_PNG) == 0) {
-        LOG_FATAL("IMG_Init failed: " << IMG_GetError());
+    // Emscripten's SDL2_Image port has built-in PNG support; IMG_Init may
+    // return 0 even though PNG loading works.  Only fatal-out on native builds.
+    int imgFlags = IMG_Init(IMG_INIT_PNG);
+    if (!(imgFlags & IMG_INIT_PNG)) {
+        LOG_WARN("IMG_Init: PNG flag not set (flags=" << imgFlags << ") — "
+                 << IMG_GetError() << ". Will attempt loads anyway.");
     }
 
     if (TTF_Init() != 0) {
@@ -430,7 +434,7 @@ TextureHandle SDLPlatform::loadTexture(const std::string& key,
                                          const std::string& path) {
     SDL_Surface* surface = IMG_Load(path.c_str());
     if (!surface) {
-        LOG_ERROR("Failed to load texture '" << key << "': " << IMG_GetError());
+        LOG_ERROR("Failed to load texture '" << key << "' path='" << path << "': " << IMG_GetError());
         return TextureHandle{0};
     }
 
@@ -456,7 +460,7 @@ SoundHandle SDLPlatform::loadSound(const std::string& key,
                                      const std::string& path) {
     Mix_Chunk* chunk = Mix_LoadWAV(path.c_str());
     if (!chunk) {
-        LOG_ERROR("Failed to load sound '" << key << "': " << Mix_GetError());
+        LOG_ERROR("Failed to load sound '" << key << "' path='" << path << "': " << Mix_GetError());
         return SoundHandle{0};
     }
 
@@ -472,7 +476,7 @@ FontHandle SDLPlatform::loadFont(const std::string& key,
     // Verify the file is accessible by opening at a default size
     TTF_Font* test = TTF_OpenFont(path.c_str(), 16);
     if (!test) {
-        LOG_ERROR("Failed to load font '" << key << "': " << TTF_GetError());
+        LOG_ERROR("Failed to load font '" << key << "' path='" << path << "': " << TTF_GetError());
         return FontHandle{0};
     }
 

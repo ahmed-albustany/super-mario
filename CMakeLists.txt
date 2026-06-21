@@ -167,6 +167,7 @@ if(MARIO_BUILD_WASM)
         "-sSDL2_IMAGE_FORMATS=[\"png\"]"
         "-sUSE_SDL_TTF=2"
         "-sUSE_SDL_MIXER=2"
+        "-sSDL2_MIXER_FORMATS=[\"ogg\"]"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sINITIAL_MEMORY=67108864"
         "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
