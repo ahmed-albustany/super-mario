@@ -90,7 +90,7 @@
         { "key": "start_idle",                  "path": "textures/items/start/idle.png"                 }
     ],
     "fonts": [
-        { "key": "main",                        "path": "fonts/pixel.ttf"                               }
+        { "key": "main",                        "path": "fonts/main.ttf"                                }
     ],
     "sounds": [
         { "key": "jump",                        "path": "sounds/jump.ogg"                               },
