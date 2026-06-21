@@ -71,7 +71,15 @@ void BootScene::update(float dt) {
     while (m_loadIndex < m_assets.size() && loaded < 4) {
         const auto& entry = m_assets[m_loadIndex];
         auto& rm = ResourceManager::instance();
-        std::string fullPath = "assets/" + entry.path;
+        auto resolved = SafeIO::safePath(entry.path);
+        if (!resolved) {
+            LOG_WARN("BootScene: failed to resolve path for '" << entry.key << "'");
+            ++m_failures;
+            ++m_loadIndex;
+            ++loaded;
+            continue;
+        }
+        std::string fullPath = *resolved;
 
         bool ok = false;
         if (entry.type == "texture") {

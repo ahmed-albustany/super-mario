@@ -32,25 +32,19 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             player.state = PlayerState::Dead;
 
             if (!player.deathAnimStarted) {
-                // First frame of death: initiate death hop animation
                 player.deathAnimStarted = true;
                 player.deathTimer = Config::DEATH_RESPAWN_DELAY;
                 vel.velocity.x = 0.0f;
                 vel.velocity.y = Config::DEATH_HOP_FORCE;
-                // Disable collision so player falls through everything
                 if (reg.all_of<ColliderComponent>(entity)) {
                     reg.get<ColliderComponent>(entity).isTrigger = true;
                 }
-                // Flip sprite upside down
                 if (reg.all_of<TransformComponent>(entity)) {
                     reg.get<TransformComponent>(entity).rotation = 180.0f;
                 }
             }
 
-            // During death: gravity pulls player down (handled by PhysicsSystem)
             vel.velocity.x = 0.0f;
-
-            // Count down respawn timer
             player.deathTimer -= dt;
             continue;
         }
@@ -106,6 +100,7 @@ void PlayerSystem::update(entt::registry& reg, float dt,
         }
 
         bool wasGrounded = player.isGrounded;
+        bool isRunning = pi.runHeld();
 
         // ================================================================
         // FIRST JUMP (ground jump + coyote time + jump buffer)
@@ -114,10 +109,10 @@ void PlayerSystem::update(entt::registry& reg, float dt,
 
         if (canGroundJump && player.jumpBufferTimer > 0.0f && player.jumpCount == 0) {
             player.state = PlayerState::Jumping;
-            // Running jump gives extra height
             float jumpForce = Config::PLAYER_JUMP_FORCE;
-            if (std::abs(vel.velocity.x) > Config::PLAYER_WALK_SPEED * 0.8f) {
-                jumpForce *= 1.15f;
+            // Running jump: higher and farther
+            if (isRunning && std::abs(vel.velocity.x) > Config::PLAYER_WALK_SPEED * 0.5f) {
+                jumpForce *= Config::PLAYER_RUN_JUMP_MULT;
             }
             vel.velocity.y = jumpForce;
             player.jumpCount = 1;
@@ -136,27 +131,51 @@ void PlayerSystem::update(entt::registry& reg, float dt,
             events.publish(PlayerJumpEvent{2, player.playerIndex});
         }
 
-        // Variable jump height: release jump early → cut upward velocity
-        if (pi.jumpReleased() && vel.velocity.y < 0.0f) {
-            vel.velocity.y *= Config::PLAYER_JUMP_CUT;
+        // ================================================================
+        // VARIABLE JUMP HEIGHT + ASYMMETRIC GRAVITY
+        // Mario-style: holding jump = floaty rise, releasing = fast fall
+        // ================================================================
+        if (vel.velocity.y < 0.0f) {
+            // Rising — if jump released early, apply stronger gravity to cut the jump short
+            if (!pi.jumpHeld() && player.jumpCount > 0) {
+                vel.velocity.y += Config::GRAVITY * (Config::PLAYER_LOW_JUMP_MULT - 1.0f) * dt;
+            }
+        } else if (vel.velocity.y > 0.0f) {
+            // Falling — apply extra gravity for snappy, weighty feel
+            vel.velocity.y += Config::GRAVITY * (Config::PLAYER_FALL_MULT - 1.0f) * dt;
         }
 
         // ================================================================
-        // HORIZONTAL MOVEMENT (acceleration-based)
+        // HORIZONTAL MOVEMENT (acceleration-based, Mario-style)
+        // Hold direction: gradual speed build. Release: snappy ground stop, drifty air.
+        // Hold run key: higher max speed.
         // ================================================================
-        float maxSpeed = Config::PLAYER_WALK_SPEED;
-        float accel = player.isGrounded ? Config::PLAYER_ACCEL : Config::PLAYER_AIR_ACCEL;
+        float maxSpeed = isRunning ? Config::PLAYER_RUN_SPEED : Config::PLAYER_WALK_SPEED;
 
         if (pi.moveX() != 0.0f) {
             float targetSpeed = pi.moveX() * maxSpeed;
+            float accel = player.isGrounded ? Config::PLAYER_ACCEL : Config::PLAYER_AIR_ACCEL;
+
+            // Skid: reversing direction while moving uses decel for snappier turnaround
+            bool skidding = (vel.velocity.x > 0.0f && pi.moveX() < 0.0f) ||
+                            (vel.velocity.x < 0.0f && pi.moveX() > 0.0f);
+            if (skidding && player.isGrounded) {
+                accel = Config::PLAYER_DECEL;
+            }
+
             vel.velocity.x = Math::approach(vel.velocity.x, targetSpeed, accel * dt);
-        } else if (player.isGrounded) {
-            vel.velocity.x = Math::approach(vel.velocity.x, 0.0f, Config::PLAYER_DECEL * dt);
+        } else {
+            // No input: decelerate
+            float decel = player.isGrounded ? Config::PLAYER_DECEL : Config::PLAYER_AIR_DECEL;
+            vel.velocity.x = Math::approach(vel.velocity.x, 0.0f, decel * dt);
         }
 
-        // Clamp to max speed
-        if (std::abs(vel.velocity.x) > maxSpeed) {
-            vel.velocity.x = Math::clamp(vel.velocity.x, -maxSpeed, maxSpeed);
+        // If over max speed (e.g., was running, released run key), let speed decay naturally
+        // instead of hard-clamping — feels more like Mario
+        if (std::abs(vel.velocity.x) > maxSpeed && pi.moveX() != 0.0f) {
+            float sign = vel.velocity.x > 0.0f ? 1.0f : -1.0f;
+            vel.velocity.x = Math::approach(vel.velocity.x, sign * maxSpeed,
+                                             Config::PLAYER_DECEL * 0.5f * dt);
         }
 
         // ================================================================

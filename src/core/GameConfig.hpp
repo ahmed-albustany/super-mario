@@ -13,20 +13,24 @@ namespace Config {
     constexpr float FIXED_TIMESTEP       = 1.0f / 60.0f;
     constexpr float MAX_DELTA_TIME       = 1.0f / 30.0f;  // spiral-of-death guard
 
-    // ---- Physics (Pixel Adventure style) ----
-    constexpr float GRAVITY              = 2400.0f;   // px/s^2
-    constexpr float TERMINAL_VELOCITY    = 900.0f;    // px/s
-    constexpr float PLAYER_WALK_SPEED    = 200.0f;    // px/s walking
-    constexpr float PLAYER_RUN_SPEED     = 380.0f;    // px/s running
-    constexpr float PLAYER_JUMP_FORCE    = -680.0f;   // px/s (negative = up)
-    constexpr float PLAYER_DOUBLE_JUMP_FORCE = -600.0f; // slightly weaker second jump
-    constexpr float PLAYER_JUMP_CUT      = 0.4f;      // velocity multiplier on early release
+    // ---- Physics (Mario Bros style) ----
+    constexpr float GRAVITY              = 1400.0f;   // px/s^2 (base, scales with fall multiplier)
+    constexpr float TERMINAL_VELOCITY    = 700.0f;    // px/s max fall speed
+    constexpr float PLAYER_WALK_SPEED    = 150.0f;    // px/s walking
+    constexpr float PLAYER_RUN_SPEED     = 280.0f;    // px/s running (hold X / DoubleJump key)
+    constexpr float PLAYER_JUMP_FORCE    = -520.0f;   // px/s (negative = up)
+    constexpr float PLAYER_DOUBLE_JUMP_FORCE = -460.0f; // slightly weaker second jump
+    constexpr float PLAYER_JUMP_CUT      = 0.45f;     // velocity multiplier on early release
+    constexpr float PLAYER_RUN_JUMP_MULT = 1.20f;     // running jump force multiplier
     constexpr float PLAYER_STOMP_BOUNCE  = -400.0f;   // bounce velocity
-    constexpr float PLAYER_ACCEL         = 1200.0f;   // px/s^2 ground acceleration
-    constexpr float PLAYER_DECEL         = 1800.0f;   // px/s^2 skid deceleration
-    constexpr float PLAYER_AIR_ACCEL     = 800.0f;    // px/s^2 air acceleration
+    constexpr float PLAYER_ACCEL         = 600.0f;    // px/s^2 ground acceleration (gradual build)
+    constexpr float PLAYER_DECEL         = 900.0f;    // px/s^2 ground deceleration (snappy stop)
+    constexpr float PLAYER_AIR_ACCEL     = 500.0f;    // px/s^2 air acceleration (less than ground)
+    constexpr float PLAYER_AIR_DECEL     = 200.0f;    // px/s^2 air deceleration (drifty in air)
+    constexpr float PLAYER_FALL_MULT     = 1.8f;      // gravity multiplier when falling
+    constexpr float PLAYER_LOW_JUMP_MULT = 2.5f;      // gravity multiplier when jump released early
     constexpr int   MAX_JUMPS            = 2;         // double jump
-    constexpr float TRAMPOLINE_FORCE     = -2040.0f;  // 3x normal jump height
+    constexpr float TRAMPOLINE_FORCE     = -1560.0f;  // 3x normal jump height
 
     // ---- Coyote / Buffer (frames at 60fps) ----
     constexpr float COYOTE_TIME          = 0.1f;      // ~6 frames
