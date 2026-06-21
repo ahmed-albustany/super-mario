@@ -211,7 +211,7 @@ void GameScene::spawnEntities() {
     // ---- Fruits ----
     for (const auto& fsd : m_levelData.fruits) {
         Vec2f pos{fsd.x, fsd.y};
-        EntityFactory::createFruitByName(m_registry, pos, fsd.type);
+        (void)EntityFactory::createFruitByName(m_registry, pos, fsd.type);
     }
 
     // ---- Traps ----
@@ -219,17 +219,17 @@ void GameScene::spawnEntities() {
         Vec2f pos{tsd.x, tsd.y};
 
         if (tsd.type == "moving_platform" && !tsd.path.empty()) {
-            EntityFactory::createMovingPlatform(m_registry, pos, tsd.path, tsd.speed);
+            (void)EntityFactory::createMovingPlatform(m_registry, pos, tsd.path, tsd.speed);
         } else if (tsd.type == "falling_platform") {
-            EntityFactory::createFallingPlatform(m_registry, pos);
+            (void)EntityFactory::createFallingPlatform(m_registry, pos);
         } else if (tsd.type == "spiked_ball") {
-            EntityFactory::createSpikedBall(m_registry, pos, tsd.chainLength);
+            (void)EntityFactory::createSpikedBall(m_registry, pos, tsd.chainLength);
         } else if (tsd.type == "fan") {
-            EntityFactory::createFan(m_registry, pos, tsd.strength);
+            (void)EntityFactory::createFan(m_registry, pos, tsd.strength);
         } else if (tsd.type == "arrow") {
-            EntityFactory::createArrow(m_registry, pos, tsd.direction);
+            (void)EntityFactory::createArrow(m_registry, pos, tsd.direction);
         } else if (tsd.type == "fire") {
-            EntityFactory::createFire(m_registry, pos, tsd.onTime, tsd.offTime);
+            (void)EntityFactory::createFire(m_registry, pos, tsd.onTime, tsd.offTime);
         } else if (tsd.type == "saw") {
             auto e = EntityFactory::createTrap(m_registry, pos, TrapType::Saw, tsd.speed);
             // If saw has a path, set it up
@@ -238,63 +238,63 @@ void GameScene::spawnEntities() {
                 tc.path = tsd.path;
             }
         } else if (tsd.type == "spike_head") {
-            EntityFactory::createTrap(m_registry, pos, TrapType::SpikeHead, tsd.speed);
+            (void)EntityFactory::createTrap(m_registry, pos, TrapType::SpikeHead, tsd.speed);
         } else if (tsd.type == "rock_head") {
-            EntityFactory::createTrap(m_registry, pos, TrapType::RockHead, tsd.speed);
+            (void)EntityFactory::createTrap(m_registry, pos, TrapType::RockHead, tsd.speed);
         } else if (tsd.type == "spikes") {
-            EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
+            (void)EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
         } else if (tsd.type == "trampoline") {
-            EntityFactory::createTrap(m_registry, pos, TrapType::Trampoline);
+            (void)EntityFactory::createTrap(m_registry, pos, TrapType::Trampoline);
         } else {
             // Generic trap
-            EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
+            (void)EntityFactory::createTrap(m_registry, pos, TrapType::Spikes);
         }
     }
 
     // ---- Boxes ----
     for (const auto& bsd : m_levelData.boxes) {
         Vec2f pos{bsd.x, bsd.y};
-        EntityFactory::createBox(m_registry, pos, bsd.type, bsd.hits);
+        (void)EntityFactory::createBox(m_registry, pos, bsd.type, bsd.hits);
     }
 
     // ---- Checkpoints ----
     for (const auto& csd : m_levelData.checkpoints) {
         Vec2f pos{csd.x, csd.y};
-        EntityFactory::createCheckpoint(m_registry, pos);
+        (void)EntityFactory::createCheckpoint(m_registry, pos);
     }
 
     // ---- Goal (trophy) ----
     if (m_levelData.goalType == "trophy") {
-        EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
+        (void)EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
     } else if (m_levelData.goalType == "flagpole") {
-        EntityFactory::createFlagPole(m_registry, m_levelData.goalPosition,
-                                      m_levelData.flagPoleHeight);
+        (void)EntityFactory::createFlagPole(m_registry, m_levelData.goalPosition,
+                                            m_levelData.flagPoleHeight);
     } else {
-        EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
+        (void)EntityFactory::createTrophy(m_registry, m_levelData.goalPosition);
     }
 
     // ---- Legacy: enemies ----
     for (const auto& esd : m_levelData.enemies) {
         Vec2f pos{esd.x, esd.y};
         if (esd.type == "koopa") {
-            EntityFactory::createKoopa(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createKoopa(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else if (esd.type == "piranha_plant") {
-            EntityFactory::createPiranhaPlant(m_registry, pos);
+            (void)EntityFactory::createPiranhaPlant(m_registry, pos);
         } else if (esd.type == "bowser") {
-            EntityFactory::createBowser(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createBowser(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         } else {
-            EntityFactory::createGoomba(m_registry, pos, esd.patrolLeft, esd.patrolRight);
+            (void)EntityFactory::createGoomba(m_registry, pos, esd.patrolLeft, esd.patrolRight);
         }
     }
 
     // ---- Legacy: collectibles ----
     for (const auto& csd : m_levelData.collectibles) {
         Vec2f pos{csd.x, csd.y};
-        if (csd.type == "mushroom")           EntityFactory::createMushroom(m_registry, pos);
-        else if (csd.type == "fire_flower")   EntityFactory::createFireFlower(m_registry, pos);
-        else if (csd.type == "star")          EntityFactory::createStar(m_registry, pos);
-        else if (csd.type == "1up")           EntityFactory::createOneUp(m_registry, pos);
-        else                                  EntityFactory::createCoin(m_registry, pos);
+        if (csd.type == "mushroom")           (void)EntityFactory::createMushroom(m_registry, pos);
+        else if (csd.type == "fire_flower")   (void)EntityFactory::createFireFlower(m_registry, pos);
+        else if (csd.type == "star")          (void)EntityFactory::createStar(m_registry, pos);
+        else if (csd.type == "1up")           (void)EntityFactory::createOneUp(m_registry, pos);
+        else                                  (void)EntityFactory::createCoin(m_registry, pos);
     }
 
     // ---- Legacy: question blocks ----
@@ -305,14 +305,14 @@ void GameScene::spawnEntities() {
         else if (qsd.contents == "fire_flower") contents = CollectibleType::FireFlower;
         else if (qsd.contents == "star")        contents = CollectibleType::Star;
         else if (qsd.contents == "1up")         contents = CollectibleType::OneUp;
-        EntityFactory::createQuestionBlock(m_registry, pos, contents);
+        (void)EntityFactory::createQuestionBlock(m_registry, pos, contents);
     }
 
     // ---- Legacy: pipes ----
     for (const auto& psd : m_levelData.pipes) {
         Vec2f pos{psd.x, psd.y};
         Vec2f dest{psd.destX, psd.destY};
-        EntityFactory::createPipe(m_registry, pos, psd.enterable, dest);
+        (void)EntityFactory::createPipe(m_registry, pos, psd.enterable, dest);
     }
 }
 
@@ -573,7 +573,7 @@ void GameScene::onBoxHit(const BoxHitEvent& event) {
 void GameScene::onBoxBreak(const BoxBreakEvent& event) {
     // Spawn the fruit at the box position
     if (!event.fruitSpawned.empty()) {
-        EntityFactory::createFruitByName(m_registry, event.position, event.fruitSpawned);
+        (void)EntityFactory::createFruitByName(m_registry, event.position, event.fruitSpawned);
     }
     AudioManager::instance().playSound("block_break");
 }

@@ -33,8 +33,6 @@ void HUDScene::render(IPlatform& platform) {
     const auto& gs = *m_state;
 
     int numActive = gs.numActivePlayers();
-    bool simultaneous = gs.isSimultaneous();
-
     // Character labels
     static const char* CHAR_NAMES[] = {"MASK DUDE", "NINJA FROG", "PINK MAN", "VIRTUAL GUY"};
     // Player colors for HUD elements

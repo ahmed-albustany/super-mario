@@ -61,20 +61,20 @@ TEST_F(LevelLoaderTest, PlayerSpawnNonZero) {
     EXPECT_GT(result->playerSpawn.y, 0.0f);
 }
 
-TEST_F(LevelLoaderTest, EnemyListNonEmpty) {
+TEST_F(LevelLoaderTest, FruitListNonEmpty) {
     if (!m_rootSet) GTEST_SKIP() << "assets directory not found";
 
     auto result = LevelLoader::load("levels/level_01.json");
     ASSERT_TRUE(result.has_value());
-    EXPECT_FALSE(result->enemies.empty());
+    EXPECT_FALSE(result->fruits.empty());
 }
 
-TEST_F(LevelLoaderTest, CollectibleListNonEmpty) {
+TEST_F(LevelLoaderTest, TrapListNonEmpty) {
     if (!m_rootSet) GTEST_SKIP() << "assets directory not found";
 
     auto result = LevelLoader::load("levels/level_01.json");
     ASSERT_TRUE(result.has_value());
-    EXPECT_FALSE(result->collectibles.empty());
+    EXPECT_FALSE(result->traps.empty());
 }
 
 TEST_F(LevelLoaderTest, TilesAreLoaded) {
