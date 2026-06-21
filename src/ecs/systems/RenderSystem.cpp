@@ -35,7 +35,15 @@ void RenderSystem::update(entt::registry& reg, IPlatform& platform) {
         const auto& transform = reg.get<TransformComponent>(entry.entity);
         const auto& sprite    = reg.get<SpriteComponent>(entry.entity);
 
-        if (!sprite.texture.valid()) continue;
+        if (!sprite.texture.valid()) {
+            // Fallback: draw a colored rectangle so the entity is never invisible
+            if (reg.all_of<PlayerComponent>(entry.entity)) {
+                Vec2f drawPos = transform.position;
+                platform.drawRect({drawPos.x, drawPos.y, 32.0f, 32.0f},
+                                  Color{0, 255, 0, 200});
+            }
+            continue;
+        }
 
         platform.drawSprite(
             sprite.texture,

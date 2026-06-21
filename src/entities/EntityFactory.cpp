@@ -1,6 +1,7 @@
 #include "entities/EntityFactory.hpp"
 #include "core/GameConfig.hpp"
 #include "core/ResourceManager.hpp"
+#include "utils/Logger.hpp"
 
 namespace {
 
@@ -96,6 +97,11 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     sprite.texture = tex(prefix + "_idle");
     sprite.srcRect = CHAR_RECT;
     sprite.zOrder  = 10;
+    if (!sprite.texture.valid()) {
+        LOG_ERROR("EntityFactory: FAILED to load texture '" << prefix << "_idle' for player " << playerIndex);
+    } else {
+        LOG_INFO("EntityFactory: player " << playerIndex << " texture '" << prefix << "_idle' handle=" << sprite.texture.id);
+    }
     registry.emplace<SpriteComponent>(entity, sprite);
 
     // Animation clips from sprite sheets
@@ -122,8 +128,7 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     registry.emplace<PlayerComponent>(entity, pc);
 
     registry.emplace<PlayerIndexComponent>(entity, PlayerIndexComponent{playerIndex});
-    // Give player spawn invincibility (60 frames = 1 second at 60fps)
-    registry.emplace<HealthComponent>(entity, HealthComponent{1, 1, Config::INVINCIBILITY_FRAMES / 2, false});
+    registry.emplace<HealthComponent>(entity, HealthComponent{1, 1, 0, false});
     registry.emplace<TagComponent>(entity, TagComponent{characterTag(playerIndex)});
 
     return entity;
