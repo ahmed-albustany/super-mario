@@ -137,6 +137,8 @@ void AudioManager::playSound(const std::string& key) {
     if (handle) {
         m_platform->setSfxVolume(m_masterVolume * m_sfxVolume);
         m_platform->playSound(*handle);
+    } else {
+        LOG_WARN("AudioManager: sound '" << key << "' not found — skipping");
     }
 }
 
