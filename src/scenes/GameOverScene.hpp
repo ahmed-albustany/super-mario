@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scenes/IScene.hpp"
+#include "core/GameState.hpp"
 #include <string>
 
 class Game;
@@ -12,7 +13,8 @@ class GameOverScene final : public IScene {
 public:
     /// @param win   true = level completed, false = all lives lost or time up.
     /// @param score Final score (copied by value).
-    GameOverScene(Game& game, bool win, int score);
+    /// @param mode  Game mode to restore on retry.
+    GameOverScene(Game& game, bool win, int score, GameMode mode = GameMode::Solo);
 
     void onEnter() override;
     void onExit() override;
@@ -26,6 +28,7 @@ private:
     Game& m_game;
     bool  m_win;
     int   m_score;
+    GameMode m_mode;
     int   m_selectedItem = 0;
     float m_elapsed = 0.0f;
 

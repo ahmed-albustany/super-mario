@@ -38,7 +38,9 @@
       "Bash(cmake .. -G \"Unix Makefiles\" -DMARIO_BUILD_TESTS=OFF)",
       "Bash(git status:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(cmake .. -G \"Unix Makefiles\")",
+      "Bash(where cmake:*)"
     ]
   }
 }

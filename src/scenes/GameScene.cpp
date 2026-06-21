@@ -203,7 +203,13 @@ void GameScene::loadLevel(const std::string& levelPath) {
     m_spawnPoint = m_levelData.playerSpawn;
     spawnEntities();
 
-    LOG_INFO("GameScene: level '" << m_levelData.name << "' loaded");
+    // Grace period: skip pit detection for 1 second after level load
+    m_spawnGraceTimer = 1.0f;
+
+    LOG_INFO("GameScene: level '" << m_levelData.name << "' loaded"
+             << " | spawn=(" << m_spawnPoint.x << "," << m_spawnPoint.y << ")"
+             << " | pixelH=" << m_tileMap.getPixelHeight()
+             << " | tiles=" << m_levelData.tiles.size());
 }
 
 void GameScene::spawnEntities() {
@@ -341,6 +347,12 @@ void GameScene::spawnPlayers() {
 
         if (ps.isAlive && ps.lives > 0) {
             m_players[static_cast<size_t>(i)].spawn(m_registry, spawnPos, i);
+            LOG_INFO("GameScene: spawned p" << i << " at (" << spawnPos.x << "," << spawnPos.y << ")"
+                     << " lives=" << ps.lives
+                     << " valid=" << m_players[static_cast<size_t>(i)].isValid(m_registry));
+        } else {
+            LOG_WARN("GameScene: SKIPPED spawn p" << i
+                     << " isAlive=" << ps.isAlive << " lives=" << ps.lives);
         }
     }
 }
@@ -351,6 +363,7 @@ void GameScene::respawnPlayer(int playerIndex) {
                        ? ps.checkpointPos : m_spawnPoint;
 
     m_players[static_cast<size_t>(playerIndex)].respawn(m_registry, respawnPos, playerIndex);
+    m_spawnGraceTimer = 1.0f; // Reset grace period on respawn
 }
 
 int GameScene::numSimultaneousPlayers() const {
@@ -377,16 +390,22 @@ void GameScene::handleInput(const InputManager& input) {
 void GameScene::update(float dt) {
     if (m_state->gameOver || m_state->levelWon) return;
 
+    // Tick spawn grace timer
+    if (m_spawnGraceTimer > 0.0f) {
+        m_spawnGraceTimer -= dt;
+    }
+
     // Countdown level timer
     m_state->levelTimer -= dt;
     if (m_state->levelTimer <= 0.0f) {
         m_state->levelTimer = 0.0f;
         m_state->gameOver = true;
+        LOG_INFO("GameScene: GAME OVER — timer expired");
         int totalScore = 0;
         for (int i = 0; i < m_state->numActivePlayers(); ++i) {
             totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(i)].score);
         }
-        m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+        m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore, m_state->mode));
         return;
     }
 
@@ -411,7 +430,9 @@ void GameScene::update(float dt) {
     m_camera.update(dt);
     m_game.platform().setCameraOffset(m_camera.getViewOffset());
 
-    // Check for player(s) falling into pit
+    // Check for player(s) falling into pit (skip during spawn grace period)
+    if (m_spawnGraceTimer > 0.0f) return;
+
     int numSim = numSimultaneousPlayers();
     for (int i = 0; i < numSim; ++i) {
         int playerIdx = (m_state->mode == GameMode::Alt2P) ? m_state->currentPlayer : i;
@@ -421,6 +442,9 @@ void GameScene::update(float dt) {
         const auto& pos = m_registry.get<TransformComponent>(player.getEntity()).position;
         if (pos.y <= m_tileMap.getPixelHeight() + 100.0f) continue;
 
+        LOG_INFO("GameScene: PIT DEATH p" << playerIdx
+                 << " y=" << pos.y
+                 << " threshold=" << (m_tileMap.getPixelHeight() + 100.0f));
         // Player fell into pit
         auto& ps = m_state->players[static_cast<size_t>(playerIdx)];
         --ps.lives;
@@ -445,7 +469,7 @@ void GameScene::update(float dt) {
                 for (int j = 0; j < numSim; ++j) {
                     totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(j)].score);
                 }
-                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore, m_state->mode));
             } else if (ps.lives > 0) {
                 respawnPlayer(playerIdx);
             } else {
@@ -459,7 +483,7 @@ void GameScene::update(float dt) {
             if (m_state->players[0].lives <= 0 && m_state->players[1].lives <= 0) {
                 m_state->gameOver = true;
                 int totalScore = m_state->players[0].score + m_state->players[1].score;
-                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore, m_state->mode));
             } else if (ps.lives <= 0) {
                 switchTurn();
             } else {
@@ -470,7 +494,7 @@ void GameScene::update(float dt) {
             // Solo
             if (ps.lives <= 0) {
                 m_state->gameOver = true;
-                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score));
+                m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score, m_state->mode));
             } else {
                 respawnPlayer(playerIdx);
                 m_camera.setTarget(m_spawnPoint);
@@ -500,6 +524,7 @@ void GameScene::render(IPlatform& platform) {
 void GameScene::onPlayerDied(const PlayerDiedEvent& event) {
     int idx = event.playerIndex;
     auto& ps = m_state->players[static_cast<size_t>(idx)];
+    LOG_INFO("GameScene: PlayerDiedEvent p" << idx << " lives=" << ps.lives << "->(" << (ps.lives-1) << ")");
     --ps.lives;
 
     // VS mode death penalty
@@ -522,7 +547,7 @@ void GameScene::onPlayerDied(const PlayerDiedEvent& event) {
             for (int j = 0; j < numSim; ++j) {
                 totalScore = Math::safeAdd(totalScore, m_state->players[static_cast<size_t>(j)].score);
             }
-            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore));
+            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, totalScore, m_state->mode));
         } else if (ps.lives > 0) {
             respawnPlayer(idx);
         } else {
@@ -532,7 +557,7 @@ void GameScene::onPlayerDied(const PlayerDiedEvent& event) {
         if (m_state->players[0].lives <= 0 && m_state->players[1].lives <= 0) {
             m_state->gameOver = true;
             m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-                m_state->players[0].score + m_state->players[1].score));
+                m_state->players[0].score + m_state->players[1].score, m_state->mode));
         } else if (ps.lives <= 0) {
             switchTurn();
         } else {
@@ -543,7 +568,7 @@ void GameScene::onPlayerDied(const PlayerDiedEvent& event) {
         // Solo
         if (ps.lives <= 0) {
             m_state->gameOver = true;
-            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score));
+            m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false, ps.score, m_state->mode));
         } else {
             respawnPlayer(idx);
             m_camera.setTarget(m_spawnPoint);
@@ -671,7 +696,7 @@ void GameScene::switchTurn() {
     if (newPs.lives <= 0) {
         m_state->gameOver = true;
         m_game.scenes().push(std::make_unique<GameOverScene>(m_game, false,
-            m_state->players[0].score + m_state->players[1].score));
+            m_state->players[0].score + m_state->players[1].score, m_state->mode));
         return;
     }
 

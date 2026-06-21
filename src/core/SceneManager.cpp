@@ -83,9 +83,10 @@ void SceneManager::applyPendingCommands() {
                         LOG_DEBUG("SceneManager: pop '" << m_stack.back()->name() << "'");
                         m_stack.back()->onExit();
                         m_stack.pop_back();
-                        if (!m_stack.empty()) {
-                            m_stack.back()->onEnter();
-                        }
+                        // Note: do NOT call onEnter() on the scene below.
+                        // onEnter() is for initialization, not resume.
+                        // Scenes that need resume logic should use onResume()
+                        // or handle it via their own update cycle.
                     } else {
                         LOG_WARN("SceneManager: pop on empty stack");
                     }

@@ -87,6 +87,10 @@ private:
     GameStatePtr m_state = std::make_shared<GameState>();
     Vec2f m_spawnPoint;
 
+    // Grace period: prevents pit-death for a brief window after spawn/respawn.
+    // This avoids edge-case instant deaths from float precision or timing issues.
+    float m_spawnGraceTimer = 0.0f;
+
     // Event subscriber IDs
     SubscriberID m_subPlayerDied       = 0;
     SubscriberID m_subFruitCollected   = 0;

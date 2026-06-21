@@ -73,8 +73,15 @@ void handlePlayerTrapCollision(entt::registry& reg, EventBus& events,
     // All other traps = instant death
     health.isDead = true;
     player.state = PlayerState::Dead;
-    events.publish(TrapDeathEvent{"trap",
-        reg.get<TransformComponent>(trapEnt).position, player.playerIndex});
+    {
+        auto trapPos = reg.get<TransformComponent>(trapEnt).position;
+        auto playerPos = reg.get<TransformComponent>(playerEnt).position;
+        LOG_INFO("CollisionSystem: TRAP KILL p" << player.playerIndex
+                 << " trap=(" << trapPos.x << "," << trapPos.y << ")"
+                 << " player=(" << playerPos.x << "," << playerPos.y << ")"
+                 << " trapType=" << static_cast<int>(trap.trapType));
+        events.publish(TrapDeathEvent{"trap", trapPos, player.playerIndex});
+    }
     events.publish(PlayerDiedEvent{0, player.playerIndex});
 }
 

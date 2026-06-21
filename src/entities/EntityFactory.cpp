@@ -122,7 +122,8 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     registry.emplace<PlayerComponent>(entity, pc);
 
     registry.emplace<PlayerIndexComponent>(entity, PlayerIndexComponent{playerIndex});
-    registry.emplace<HealthComponent>(entity, HealthComponent{1, 1, 0, false});
+    // Give player spawn invincibility (60 frames = 1 second at 60fps)
+    registry.emplace<HealthComponent>(entity, HealthComponent{1, 1, Config::INVINCIBILITY_FRAMES / 2, false});
     registry.emplace<TagComponent>(entity, TagComponent{characterTag(playerIndex)});
 
     return entity;

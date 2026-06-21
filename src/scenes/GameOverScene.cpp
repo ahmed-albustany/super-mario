@@ -10,10 +10,11 @@
 #include <cmath>
 #include <string>
 
-GameOverScene::GameOverScene(Game& game, bool win, int score)
+GameOverScene::GameOverScene(Game& game, bool win, int score, GameMode mode)
     : m_game(game)
     , m_win(win)
     , m_score(score)
+    , m_mode(mode)
 {}
 
 void GameOverScene::onEnter() {
@@ -130,12 +131,15 @@ void GameOverScene::selectItem(int index) {
 
 void GameOverScene::confirmSelection() {
     switch (m_selectedItem) {
-        case GO_RETRY:
+        case GO_RETRY: {
             // Pop GameOver + HUD + GameScene, push fresh GameScene
             m_game.scenes().pop();   // GameOverScene
             m_game.scenes().pop();   // HUDScene
-            m_game.scenes().replace(std::make_unique<GameScene>(m_game));
+            auto scene = std::make_unique<GameScene>(m_game);
+            scene->setGameMode(m_mode);
+            m_game.scenes().replace(std::move(scene));
             break;
+        }
         case GO_MENU:
             m_game.scenes().pop();   // GameOverScene
             m_game.scenes().pop();   // HUDScene
