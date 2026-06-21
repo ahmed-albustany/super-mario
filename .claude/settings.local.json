@@ -79,7 +79,9 @@
       "Bash(rm -rf C:/Users/Ahmed/project/super_mario/build/debug-native)",
       "Bash(cmake -S . -B build/debug-native -G \"MinGW Makefiles\" -DCMAKE_BUILD_TYPE=Debug -DMARIO_BUILD_WASM=OFF -DMARIO_BUILD_TESTS=OFF -DMARIO_ENABLE_SANITIZERS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON)",
       "Bash(timeout 8 ./MarioGame.exe)",
-      "Bash(timeout 6 ./MarioGame.exe)"
+      "Bash(timeout 6 ./MarioGame.exe)",
+      "Bash(cmake --build .)",
+      "Bash(\"C:/Program Files/CMake/bin/cmake.exe\" --build .)"
     ]
   }
 }

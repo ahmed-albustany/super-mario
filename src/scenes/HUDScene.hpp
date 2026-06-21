@@ -23,6 +23,5 @@ public:
     [[nodiscard]] std::string name() const override { return "HUDScene"; }
 
 private:
-    Game& m_game;
     GameStatePtr m_state;
 };

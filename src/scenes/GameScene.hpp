@@ -27,6 +27,9 @@ public:
     /// @brief Configure game mode before onEnter(). Call from MenuScene.
     void setGameMode(GameMode mode);
 
+    /// @brief Set starting level index before onEnter(). Call from LevelSelectScene.
+    void setStartLevel(int levelIndex);
+
     void onEnter() override;
     void onExit() override;
     void handleInput(const InputManager& input) override;

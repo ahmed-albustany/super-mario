@@ -54,12 +54,19 @@ struct GameState {
     static inline const std::vector<std::string> LEVEL_PATHS = {
         "levels/level_01.json",
         "levels/level_02.json",
-        "levels/level_03.json"
+        "levels/level_03.json",
+        "levels/level_04.json",
+        "levels/level_05.json",
+        "levels/level_06.json",
+        "levels/level_07.json",
+        "levels/level_08.json",
+        "levels/level_09.json",
+        "levels/level_10.json"
     };
     static inline const std::vector<std::string> WORLD_NAMES = {
-        "1-1", "1-2", "1-3"
+        "1-1", "1-2", "2-1", "2-2", "3-1", "3-2", "4-1", "4-2", "5-1", "5-2"
     };
-    static constexpr int TOTAL_LEVELS = 3;
+    static constexpr int TOTAL_LEVELS = 10;
 
     GameState() {
         players[0].playerIndex = 0;

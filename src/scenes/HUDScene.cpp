@@ -7,9 +7,8 @@
 #include <string>
 #include <cmath>
 
-HUDScene::HUDScene(Game& game, GameStatePtr state)
-    : m_game(game)
-    , m_state(std::move(state))
+HUDScene::HUDScene(Game& /*game*/, GameStatePtr state)
+    : m_state(std::move(state))
 {}
 
 void HUDScene::onEnter() {}

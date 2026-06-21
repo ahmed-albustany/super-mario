@@ -1,12 +1,12 @@
 {
   "meta": {
-    "name": "Pixel Rush 1-1",
-    "theme": "green",
+    "name": "Pixel Rush 3-1",
+    "theme": "castle",
     "width": 60,
     "height": 20,
-    "background": "bg_green",
-    "music": "overworld_theme",
-    "time_limit": 300,
+    "background": "bg_purple",
+    "music": "castle_theme",
+    "time_limit": 280,
     "gravity": 0
   },
   "tiles": [
@@ -21,8 +21,6 @@
     {"x":8,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":9,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":10,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":11,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":12,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":13,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":14,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":15,"y":19,"id":1,"solid":true,"destructible":false},
@@ -33,19 +31,16 @@
     {"x":20,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":21,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":22,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":23,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":24,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":25,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":26,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":27,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":28,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":29,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":30,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":31,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":32,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":33,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":34,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":35,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":36,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":37,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":38,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":39,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":40,"y":19,"id":1,"solid":true,"destructible":false},
@@ -55,8 +50,6 @@
     {"x":44,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":45,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":46,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":47,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":48,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":49,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":50,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":51,"y":19,"id":1,"solid":true,"destructible":false},
@@ -81,62 +74,92 @@
     {"x":58,"y":18,"id":1,"solid":true,"destructible":false},
     {"x":59,"y":18,"id":1,"solid":true,"destructible":false},
 
-    {"x":10,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":11,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":12,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":13,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":4,"y":16,"id":2,"solid":true,"destructible":false},
+    {"x":5,"y":16,"id":2,"solid":true,"destructible":false},
+    {"x":6,"y":16,"id":2,"solid":true,"destructible":false},
+    {"x":7,"y":16,"id":2,"solid":true,"destructible":false},
 
-    {"x":18,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":14,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":15,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":16,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":17,"y":15,"id":2,"solid":true,"destructible":false},
+
     {"x":19,"y":13,"id":2,"solid":true,"destructible":false},
     {"x":20,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":21,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":22,"y":13,"id":2,"solid":true,"destructible":false},
 
-    {"x":25,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":26,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":27,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":27,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":28,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":29,"y":14,"id":2,"solid":true,"destructible":false},
 
-    {"x":38,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":32,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":33,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":34,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":35,"y":11,"id":2,"solid":true,"destructible":false},
+
     {"x":39,"y":15,"id":2,"solid":true,"destructible":false},
     {"x":40,"y":15,"id":2,"solid":true,"destructible":false},
     {"x":41,"y":15,"id":2,"solid":true,"destructible":false},
 
-    {"x":45,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":46,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":47,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":44,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":45,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":46,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":47,"y":12,"id":2,"solid":true,"destructible":false},
 
-    {"x":52,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":53,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":54,"y":16,"id":2,"solid":true,"destructible":false}
+    {"x":50,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":51,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":52,"y":15,"id":2,"solid":true,"destructible":false},
+
+    {"x":55,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":56,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":57,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":58,"y":14,"id":2,"solid":true,"destructible":false}
   ],
   "spawn_points": {
     "player": { "x": 2, "y": 16 },
     "fruits": [
-      { "type": "cherry", "x": 6, "y": 17 },
-      { "type": "cherry", "x": 8, "y": 17 },
-      { "type": "cherry", "x": 11, "y": 13 },
-      { "type": "cherry", "x": 12, "y": 13 },
-      { "type": "apple", "x": 19, "y": 11 },
-      { "type": "cherry", "x": 22, "y": 17 },
-      { "type": "apple", "x": 26, "y": 13 },
-      { "type": "cherry", "x": 29, "y": 17 },
-      { "type": "cherry", "x": 36, "y": 17 },
-      { "type": "apple", "x": 39, "y": 13 },
-      { "type": "apple", "x": 40, "y": 13 },
-      { "type": "cherry", "x": 43, "y": 17 },
-      { "type": "cherry", "x": 46, "y": 11 },
-      { "type": "apple", "x": 50, "y": 17 }
+      { "type": "cherry", "x": 5, "y": 17 },
+      { "type": "cherry", "x": 7, "y": 17 },
+      { "type": "apple",  "x": 15, "y": 13 },
+      { "type": "orange", "x": 20, "y": 11 },
+      { "type": "cherry", "x": 21, "y": 11 },
+      { "type": "apple",  "x": 28, "y": 12 },
+      { "type": "melon",  "x": 33, "y": 9 },
+      { "type": "orange", "x": 34, "y": 9 },
+      { "type": "cherry", "x": 40, "y": 13 },
+      { "type": "apple",  "x": 45, "y": 10 },
+      { "type": "orange", "x": 46, "y": 10 },
+      { "type": "melon",  "x": 51, "y": 13 },
+      { "type": "cherry", "x": 56, "y": 12 },
+      { "type": "apple",  "x": 57, "y": 12 }
+    ],
+    "enemies": [
+      { "type": "spike_head", "x": 15, "y": 14 },
+      { "type": "spike_head", "x": 40, "y": 14 },
+      { "type": "spike_head", "x": 56, "y": 13, "direction": "left" },
+      { "type": "rock_head",  "x": 20, "y": 12 },
+      { "type": "rock_head",  "x": 45, "y": 11 }
     ],
     "traps": [
-      { "type": "spikes", "x": 15, "y": 18 },
-      { "type": "spikes", "x": 16, "y": 18 },
-      { "type": "spikes", "x": 34, "y": 18 },
-      { "type": "spikes", "x": 35, "y": 18 },
-      { "type": "spikes", "x": 48, "y": 18 },
-      { "type": "spikes", "x": 49, "y": 18 },
-      { "type": "trampoline", "x": 31, "y": 18 },
-      { "type": "trampoline", "x": 44, "y": 18 }
+      { "type": "spikes",     "x": 13, "y": 18 },
+      { "type": "spikes",     "x": 22, "y": 18 },
+      { "type": "spikes",     "x": 38, "y": 18 },
+      { "type": "spikes",     "x": 46, "y": 18 },
+      { "type": "trampoline", "x": 24, "y": 18 },
+      {
+        "type": "saw",
+        "x": 29, "y": 16,
+        "speed": 2.0,
+        "path": [
+          { "x": 29, "y": 16 },
+          { "x": 29, "y": 19 }
+        ]
+      }
     ],
     "boxes": [
-      { "type": "box1", "x": 19, "y": 11, "hits": 3 }
+      { "type": "box1", "x": 28, "y": 12, "hits": 3 },
+      { "type": "box1", "x": 51, "y": 13, "hits": 3 }
     ],
     "checkpoints": [
       { "x": 30, "y": 17 }
@@ -145,6 +168,6 @@
   "goal": {
     "type": "trophy",
     "x": 57,
-    "y": 14
+    "y": 13
   }
 }

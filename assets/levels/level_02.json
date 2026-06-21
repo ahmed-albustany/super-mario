@@ -1,12 +1,12 @@
 {
   "meta": {
     "name": "Pixel Rush 1-2",
-    "theme": "blue",
-    "width": 70,
+    "theme": "green",
+    "width": 60,
     "height": 20,
-    "background": "bg_blue",
-    "music": "level_blue",
-    "time_limit": 350,
+    "background": "bg_green",
+    "music": "overworld_theme",
+    "time_limit": 300,
     "gravity": 0
   },
   "tiles": [
@@ -26,8 +26,9 @@
     {"x":13,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":14,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":15,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":16,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":17,"y":19,"id":1,"solid":true,"destructible":false},
+
+    {"x":18,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":19,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":20,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":21,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":22,"y":19,"id":1,"solid":true,"destructible":false},
@@ -39,9 +40,10 @@
     {"x":28,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":29,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":30,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":31,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":32,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":33,"y":19,"id":1,"solid":true,"destructible":false},
+
+    {"x":34,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":35,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":36,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":37,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":38,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":39,"y":19,"id":1,"solid":true,"destructible":false},
@@ -52,9 +54,11 @@
     {"x":44,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":45,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":46,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":47,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":48,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":49,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":50,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":51,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":52,"y":19,"id":1,"solid":true,"destructible":false},
+
     {"x":53,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":54,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":55,"y":19,"id":1,"solid":true,"destructible":false},
@@ -62,117 +66,64 @@
     {"x":57,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":58,"y":19,"id":1,"solid":true,"destructible":false},
     {"x":59,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":60,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":61,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":62,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":63,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":64,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":65,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":66,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":67,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":68,"y":19,"id":1,"solid":true,"destructible":false},
-    {"x":69,"y":19,"id":1,"solid":true,"destructible":false},
 
-    {"x":0,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":1,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":2,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":3,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":66,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":67,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":68,"y":18,"id":1,"solid":true,"destructible":false},
-    {"x":69,"y":18,"id":1,"solid":true,"destructible":false},
-
-    {"x":8,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":9,"y":15,"id":2,"solid":true,"destructible":false},
     {"x":10,"y":15,"id":2,"solid":true,"destructible":false},
     {"x":11,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":12,"y":15,"id":2,"solid":true,"destructible":false},
 
-    {"x":14,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":15,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":16,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":22,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":23,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":24,"y":13,"id":2,"solid":true,"destructible":false},
+    {"x":25,"y":13,"id":2,"solid":true,"destructible":false},
 
-    {"x":22,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":23,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":24,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":38,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":39,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":40,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":41,"y":14,"id":2,"solid":true,"destructible":false},
 
-    {"x":28,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":29,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":30,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":31,"y":13,"id":2,"solid":true,"destructible":false},
-
-    {"x":38,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":39,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":40,"y":16,"id":2,"solid":true,"destructible":false},
-
-    {"x":42,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":43,"y":13,"id":2,"solid":true,"destructible":false},
-    {"x":44,"y":13,"id":2,"solid":true,"destructible":false},
-
-    {"x":52,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":53,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":54,"y":15,"id":2,"solid":true,"destructible":false},
-    {"x":55,"y":15,"id":2,"solid":true,"destructible":false},
-
-    {"x":58,"y":12,"id":2,"solid":true,"destructible":false},
-    {"x":59,"y":12,"id":2,"solid":true,"destructible":false},
-    {"x":60,"y":12,"id":2,"solid":true,"destructible":false},
-
-    {"x":63,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":64,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":65,"y":16,"id":2,"solid":true,"destructible":false},
-    {"x":66,"y":16,"id":2,"solid":true,"destructible":false}
+    {"x":48,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":49,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":50,"y":12,"id":2,"solid":true,"destructible":false}
   ],
   "spawn_points": {
-    "player": { "x": 2, "y": 17 },
+    "player": { "x": 2, "y": 16 },
     "fruits": [
-      { "type": "cherry", "x": 5, "y": 17 },
-      { "type": "cherry", "x": 7, "y": 17 },
-      { "type": "apple", "x": 9, "y": 13 },
-      { "type": "apple", "x": 10, "y": 13 },
-      { "type": "orange", "x": 15, "y": 11 },
-      { "type": "cherry", "x": 21, "y": 17 },
-      { "type": "cherry", "x": 23, "y": 13 },
-      { "type": "pineapple", "x": 29, "y": 11 },
-      { "type": "apple", "x": 30, "y": 11 },
-      { "type": "cherry", "x": 32, "y": 17 },
-      { "type": "orange", "x": 39, "y": 14 },
-      { "type": "cherry", "x": 41, "y": 17 },
-      { "type": "apple", "x": 43, "y": 11 },
-      { "type": "pineapple", "x": 53, "y": 13 },
-      { "type": "cherry", "x": 54, "y": 13 },
-      { "type": "orange", "x": 59, "y": 10 },
-      { "type": "apple", "x": 62, "y": 17 },
-      { "type": "cherry", "x": 64, "y": 14 }
+      { "type": "cherry", "x": 5,  "y": 17 },
+      { "type": "cherry", "x": 11, "y": 13 },
+      { "type": "apple",  "x": 12, "y": 13 },
+      { "type": "cherry", "x": 22, "y": 11 },
+      { "type": "apple",  "x": 24, "y": 11 },
+      { "type": "cherry", "x": 26, "y": 17 },
+      { "type": "apple",  "x": 35, "y": 17 },
+      { "type": "cherry", "x": 38, "y": 12 },
+      { "type": "apple",  "x": 40, "y": 12 },
+      { "type": "apple",  "x": 48, "y": 10 },
+      { "type": "cherry", "x": 49, "y": 10 },
+      { "type": "apple",  "x": 55, "y": 17 }
     ],
     "traps": [
-      { "type": "spikes", "x": 12, "y": 18 },
-      { "type": "spikes", "x": 13, "y": 18 },
-      { "type": "spikes", "x": 25, "y": 18 },
-      { "type": "spikes", "x": 26, "y": 18 },
-      { "type": "spikes", "x": 27, "y": 18 },
-      { "type": "spikes", "x": 55, "y": 18 },
-      { "type": "spikes", "x": 56, "y": 18 },
-      { "type": "saw", "x": 20, "y": 16, "speed": 2.0, "path": [{"x": 20, "y": 16}, {"x": 20, "y": 12}] },
-      { "type": "saw", "x": 45, "y": 17, "speed": 2.5, "path": [{"x": 45, "y": 17}, {"x": 50, "y": 17}] },
-      { "type": "fire", "x": 33, "y": 18, "on_time": 2.0, "off_time": 1.0 },
-      { "type": "fire", "x": 61, "y": 18, "on_time": 1.5, "off_time": 1.0 },
-      { "type": "moving_platform", "x": 34, "y": 15, "speed": 1.5, "path": [{"x": 34, "y": 15}, {"x": 37, "y": 15}] },
-      { "type": "moving_platform", "x": 47, "y": 14, "speed": 1.0, "path": [{"x": 47, "y": 14}, {"x": 50, "y": 14}] },
-      { "type": "falling_platform", "x": 35, "y": 12 },
-      { "type": "falling_platform", "x": 57, "y": 14 }
+      { "type": "saw", "x": 14, "y": 15, "move_axis": "vertical", "range_min": 13, "range_max": 17, "speed": 2.0 },
+      { "type": "saw", "x": 36, "y": 15, "move_axis": "vertical", "range_min": 13, "range_max": 17, "speed": 2.0 },
+      { "type": "saw", "x": 44, "y": 17, "move_axis": "horizontal", "range_min": 42, "range_max": 47, "speed": 2.5 },
+      { "type": "trampoline", "x": 17, "y": 18 },
+      { "type": "trampoline", "x": 33, "y": 18 },
+      { "type": "spikes", "x": 20, "y": 18 },
+      { "type": "spikes", "x": 21, "y": 18 },
+      { "type": "spikes", "x": 28, "y": 18 },
+      { "type": "spikes", "x": 29, "y": 18 },
+      { "type": "moving_platform", "x": 51, "y": 16, "target_x": 53, "target_y": 16, "speed": 1.5 }
     ],
     "boxes": [
-      { "type": "box1", "x": 15, "y": 11, "hits": 3 },
-      { "type": "box1", "x": 43, "y": 11, "hits": 3 }
+      { "type": "box1", "x": 11, "y": 13, "hits": 3 },
+      { "type": "box1", "x": 39, "y": 12, "hits": 3 }
     ],
     "checkpoints": [
-      { "x": 25, "y": 17 },
-      { "x": 52, "y": 17 }
+      { "x": 28, "y": 17 }
     ]
   },
   "goal": {
     "type": "trophy",
-    "x": 67,
-    "y": 17
+    "x": 57,
+    "y": 14
   }
 }

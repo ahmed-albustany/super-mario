@@ -69,14 +69,11 @@ const char* characterTag(int playerIndex) {
 
 constexpr Rect CHAR_RECT  = {0.0f, 0.0f, 32.0f, 32.0f};
 constexpr Rect FRUIT_RECT = {0.0f, 0.0f, 32.0f, 32.0f};
-constexpr Rect TRAP_RECT  = {0.0f, 0.0f, 16.0f, 16.0f};
 constexpr Rect ITEM_RECT  = {0.0f, 0.0f, 16.0f, 16.0f};
 constexpr Rect TILE_RECT  = {0.0f, 0.0f, 32.0f, 32.0f};
 constexpr Rect ENEMY_RECT = {0.0f, 0.0f, 16.0f, 16.0f};
 constexpr Rect BOWSER_RECT = {0.0f, 0.0f, 32.0f, 32.0f};
 constexpr Rect PIPE_RECT  = {0.0f, 0.0f, 64.0f, 64.0f};
-constexpr Rect SMALL_RECT = {0.0f, 0.0f, 16.0f, 16.0f};
-constexpr Rect BIG_RECT   = {0.0f, 0.0f, 16.0f, 32.0f};
 
 } // anonymous namespace
 

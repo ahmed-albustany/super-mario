@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "name": "Pixel Rush 3-2",
+    "theme": "castle",
+    "width": 60,
+    "height": 20,
+    "background": "bg_purple",
+    "music": "castle_theme",
+    "time_limit": 260,
+    "gravity": 0
+  },
+  "tiles": [
+    {"x":0,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":1,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":2,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":3,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":4,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":5,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":6,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":7,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":11,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":12,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":13,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":14,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":15,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":16,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":20,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":21,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":22,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":23,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":24,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":25,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":26,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":27,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":28,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":33,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":34,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":35,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":36,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":37,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":38,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":39,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":40,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":44,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":45,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":46,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":47,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":48,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":49,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":50,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":51,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":52,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":55,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":56,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":57,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":58,"y":19,"id":1,"solid":true,"destructible":false},
+    {"x":59,"y":19,"id":1,"solid":true,"destructible":false},
+
+    {"x":0,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":1,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":2,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":3,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":55,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":56,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":57,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":58,"y":18,"id":1,"solid":true,"destructible":false},
+    {"x":59,"y":18,"id":1,"solid":true,"destructible":false},
+
+    {"x":3,"y":16,"id":2,"solid":true,"destructible":false},
+    {"x":4,"y":16,"id":2,"solid":true,"destructible":false},
+    {"x":5,"y":16,"id":2,"solid":true,"destructible":false},
+
+    {"x":11,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":12,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":13,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":14,"y":15,"id":2,"solid":true,"destructible":false},
+
+    {"x":16,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":17,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":18,"y":12,"id":2,"solid":true,"destructible":false},
+
+    {"x":22,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":23,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":24,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":25,"y":14,"id":2,"solid":true,"destructible":false},
+
+    {"x":26,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":27,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":28,"y":11,"id":2,"solid":true,"destructible":false},
+
+    {"x":34,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":35,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":36,"y":15,"id":2,"solid":true,"destructible":false},
+    {"x":37,"y":15,"id":2,"solid":true,"destructible":false},
+
+    {"x":38,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":39,"y":12,"id":2,"solid":true,"destructible":false},
+    {"x":40,"y":12,"id":2,"solid":true,"destructible":false},
+
+    {"x":45,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":46,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":47,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":48,"y":14,"id":2,"solid":true,"destructible":false},
+
+    {"x":50,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":51,"y":11,"id":2,"solid":true,"destructible":false},
+    {"x":52,"y":11,"id":2,"solid":true,"destructible":false},
+
+    {"x":55,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":56,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":57,"y":14,"id":2,"solid":true,"destructible":false},
+    {"x":58,"y":14,"id":2,"solid":true,"destructible":false}
+  ],
+  "spawn_points": {
+    "player": { "x": 2, "y": 16 },
+    "fruits": [
+      { "type": "strawberry", "x": 4,  "y": 17 },
+      { "type": "kiwi",       "x": 12, "y": 13 },
+      { "type": "strawberry", "x": 13, "y": 13 },
+      { "type": "apple",      "x": 17, "y": 10 },
+      { "type": "kiwi",       "x": 23, "y": 12 },
+      { "type": "cherry",     "x": 27, "y": 9  },
+      { "type": "strawberry", "x": 35, "y": 13 },
+      { "type": "kiwi",       "x": 36, "y": 13 },
+      { "type": "apple",      "x": 39, "y": 10 },
+      { "type": "cherry",     "x": 46, "y": 12 },
+      { "type": "strawberry", "x": 51, "y": 9  },
+      { "type": "kiwi",       "x": 56, "y": 12 }
+    ],
+    "enemies": [
+      { "type": "rock_head",  "x": 12, "y": 14 },
+      { "type": "rock_head",  "x": 24, "y": 13 },
+      { "type": "rock_head",  "x": 36, "y": 14 },
+      { "type": "rock_head",  "x": 47, "y": 13 },
+      { "type": "spike_head", "x": 17, "y": 11 },
+      { "type": "spike_head", "x": 39, "y": 11, "direction": "left" }
+    ],
+    "traps": [
+      { "type": "spikes", "x": 8,  "y": 18 },
+      { "type": "spikes", "x": 17, "y": 18 },
+      { "type": "spikes", "x": 30, "y": 18 },
+      { "type": "spikes", "x": 31, "y": 18 },
+      { "type": "spikes", "x": 41, "y": 18 },
+      { "type": "spikes", "x": 53, "y": 18 },
+      {
+        "type": "saw",
+        "x": 18, "y": 16,
+        "speed": 2.0,
+        "path": [
+          { "x": 18, "y": 16 },
+          { "x": 18, "y": 19 }
+        ]
+      },
+      {
+        "type": "saw",
+        "x": 43, "y": 17,
+        "speed": 2.5,
+        "path": [
+          { "x": 43, "y": 17 },
+          { "x": 43, "y": 19 }
+        ]
+      },
+      {
+        "type": "saw",
+        "x": 29, "y": 12,
+        "speed": 2.0,
+        "path": [
+          { "x": 29, "y": 12 },
+          { "x": 32, "y": 12 }
+        ]
+      },
+      {
+        "type": "moving_platform",
+        "x": 9,  "y": 17,
+        "speed": 1.5,
+        "path": [
+          { "x": 9,  "y": 17 },
+          { "x": 10, "y": 17 }
+        ]
+      },
+      {
+        "type": "moving_platform",
+        "x": 41, "y": 17,
+        "speed": 1.5,
+        "path": [
+          { "x": 41, "y": 17 },
+          { "x": 43, "y": 17 }
+        ]
+      }
+    ],
+    "checkpoints": [
+      { "x": 28, "y": 17 }
+    ]
+  },
+  "goal": {
+    "type": "trophy",
+    "x": 57,
+    "y": 13
+  }
+}

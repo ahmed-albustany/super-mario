@@ -1,5 +1,5 @@
 #include "scenes/MenuScene.hpp"
-#include "scenes/GameScene.hpp"
+#include "scenes/LevelSelectScene.hpp"
 #include "core/Game.hpp"
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
@@ -144,9 +144,7 @@ void MenuScene::confirmSelection() {
     AudioManager::instance().playSound("menu_confirm");
 
     auto createScene = [this](GameMode mode) {
-        auto scene = std::make_unique<GameScene>(m_game);
-        scene->setGameMode(mode);
-        m_game.scenes().replace(std::move(scene));
+        m_game.scenes().replace(std::make_unique<LevelSelectScene>(m_game, mode));
     };
 
     switch (m_selectedItem) {

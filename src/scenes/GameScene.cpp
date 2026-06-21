@@ -21,6 +21,13 @@ void GameScene::setGameMode(GameMode mode) {
     m_state->currentPlayer = 0;
 }
 
+void GameScene::setStartLevel(int levelIndex) {
+    m_state->currentLevel = levelIndex;
+    if (levelIndex >= 0 && levelIndex < static_cast<int>(GameState::WORLD_NAMES.size())) {
+        m_state->worldDisplay = GameState::WORLD_NAMES[static_cast<size_t>(levelIndex)];
+    }
+}
+
 // =============================================================================
 // Lifecycle
 // =============================================================================
