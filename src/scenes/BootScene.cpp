@@ -7,6 +7,7 @@
 #include "utils/Logger.hpp"
 #include <nlohmann/json.hpp>
 #include <iostream>
+#include <cstdio>
 
 BootScene::BootScene(Game& game) : m_game(game) {}
 
@@ -83,6 +84,9 @@ void BootScene::update(float dt) {
         }
         std::string fullPath = *resolved;
 
+        printf("[BOOT] loading %s '%s' -> '%s'\n",
+               entry.type.c_str(), entry.key.c_str(), fullPath.c_str());
+
         bool ok = false;
         if (entry.type == "texture") {
             ok = rm.loadTexture(entry.key, fullPath);
@@ -93,6 +97,8 @@ void BootScene::update(float dt) {
         }
 
         if (!ok) {
+            printf("[BOOT] FAILED %s '%s' path='%s'\n",
+                   entry.type.c_str(), entry.key.c_str(), fullPath.c_str());
             std::cerr << "BootScene: FAILED to load " << entry.type << " '"
                       << entry.key << "' path=" << fullPath << std::endl;
             ++m_failures;

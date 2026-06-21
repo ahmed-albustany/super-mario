@@ -250,6 +250,20 @@
             // Route keyboard events to window so input works regardless of focus
             keyboardListeningElement: window,
             onRuntimeInitialized: function() {
+                // --- DEBUG: dump VFS contents to browser console ---
+                try {
+                    console.log('[VFS] /assets/ exists:', FS.readdir('/assets/'));
+                } catch(e) { console.error('[VFS] /assets/ NOT FOUND:', e.message); }
+                try {
+                    console.log('[VFS] /assets/textures/characters/mask_dude/:', FS.readdir('/assets/textures/characters/mask_dude'));
+                } catch(e) { console.error('[VFS] mask_dude dir NOT FOUND:', e.message); }
+                try {
+                    console.log('[VFS] /assets/fonts/:', FS.readdir('/assets/fonts'));
+                } catch(e) { console.error('[VFS] fonts dir NOT FOUND:', e.message); }
+                try {
+                    console.log('[VFS] /assets/audio/:', FS.readdir('/assets/audio').slice(0, 10), '...');
+                } catch(e) { console.error('[VFS] audio dir NOT FOUND:', e.message); }
+                // --- END DEBUG ---
                 onWASMReady();
             },
             setStatus: function(text) {

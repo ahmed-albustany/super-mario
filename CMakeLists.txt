@@ -171,14 +171,15 @@ if(MARIO_BUILD_WASM)
         "-sALLOW_MEMORY_GROWTH=1"
         "-sINITIAL_MEMORY=67108864"
         "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
-        "-sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\"]"
+        "-sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"FS\"]"
         "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
     )
 
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND MARIO_EM_FLAGS "-sASSERTIONS=1" "-g2")
     else()
-        list(APPEND MARIO_EM_FLAGS "-O2" "--closure 1")
+        # -sASSERTIONS=1 temporarily enabled in Release for debugging green-square issue
+        list(APPEND MARIO_EM_FLAGS "-O2" "-sASSERTIONS=1")
     endif()
 
     target_link_options(MarioGame-web PRIVATE ${MARIO_EM_FLAGS})

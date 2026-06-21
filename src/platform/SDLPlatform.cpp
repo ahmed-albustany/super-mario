@@ -3,6 +3,7 @@
 #include "platform/SDLPlatform.hpp"
 #include "core/GameConfig.hpp"
 #include "utils/Logger.hpp"
+#include <cstdio>
 
 // =============================================================================
 // Factory
@@ -432,11 +433,20 @@ void SDLPlatform::setSfxVolume(float volume) {
 // =============================================================================
 TextureHandle SDLPlatform::loadTexture(const std::string& key,
                                          const std::string& path) {
+    // --- DEBUG: print every texture load attempt to browser console ---
+    printf("[TEX] loadTexture key='%s' path='%s'\n", key.c_str(), path.c_str());
+
     SDL_Surface* surface = IMG_Load(path.c_str());
     if (!surface) {
+        printf("[TEX] FAIL IMG_Load returned NULL for '%s'\n", path.c_str());
+        printf("[TEX]   IMG_GetError: %s\n", IMG_GetError());
+        printf("[TEX]   SDL_GetError: %s\n", SDL_GetError());
         LOG_ERROR("Failed to load texture '" << key << "' path='" << path << "': " << IMG_GetError());
         return TextureHandle{0};
     }
+
+    printf("[TEX] OK IMG_Load surface=%p w=%d h=%d for '%s'\n",
+           (void*)surface, surface->w, surface->h, key.c_str());
 
     SDL_Texture* texture = SDL_CreateTextureFromSurface(m_renderer, surface);
     int w = surface->w;
@@ -444,6 +454,7 @@ TextureHandle SDLPlatform::loadTexture(const std::string& key,
     SDL_FreeSurface(surface);
 
     if (!texture) {
+        printf("[TEX] FAIL SDL_CreateTextureFromSurface: %s\n", SDL_GetError());
         LOG_ERROR("Failed to create texture from surface: " << SDL_GetError());
         return TextureHandle{0};
     }
@@ -452,17 +463,21 @@ TextureHandle SDLPlatform::loadTexture(const std::string& key,
 
     uint32_t id = m_nextTexId++;
     m_textures[id] = {texture, w, h};
+    printf("[TEX] SUCCESS key='%s' handle=%u (%dx%d)\n", key.c_str(), id, w, h);
     LOG_DEBUG("Loaded texture '" << key << "' as handle " << id);
     return TextureHandle{id};
 }
 
 SoundHandle SDLPlatform::loadSound(const std::string& key,
                                      const std::string& path) {
+    printf("[SND] loadSound key='%s' path='%s'\n", key.c_str(), path.c_str());
     Mix_Chunk* chunk = Mix_LoadWAV(path.c_str());
     if (!chunk) {
+        printf("[SND] FAIL key='%s' path='%s': %s\n", key.c_str(), path.c_str(), Mix_GetError());
         LOG_ERROR("Failed to load sound '" << key << "' path='" << path << "': " << Mix_GetError());
         return SoundHandle{0};
     }
+    printf("[SND] OK key='%s'\n", key.c_str());
 
     uint32_t id = m_nextSndId++;
     m_sounds[id] = chunk;
@@ -474,11 +489,14 @@ FontHandle SDLPlatform::loadFont(const std::string& key,
                                    const std::string& path) {
     // For SDL_ttf, we store the path and open at each requested size on demand
     // Verify the file is accessible by opening at a default size
+    printf("[FNT] loadFont key='%s' path='%s'\n", key.c_str(), path.c_str());
     TTF_Font* test = TTF_OpenFont(path.c_str(), 16);
     if (!test) {
+        printf("[FNT] FAIL key='%s' path='%s': %s\n", key.c_str(), path.c_str(), TTF_GetError());
         LOG_ERROR("Failed to load font '" << key << "' path='" << path << "': " << TTF_GetError());
         return FontHandle{0};
     }
+    printf("[FNT] OK key='%s'\n", key.c_str());
 
     uint32_t id = m_nextFontId++;
     FontData data;
