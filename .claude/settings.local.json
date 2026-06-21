@@ -36,7 +36,9 @@
       "Bash(git remote:*)",
       "Bash(mkdir -p build_check)",
       "Bash(cmake .. -G \"Unix Makefiles\" -DMARIO_BUILD_TESTS=OFF)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
