@@ -176,10 +176,12 @@ void GameScene::loadLevel(const std::string& levelPath) {
     if (!m_levelData.background.empty()) {
         auto bg = rm.getTexture(m_levelData.background);
         if (bg) {
+            // Pixel Adventure backgrounds are 64x64 tiles — pass actual size so
+            // the parallax renderer can tile them across the full screen.
             m_parallax.addDefaultLayers(
-                *bg, 1280.0f, 720.0f,
-                *bg, 1280.0f, 720.0f,
-                *bg, 1280.0f, 720.0f
+                *bg, 64.0f, 64.0f,
+                *bg, 64.0f, 64.0f,
+                *bg, 64.0f, 64.0f
             );
             bgLoaded = true;
         }

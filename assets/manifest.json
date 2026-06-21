@@ -80,6 +80,9 @@
         { "key": "checkpoint_flag_idle",        "path": "textures/items/checkpoints/flag_idle.png"      },
 
         { "key": "trophy_idle",                 "path": "textures/items/trophy/idle.png"                },
+        { "key": "trophy_pressed",              "path": "textures/items/trophy/pressed.png"             },
+
+        { "key": "trap_platform",               "path": "textures/traps/platform/on.png"               },
 
         { "key": "bg_green",                    "path": "textures/background/green.png"                 },
         { "key": "bg_blue",                     "path": "textures/background/blue.png"                  },

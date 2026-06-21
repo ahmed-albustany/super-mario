@@ -27,7 +27,7 @@ void Parallax::render(IPlatform& platform, const Vec2f& cameraOffset) const {
 
     for (const auto& layer : m_layers) {
         if (!layer.texture.valid()) continue;
-        if (layer.texWidth <= 0.0f) continue;
+        if (layer.texWidth <= 0.0f || layer.texHeight <= 0.0f) continue;
 
         // Parallax scroll: camera offset scaled by the layer's speed
         float scrollX = cameraOffset.x * layer.scrollSpeed;
@@ -36,22 +36,17 @@ void Parallax::render(IPlatform& platform, const Vec2f& cameraOffset) const {
         float startX = -std::fmod(scrollX, layer.texWidth);
         if (startX > 0.0f) startX -= layer.texWidth;
 
-        // Vertical: position layer at the bottom of the screen if shorter than viewport,
-        // otherwise pin to top
-        float drawY = 0.0f;
-        if (layer.texHeight < screenH) {
-            drawY = screenH - layer.texHeight;
-        }
-
         Rect srcRect = {0.0f, 0.0f, layer.texWidth, layer.texHeight};
 
-        // Tile horizontally until we fill the screen
-        for (float x = startX; x < screenW; x += layer.texWidth) {
-            // Convert screen-space position to world-space so that the platform's
-            // camera offset subtraction produces the correct screen position.
-            Vec2f worldPos = {x + cameraOffset.x, drawY + cameraOffset.y};
+        // Tile both horizontally and vertically to fill the screen
+        for (float y = 0.0f; y < screenH; y += layer.texHeight) {
+            for (float x = startX; x < screenW; x += layer.texWidth) {
+                // Convert screen-space position to world-space so that the platform's
+                // camera offset subtraction produces the correct screen position.
+                Vec2f worldPos = {x + cameraOffset.x, y + cameraOffset.y};
 
-            platform.drawSprite(layer.texture, srcRect, worldPos);
+                platform.drawSprite(layer.texture, srcRect, worldPos);
+            }
         }
     }
 }

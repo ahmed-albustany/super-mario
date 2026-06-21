@@ -188,6 +188,29 @@
             }
         });
 
+        // ---- Resume AudioContext after first user gesture ----
+        // Browsers block AudioContext.start() until a user interaction.
+        (function() {
+            var resumed = false;
+            function resumeAudio() {
+                if (resumed) return;
+                var ctx = window.AudioContext || window.webkitAudioContext;
+                if (typeof Module !== 'undefined' && Module.SDL2 && Module.SDL2.audioContext) {
+                    Module.SDL2.audioContext.resume();
+                } else if (ctx) {
+                    // Fallback: resume any existing AudioContext instances
+                    try {
+                        var tmp = new ctx();
+                        tmp.resume().then(function() { tmp.close(); });
+                    } catch(e) {}
+                }
+                resumed = true;
+            }
+            document.addEventListener('click', resumeAudio, { once: false, capture: true });
+            document.addEventListener('keydown', resumeAudio, { once: false, capture: true });
+            document.addEventListener('touchstart', resumeAudio, { once: false, capture: true });
+        })();
+
         document.addEventListener('DOMContentLoaded', function() {
             bindTouchButton('btn-left',  ACTION_MOVE_LEFT);
             bindTouchButton('btn-right', ACTION_MOVE_RIGHT);

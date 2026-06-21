@@ -93,7 +93,7 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     std::string prefix = characterPrefix(playerIndex);
 
     SpriteComponent sprite;
-    sprite.texture = tex(prefix);
+    sprite.texture = tex(prefix + "_idle");
     sprite.srcRect = CHAR_RECT;
     sprite.zOrder  = 10;
     registry.emplace<SpriteComponent>(entity, sprite);
@@ -104,7 +104,7 @@ entt::entity EntityFactory::createPlayer(entt::registry& registry, Vec2f spawnPo
     anim.frameWidth  = 32;
     anim.frameHeight = 32;
     anim.clips = {
-        makeSheetClip("idle",        prefix,                    32, 32, 11, 20.0f, true),
+        makeSheetClip("idle",        prefix + "_idle",          32, 32, 11, 20.0f, true),
         makeSheetClip("run",         prefix + "_run",           32, 32, 12, 20.0f, true),
         makeSheetClip("jump",        prefix + "_jump",          32, 32, 1,  1.0f,  false),
         makeSheetClip("double_jump", prefix + "_double_jump",   32, 32, 6,  15.0f, true),
@@ -142,14 +142,14 @@ entt::entity EntityFactory::createFruit(entt::registry& registry, Vec2f pos,
 
     std::string texKey;
     switch (type) {
-        case FruitType::Cherry:     texKey = "fruit_cherries"; break;
+        case FruitType::Cherry:     texKey = "fruit_cherry"; break;
         case FruitType::Apple:      texKey = "fruit_apple"; break;
         case FruitType::Orange:     texKey = "fruit_orange"; break;
         case FruitType::Pineapple:  texKey = "fruit_pineapple"; break;
         case FruitType::Melon:      texKey = "fruit_melon"; break;
         case FruitType::Strawberry: texKey = "fruit_strawberry"; break;
         case FruitType::Kiwi:       texKey = "fruit_kiwi"; break;
-        case FruitType::Banana:     texKey = "fruit_bananas"; break;
+        case FruitType::Banana:     texKey = "fruit_banana"; break;
     }
 
     SpriteComponent sprite;
@@ -209,11 +209,11 @@ entt::entity EntityFactory::createTrap(entt::registry& registry, Vec2f pos,
             isStatic = true;
             break;
         case TrapType::SpikeHead:
-            texKey = "trap_spike_head";
+            texKey = "trap_spike_head_idle";
             collSize = {44.0f, 44.0f};
             break;
         case TrapType::RockHead:
-            texKey = "trap_rock_head";
+            texKey = "trap_rock_head_idle";
             collSize = {42.0f, 42.0f};
             registry.emplace<VelocityComponent>(entity);
             break;
@@ -277,7 +277,7 @@ entt::entity EntityFactory::createFallingPlatform(entt::registry& registry, Vec2
     });
 
     SpriteComponent sprite;
-    sprite.texture = tex("trap_falling_platform");
+    sprite.texture = tex("trap_falling_platform_on");
     sprite.srcRect = {0.0f, 0.0f, 32.0f, 10.0f};
     sprite.zOrder  = 3;
     registry.emplace<SpriteComponent>(entity, sprite);
@@ -400,18 +400,20 @@ entt::entity EntityFactory::createBox(entt::registry& registry, Vec2f pos,
         {0.0f, 0.0f}, {28.0f, 24.0f}, false, true
     });
 
-    std::string texKey = boxType + "_idle";
+    // boxType is "box1", "box2", "box3" — manifest keys are box_idle1, box_hit, box_break
+    std::string boxNum = boxType.substr(3); // "1", "2", "3"
+    std::string idleKey = "box_idle" + boxNum;
     SpriteComponent sprite;
-    sprite.texture = tex(texKey);
+    sprite.texture = tex(idleKey);
     sprite.srcRect = {0.0f, 0.0f, 28.0f, 24.0f};
     sprite.zOrder  = 3;
     registry.emplace<SpriteComponent>(entity, sprite);
 
     AnimationComponent anim;
     anim.clips = {
-        makeClip("idle",  texKey,              {0.0f, 0.0f, 28.0f, 24.0f}, 1.0f, true),
-        makeSheetClip("hit",   boxType + "_hit",   28, 24, 3, 10.0f, false),
-        makeSheetClip("break", boxType + "_break", 28, 24, 4, 10.0f, false),
+        makeClip("idle",  idleKey,        {0.0f, 0.0f, 28.0f, 24.0f}, 1.0f, true),
+        makeSheetClip("hit",   "box_hit",   28, 24, 3, 10.0f, false),
+        makeSheetClip("break", "box_break", 28, 24, 4, 10.0f, false),
     };
     registry.emplace<AnimationComponent>(entity, anim);
 
@@ -465,15 +467,15 @@ entt::entity EntityFactory::createTrophy(entt::registry& registry, Vec2f pos) {
     });
 
     SpriteComponent sprite;
-    sprite.texture = tex("end_idle");
+    sprite.texture = tex("trophy_idle");
     sprite.srcRect = {0.0f, 0.0f, 64.0f, 64.0f};
     sprite.zOrder  = 2;
     registry.emplace<SpriteComponent>(entity, sprite);
 
     AnimationComponent anim;
     anim.clips = {
-        makeSheetClip("idle", "end_idle", 64, 64, 4, 8.0f, true),
-        makeSheetClip("pressed", "end_pressed", 64, 64, 8, 15.0f, false),
+        makeSheetClip("idle", "trophy_idle", 64, 64, 4, 8.0f, true),
+        makeSheetClip("pressed", "trophy_pressed", 64, 64, 8, 15.0f, false),
     };
     registry.emplace<AnimationComponent>(entity, anim);
 
