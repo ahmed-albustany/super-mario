@@ -23,10 +23,10 @@ namespace Config {
     constexpr float PLAYER_JUMP_CUT      = 0.45f;     // velocity multiplier on early release
     constexpr float PLAYER_RUN_JUMP_MULT = 1.20f;     // running jump force multiplier
     constexpr float PLAYER_STOMP_BOUNCE  = -400.0f;   // bounce velocity
-    constexpr float PLAYER_ACCEL         = 600.0f;    // px/s^2 ground acceleration (gradual build)
-    constexpr float PLAYER_DECEL         = 900.0f;    // px/s^2 ground deceleration (snappy stop)
-    constexpr float PLAYER_AIR_ACCEL     = 500.0f;    // px/s^2 air acceleration (less than ground)
-    constexpr float PLAYER_AIR_DECEL     = 200.0f;    // px/s^2 air deceleration (drifty in air)
+    constexpr float PLAYER_ACCEL         = 1500.0f;   // px/s^2 ground acceleration (~6 frames 0→walk)
+    constexpr float PLAYER_DECEL         = 2250.0f;   // px/s^2 ground deceleration (~4 frames walk→0)
+    constexpr float PLAYER_AIR_ACCEL     = 900.0f;    // px/s^2 air acceleration (responsive but driftier)
+    constexpr float PLAYER_AIR_DECEL     = 350.0f;    // px/s^2 air deceleration (slight air drift)
     constexpr float PLAYER_FALL_MULT     = 1.8f;      // gravity multiplier when falling
     constexpr float PLAYER_LOW_JUMP_MULT = 2.5f;      // gravity multiplier when jump released early
     constexpr int   MAX_JUMPS            = 2;         // double jump

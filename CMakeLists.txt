@@ -104,6 +104,7 @@ set(MARIO_SCENE_SOURCES
     src/scenes/GetReadyScene.cpp
     src/scenes/VictoryScene.cpp
     src/scenes/LevelSelectScene.cpp
+    src/scenes/LevelCompleteScene.cpp
 )
 
 set(MARIO_ENTITY_SOURCES
@@ -178,8 +179,7 @@ if(MARIO_BUILD_WASM)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         list(APPEND MARIO_EM_FLAGS "-sASSERTIONS=1" "-g2")
     else()
-        # -sASSERTIONS=1 temporarily enabled in Release for debugging green-square issue
-        list(APPEND MARIO_EM_FLAGS "-O2" "-sASSERTIONS=1")
+        list(APPEND MARIO_EM_FLAGS "-O2" "--closure" "1")
     endif()
 
     target_link_options(MarioGame-web PRIVATE ${MARIO_EM_FLAGS})

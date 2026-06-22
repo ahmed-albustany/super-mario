@@ -27,7 +27,21 @@
 |-------------|---------|
 | ![Multiplayer](docs/screenshots/multiplayer.png) | ![Victory](docs/screenshots/victory.png) |
 
-*Replace placeholder images with actual screenshots after building.*
+> **Adding screenshots:** Build and run the game, then capture screenshots and save them to `docs/screenshots/`. Recommended resolution: 1280x720. Use PNG format for best quality.
+
+---
+
+## How to Play
+
+1. **Move** with Arrow Keys (or WASD for Player 2)
+2. **Jump** with Z or Space — hold for a higher jump, tap for a short hop
+3. **Double Jump** by pressing X in mid-air
+4. **Run** by holding X while moving for extra speed
+5. **Collect fruits** scattered through each level for points
+6. **Activate checkpoints** by touching flag markers — you'll respawn there on death
+7. **Reach the trophy** at the end of each level to advance
+8. **Avoid traps** — saws, spikes, fire, and more will cost you a life
+9. Complete all 10 levels across 5 worlds to win!
 
 ---
 
@@ -36,9 +50,13 @@
 ### Gameplay
 - **4 playable characters** — Mask Dude, Ninja Frog, Pink Man, Virtual Guy
 - **Fruit collection** — 8 fruit types (cherry, apple, orange, pineapple, melon, strawberry, kiwi, banana) with increasing point values
-- **Wall jumping & double jumping** — fluid movement with coyote time and jump buffering
+- **Precision platforming** — smooth acceleration/deceleration, variable jump height, coyote time, and jump buffering
+- **Double jumping & wall jumping** — fluid aerial movement
 - **Checkpoint system** — activate checkpoints to save progress within each level
+- **Death animation** — character flips and hops off screen, then respawns after a brief delay
+- **Level complete screen** — score summary with time bonus before advancing
 - **Trophy goals** — reach the end-of-level trophy to advance
+- **Victory screen** — congratulations and final score after completing all 10 levels
 
 ### Levels
 - **10 hand-crafted levels** across 5 worlds with progressive difficulty
@@ -62,9 +80,16 @@
 - **4P Co-op** — Four players cooperating on screen
 - **4P VS** — Four players competing for the highest fruit score
 
+### HUD
+- Score display with live updates on fruit collection
+- Lives counter with character icon
+- World/level indicator
+- Countdown timer with red warning under 100 seconds
+- Per-player score panels in multiplayer modes
+
 ### Engine
 - **ECS architecture** — EnTT-based Entity Component System
-- **Scene stack** — Boot, Menu, LevelSelect, Game, HUD, Pause, GameOver, GetReady, Victory
+- **Scene stack** — Boot, Menu, LevelSelect, Game, HUD, Pause, GameOver, GetReady, LevelComplete, Victory
 - **Cross-platform** — native desktop (SFML 2.6) + browser (Emscripten + SDL2)
 - **Mobile touch controls** — on-screen D-pad and action buttons
 - **Parallax backgrounds** — 3-layer scrolling for depth
@@ -80,7 +105,7 @@
 |--------|------|
 | Move Left/Right | Arrow Keys |
 | Jump | Z, Space |
-| Run / Dash | X, Left Shift |
+| Double Jump / Run | X, Left Shift |
 | Pause | Escape, P |
 | Confirm (menus) | Enter, Z |
 
@@ -90,7 +115,7 @@
 |--------|------|
 | Move Left/Right | A / D |
 | Jump | J |
-| Run / Dash | K |
+| Double Jump / Run | K |
 
 ### Player 3 — Keyboard
 
@@ -98,15 +123,15 @@
 |--------|------|
 | Move Left/Right | Numpad 4 / 6 |
 | Jump | Numpad 8 |
-| Run / Dash | Numpad 5 |
+| Double Jump / Run | Numpad 5 |
 
 ### Player 4 — Keyboard
 
 | Action | Keys |
 |--------|------|
-| Move Left/Right | G / J (Alt bindings) |
-| Jump | Y |
-| Run / Dash | H |
+| Move Left/Right | Numpad Left / Right |
+| Jump | Numpad 1 |
+| Double Jump / Run | Numpad 2 |
 
 ### Mobile Touch
 
@@ -226,7 +251,7 @@ pixel_rush/
 │   ├── platform/       # IPlatform, SFMLPlatform, SDLPlatform
 │   ├── ecs/            # Components + 10 systems
 │   ├── entities/       # EntityFactory, Player wrappers
-│   ├── scenes/         # Boot, Menu, LevelSelect, Game, Pause, HUD, GameOver, GetReady, Victory
+│   ├── scenes/         # Boot, Menu, LevelSelect, Game, Pause, HUD, LevelComplete, GameOver, GetReady, Victory
 │   ├── world/          # TileMap, LevelLoader, Camera, Parallax
 │   ├── physics/        # AABB math, PhysicsWorld config
 │   ├── audio/          # AudioManager (graceful fallback on missing sounds)

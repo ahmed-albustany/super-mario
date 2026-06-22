@@ -66,7 +66,7 @@ void HUDScene::render(IPlatform& platform) {
         platform.drawText(f, "WORLD", {worldX, pad}, 14, {255, 255, 255, 255});
         platform.drawText(f, gs.worldDisplay, {worldX + 8.0f, pad + 18.0f}, 22, {255, 255, 255, 255});
 
-        // TIME (top-right)
+        // TIME (top-right, inset enough so label + 3-digit number stay visible)
         float timeX = screenW - 200.0f;
         int seconds = static_cast<int>(std::ceil(gs.levelTimer));
         std::string timeStr = std::to_string(seconds);
@@ -74,16 +74,18 @@ void HUDScene::render(IPlatform& platform) {
         platform.drawText(f, "TIME", {timeX, pad}, 14, {255, 255, 255, 255});
         platform.drawText(f, timeStr, {timeX + 10.0f, pad + 18.0f}, 22, timerColor);
 
-        // Lives (bottom-left)
-        std::string livesStr = std::string(CHAR_NAMES[static_cast<size_t>(activeIdx)]) + " x" + std::to_string(ps.lives);
-        platform.drawText(f, livesStr, {pad, screenH - 36.0f}, 16, {255, 255, 255, 200});
+        // Lives (bottom-left) with character icon placeholder
+        Color livesColor = PLAYER_COLORS[static_cast<size_t>(activeIdx)];
+        platform.drawRect({pad, screenH - 40.0f, 20.0f, 20.0f}, livesColor, livesColor, 0.0f);
+        std::string livesStr = "x" + std::to_string(ps.lives);
+        platform.drawText(f, livesStr, {pad + 26.0f, screenH - 38.0f}, 18, {255, 255, 255, 230});
 
         // In alternating mode, show the other player's status dimmed on the right
         if (gs.mode == GameMode::Alt2P) {
             int otherIdx = 1 - activeIdx;
             const auto& otherPs = gs.players[static_cast<size_t>(otherIdx)];
             Color dimColor = {160, 160, 160, 140};
-            float p2X = screenW - 160.0f;
+            float p2X = screenW - 200.0f;
             platform.drawText(f, CHAR_NAMES[static_cast<size_t>(otherIdx)],
                               {p2X, pad}, 12, dimColor);
             std::string p2Score = std::to_string(otherPs.score);
