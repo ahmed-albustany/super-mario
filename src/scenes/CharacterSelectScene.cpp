@@ -9,17 +9,12 @@
 #include <cmath>
 
 static const char* CHAR_NAMES[] = {"MASK DUDE", "NINJA FROG", "PINK MAN", "VIRTUAL GUY"};
+static const char* CHAR_PREFIXES[] = {"char_mask_dude", "char_ninja_frog", "char_pink_man", "char_virtual_guy"};
 static const Color CHAR_COLORS[] = {
     {78, 205, 196, 255},    // Teal
     {255, 107, 107, 255},   // Red
     {255, 182, 193, 255},   // Pink
     {130, 130, 255, 255}    // Blue
-};
-static const CharacterType CHAR_TYPES[] = {
-    CharacterType::MaskDude,
-    CharacterType::NinjaFrog,
-    CharacterType::PinkMan,
-    CharacterType::VirtualGuy
 };
 
 CharacterSelectScene::CharacterSelectScene(Game& game, GameMode mode)
@@ -135,36 +130,48 @@ void CharacterSelectScene::render(IPlatform& platform) {
         float borderW = selected ? 3.0f : 1.5f;
         platform.drawRect({cx, cardY, cardW, cardH}, bg, border, borderW);
 
-        // Character color preview (large colored square as placeholder for sprite)
-        Color previewColor = CHAR_COLORS[static_cast<size_t>(i)];
-        if (taken) previewColor.a = 80;
-        float previewSize = 80.0f;
-        float previewX = cx + (cardW - previewSize) * 0.5f;
-        float previewY = cardY + 40.0f;
-        platform.drawRect({previewX, previewY, previewSize, previewSize}, previewColor, previewColor, 0.0f);
+        // Character idle sprite
+        float spriteScale = 3.0f;  // 32x32 -> 96x96
+        float spriteSize = 32.0f * spriteScale;
+        float spriteX = cx + (cardW - spriteSize) * 0.5f;
+        float spriteY = cardY + 30.0f;
 
-        // Idle animation bob for selected character
-        if (selected && !taken) {
-            float bob = std::sin(m_elapsed * 3.0f) * 6.0f;
-            platform.drawRect({previewX + 10.0f, previewY + 10.0f + bob, 60.0f, 60.0f},
-                              Color{255, 255, 255, 60}, Color{255, 255, 255, 60}, 0.0f);
+        // Bob the selected character
+        float bob = (selected && !taken) ? std::sin(m_elapsed * 3.0f) * 6.0f : 0.0f;
+
+        std::string texKey = std::string(CHAR_PREFIXES[i]) + "_idle";
+        auto texOpt = ResourceManager::instance().getTexture(texKey);
+        if (texOpt) {
+            // Animate: cycle through idle frames (11 frames, 32px each)
+            int frame = static_cast<int>(m_elapsed * 8.0f) % 11;
+            Rect srcRect = {static_cast<float>(frame) * 32.0f, 0.0f, 32.0f, 32.0f};
+            Color tint = taken ? Color{100, 100, 100, 120} : Color::White();
+            platform.drawSprite(*texOpt, srcRect,
+                                {spriteX, spriteY + bob},
+                                {spriteScale, spriteScale}, 0.0f, false, tint);
+        } else {
+            // Fallback: colored rectangle if texture not loaded
+            Color previewColor = CHAR_COLORS[static_cast<size_t>(i)];
+            if (taken) previewColor.a = 80;
+            platform.drawRect({spriteX, spriteY + bob, spriteSize, spriteSize},
+                              previewColor, previewColor, 0.0f);
         }
 
         // Character name
         Color nameColor = taken ? Color{120, 120, 120, 180} : CHAR_COLORS[static_cast<size_t>(i)];
         float nameW = static_cast<float>(std::string(CHAR_NAMES[i]).size()) * 9.0f;
         platform.drawText(f, CHAR_NAMES[i],
-                          {cx + (cardW - nameW) * 0.5f, cardY + 150.0f}, 16, nameColor);
+                          {cx + (cardW - nameW) * 0.5f, cardY + 160.0f}, 16, nameColor);
 
         // "TAKEN" label for already-picked characters
         if (taken) {
-            platform.drawText(f, "TAKEN", {cx + cardW * 0.5f - 30.0f, cardY + 190.0f}, 14,
+            platform.drawText(f, "TAKEN", {cx + cardW * 0.5f - 30.0f, cardY + 200.0f}, 14,
                               Color{255, 80, 80, 200});
             // Show which player took it
             for (int p = 0; p < m_currentPicker; ++p) {
                 if (m_picks[static_cast<size_t>(p)] == i) {
                     std::string takenBy = "P" + std::to_string(p + 1);
-                    platform.drawText(f, takenBy, {cx + cardW * 0.5f - 10.0f, cardY + 210.0f}, 12,
+                    platform.drawText(f, takenBy, {cx + cardW * 0.5f - 10.0f, cardY + 220.0f}, 12,
                                       CHAR_COLORS[static_cast<size_t>(p)]);
                 }
             }
@@ -225,24 +232,27 @@ void CharacterSelectScene::confirmPick() {
 }
 
 void CharacterSelectScene::finishSelection() {
-    // Apply character assignments to GameState defaults via LevelSelectScene
-    // We store picks on the Game object so GameScene can read them.
-    // For simplicity, we use a static array that GameScene reads on init.
+    // Apply character assignments to Game so GameScene can read them.
     auto& charPicks = m_game.characterPicks();
+
+    // First pass: apply explicit picks
+    charPicks = {-1, -1, -1, -1};
+    for (int i = 0; i < m_numPickers; ++i) {
+        charPicks[static_cast<size_t>(i)] = m_picks[static_cast<size_t>(i)];
+    }
+
+    // Second pass: auto-assign remaining players (unpicked slots) to unused characters
     for (int i = 0; i < 4; ++i) {
-        if (m_picks[static_cast<size_t>(i)] >= 0) {
-            charPicks[static_cast<size_t>(i)] = m_picks[static_cast<size_t>(i)];
-        } else {
-            // Auto-assign remaining players sequentially, skipping taken
-            int assign = i; // default
-            for (int c = 0; c < 4; ++c) {
-                bool taken = false;
-                for (int p = 0; p < 4; ++p) {
-                    if (charPicks[static_cast<size_t>(p)] == c) { taken = true; break; }
-                }
-                if (!taken) { assign = c; break; }
+        if (charPicks[static_cast<size_t>(i)] >= 0) continue;
+        for (int c = 0; c < 4; ++c) {
+            bool taken = false;
+            for (int p = 0; p < 4; ++p) {
+                if (charPicks[static_cast<size_t>(p)] == c) { taken = true; break; }
             }
-            charPicks[static_cast<size_t>(i)] = assign;
+            if (!taken) {
+                charPicks[static_cast<size_t>(i)] = c;
+                break;
+            }
         }
     }
 

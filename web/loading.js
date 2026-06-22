@@ -115,12 +115,13 @@
         }
     });
 
-    // ---- Timeout fallback: if WASM hasn't loaded after 30s, show error ----
+    // ---- Timeout fallback: if WASM hasn't loaded after 120s, show error ----
+    // WASM binary is ~2.5MB; slow connections may need more time.
     var loadTimeout = setTimeout(function() {
         if (loadingScreen && !loadingScreen.classList.contains('hidden')) {
             window.onWASMError('Loading timed out. Please refresh the page.');
         }
-    }, 30000);
+    }, 120000);
 
     // Clear timeout when WASM is ready
     var originalOnReady = window.onWASMReady;
