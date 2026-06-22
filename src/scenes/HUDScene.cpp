@@ -47,9 +47,9 @@ void HUDScene::render(IPlatform& platform) {
         int activeIdx = gs.currentPlayer;
         const auto& ps = gs.players[static_cast<size_t>(activeIdx)];
 
-        // Player name (top-left)
+        // Player name (top-left) — use character index, not player slot
         Color labelColor = PLAYER_COLORS[static_cast<size_t>(activeIdx)];
-        platform.drawText(f, CHAR_NAMES[static_cast<size_t>(activeIdx)],
+        platform.drawText(f, CHAR_NAMES[static_cast<size_t>(ps.playerIndex)],
                           {pad, pad}, 14, labelColor);
 
         // Score (top-left, under name)
@@ -86,7 +86,7 @@ void HUDScene::render(IPlatform& platform) {
             const auto& otherPs = gs.players[static_cast<size_t>(otherIdx)];
             Color dimColor = {160, 160, 160, 140};
             float p2X = screenW - 200.0f;
-            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(otherIdx)],
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(otherPs.playerIndex)],
                               {p2X, pad}, 12, dimColor);
             std::string p2Score = std::to_string(otherPs.score);
             while (p2Score.size() < 6) p2Score = "0" + p2Score;
@@ -125,9 +125,9 @@ void HUDScene::render(IPlatform& platform) {
                 pColor.a = 100;
             }
 
-            // Player name
-            std::string pLabel = "P" + std::to_string(i + 1);
-            platform.drawText(f, pLabel, {px, panelY}, 12, pColor);
+            // Player name (character name based on picked character)
+            int charIdx = ps.playerIndex; // character index from character select
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(charIdx)], {px, panelY}, 12, pColor);
 
             // Score
             std::string pScore = std::to_string(ps.score);
@@ -146,15 +146,15 @@ void HUDScene::render(IPlatform& platform) {
         if (numActive >= 2) {
             // P1 top-left
             const auto& p1 = gs.players[0];
-            platform.drawText(f, "P1", {pad, pad}, 12, PLAYER_COLORS[0]);
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(p1.playerIndex)], {pad, pad}, 12, PLAYER_COLORS[0]);
             std::string s1 = std::to_string(p1.score);
             while (s1.size() < 6) s1 = "0" + s1;
             platform.drawText(f, s1, {pad, pad + 14.0f}, 16, PLAYER_COLORS[0]);
 
             // P2 top-right
             const auto& p2 = gs.players[1];
-            float p2X = screenW - 120.0f;
-            platform.drawText(f, "P2", {p2X, pad}, 12, PLAYER_COLORS[1]);
+            float p2X = screenW - 160.0f;
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(p2.playerIndex)], {p2X, pad}, 12, PLAYER_COLORS[1]);
             std::string s2 = std::to_string(p2.score);
             while (s2.size() < 6) s2 = "0" + s2;
             platform.drawText(f, s2, {p2X, pad + 14.0f}, 16, PLAYER_COLORS[1]);
@@ -163,15 +163,15 @@ void HUDScene::render(IPlatform& platform) {
         if (numActive >= 4) {
             // P3 below P1
             const auto& p3 = gs.players[2];
-            platform.drawText(f, "P3", {pad, pad + 36.0f}, 12, PLAYER_COLORS[2]);
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(p3.playerIndex)], {pad, pad + 36.0f}, 12, PLAYER_COLORS[2]);
             std::string s3 = std::to_string(p3.score);
             while (s3.size() < 6) s3 = "0" + s3;
             platform.drawText(f, s3, {pad, pad + 50.0f}, 16, PLAYER_COLORS[2]);
 
             // P4 below P2
             const auto& p4 = gs.players[3];
-            float p4X = screenW - 120.0f;
-            platform.drawText(f, "P4", {p4X, pad + 36.0f}, 12, PLAYER_COLORS[3]);
+            float p4X = screenW - 160.0f;
+            platform.drawText(f, CHAR_NAMES[static_cast<size_t>(p4.playerIndex)], {p4X, pad + 36.0f}, 12, PLAYER_COLORS[3]);
             std::string s4 = std::to_string(p4.score);
             while (s4.size() < 6) s4 = "0" + s4;
             platform.drawText(f, s4, {p4X, pad + 50.0f}, 16, PLAYER_COLORS[3]);

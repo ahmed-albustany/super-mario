@@ -51,7 +51,8 @@ void GetReadyScene::render(IPlatform& platform) {
     };
 
     int idx = m_state->currentPlayer;
-    const char* playerName = CHAR_NAMES[static_cast<size_t>(idx)];
+    int charIdx = m_state->players[static_cast<size_t>(idx)].playerIndex;
+    const char* playerName = CHAR_NAMES[static_cast<size_t>(charIdx)];
     Color nameColor = CHAR_COLORS[static_cast<size_t>(idx)];
 
     platform.drawText(f, m_state->worldDisplay,

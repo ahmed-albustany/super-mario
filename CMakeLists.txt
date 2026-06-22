@@ -105,6 +105,7 @@ set(MARIO_SCENE_SOURCES
     src/scenes/VictoryScene.cpp
     src/scenes/LevelSelectScene.cpp
     src/scenes/LevelCompleteScene.cpp
+    src/scenes/CharacterSelectScene.cpp
 )
 
 set(MARIO_ENTITY_SOURCES

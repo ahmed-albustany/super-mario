@@ -1,4 +1,5 @@
 #include "scenes/MenuScene.hpp"
+#include "scenes/CharacterSelectScene.hpp"
 #include "scenes/LevelSelectScene.hpp"
 #include "core/Game.hpp"
 #include "core/GameConfig.hpp"
@@ -143,16 +144,16 @@ void MenuScene::confirmSelection() {
     m_confirmed = true;
     AudioManager::instance().playSound("menu_confirm");
 
-    auto createScene = [this](GameMode mode) {
-        m_game.scenes().replace(std::make_unique<LevelSelectScene>(m_game, mode));
+    auto goCharSelect = [this](GameMode mode) {
+        m_game.scenes().replace(std::make_unique<CharacterSelectScene>(m_game, mode));
     };
 
     switch (m_selectedItem) {
-        case MENU_SOLO:     createScene(GameMode::Solo);   break;
-        case MENU_2P_ALT:   createScene(GameMode::Alt2P);  break;
-        case MENU_2P_COOP:  createScene(GameMode::Coop2P); break;
-        case MENU_4P_COOP:  createScene(GameMode::Coop4P); break;
-        case MENU_4P_VS:    createScene(GameMode::VS4P);   break;
-        case MENU_QUIT:     m_game.platform().close();     break;
+        case MENU_SOLO:     goCharSelect(GameMode::Solo);   break;
+        case MENU_2P_ALT:   goCharSelect(GameMode::Alt2P);  break;
+        case MENU_2P_COOP:  goCharSelect(GameMode::Coop2P); break;
+        case MENU_4P_COOP:  goCharSelect(GameMode::Coop4P); break;
+        case MENU_4P_VS:    goCharSelect(GameMode::VS4P);   break;
+        case MENU_QUIT:     m_game.platform().close();      break;
     }
 }

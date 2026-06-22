@@ -46,6 +46,13 @@ void GameScene::onEnter() {
     m_state->currentLevel = startLevel;
     m_state->worldDisplay = GameState::WORLD_NAMES[static_cast<size_t>(startLevel)];
 
+    // Apply character picks from character select screen
+    const auto& picks = m_game.characterPicks();
+    for (int i = 0; i < 4; ++i) {
+        m_state->players[static_cast<size_t>(i)].playerIndex = picks[static_cast<size_t>(i)];
+        m_state->players[static_cast<size_t>(i)].characterType = static_cast<CharacterType>(picks[static_cast<size_t>(i)]);
+    }
+
     // Initialize lives for active players
     int numActive = m_state->numActivePlayers();
     for (int i = 0; i < numActive; ++i) {
@@ -351,6 +358,9 @@ void GameScene::spawnPlayers() {
     float spacing = 24.0f;
 
     for (int i = 0; i < numSim; ++i) {
+        // In alternating mode, spawn the current player (0 or 1), not always index 0
+        int playerIdx = (m_state->mode == GameMode::Alt2P) ? m_state->currentPlayer : i;
+
         Vec2f spawnPos = m_spawnPoint;
 
         // In simultaneous modes, offset players horizontally
@@ -359,7 +369,7 @@ void GameScene::spawnPlayers() {
         }
 
         // Use checkpoint position if available
-        auto& ps = m_state->players[static_cast<size_t>(i)];
+        auto& ps = m_state->players[static_cast<size_t>(playerIdx)];
         if (ps.checkpointPos.x > 0.0f || ps.checkpointPos.y > 0.0f) {
             spawnPos = ps.checkpointPos;
             if (numSim > 1) {
@@ -368,12 +378,14 @@ void GameScene::spawnPlayers() {
         }
 
         if (ps.isAlive && ps.lives > 0) {
-            m_players[static_cast<size_t>(i)].spawn(m_registry, spawnPos, i);
-            LOG_INFO("GameScene: spawned p" << i << " at (" << spawnPos.x << "," << spawnPos.y << ")"
+            // Use the character index from player state (set by character select)
+            int charIdx = ps.playerIndex;
+            m_players[static_cast<size_t>(playerIdx)].spawn(m_registry, spawnPos, charIdx);
+            LOG_INFO("GameScene: spawned p" << playerIdx << " (char=" << charIdx << ") at (" << spawnPos.x << "," << spawnPos.y << ")"
                      << " lives=" << ps.lives
-                     << " valid=" << m_players[static_cast<size_t>(i)].isValid(m_registry));
+                     << " valid=" << m_players[static_cast<size_t>(playerIdx)].isValid(m_registry));
         } else {
-            LOG_WARN("GameScene: SKIPPED spawn p" << i
+            LOG_WARN("GameScene: SKIPPED spawn p" << playerIdx
                      << " isAlive=" << ps.isAlive << " lives=" << ps.lives);
         }
     }
@@ -384,7 +396,8 @@ void GameScene::respawnPlayer(int playerIndex) {
     Vec2f respawnPos = (ps.checkpointPos.x > 0.0f || ps.checkpointPos.y > 0.0f)
                        ? ps.checkpointPos : m_spawnPoint;
 
-    m_players[static_cast<size_t>(playerIndex)].respawn(m_registry, respawnPos, playerIndex);
+    int charIdx = ps.playerIndex; // character index from character select
+    m_players[static_cast<size_t>(playerIndex)].respawn(m_registry, respawnPos, charIdx);
     m_spawnGraceTimer = 1.0f; // Reset grace period on respawn
 }
 

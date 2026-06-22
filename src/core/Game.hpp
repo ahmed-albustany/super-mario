@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include "platform/IPlatform.hpp"
 #include "core/SceneManager.hpp"
@@ -33,6 +34,10 @@ public:
     [[nodiscard]] EventBus&       events()       { return m_eventBus; }
     [[nodiscard]] AudioManager&   audio()        { return AudioManager::instance(); }
 
+    /// @brief Character picks from CharacterSelectScene. Index = player, value = character (0-3).
+    [[nodiscard]] std::array<int, 4>& characterPicks() { return m_characterPicks; }
+    [[nodiscard]] const std::array<int, 4>& characterPicks() const { return m_characterPicks; }
+
 private:
     void initSubsystems();
 
@@ -42,4 +47,7 @@ private:
     EventBus                   m_eventBus;
 
     float m_accumulator = 0.0f;
+
+    /// @brief Character picks: player index → character index (0-3). Default: identity mapping.
+    std::array<int, 4> m_characterPicks = {0, 1, 2, 3};
 };
