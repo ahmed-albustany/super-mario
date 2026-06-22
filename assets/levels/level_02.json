@@ -101,6 +101,10 @@
       { "type": "cherry", "x": 49, "y": 10 },
       { "type": "apple",  "x": 55, "y": 17 }
     ],
+    "enemies": [
+      { "type": "goomba", "x": 8, "y": 18, "patrol_left": 5, "patrol_right": 10 },
+      { "type": "goomba", "x": 24, "y": 18, "patrol_left": 22, "patrol_right": 27 }
+    ],
     "traps": [
       { "type": "saw", "x": 14, "y": 15, "move_axis": "vertical", "range_min": 13, "range_max": 17, "speed": 2.0 },
       { "type": "saw", "x": 36, "y": 15, "move_axis": "vertical", "range_min": 13, "range_max": 17, "speed": 2.0 },

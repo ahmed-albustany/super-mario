@@ -119,6 +119,13 @@
       { "type": "orange", "x": 43, "y": 11 },
       { "type": "banana", "x": 49, "y": 8 }
     ],
+    "enemies": [
+      { "type": "koopa", "x": 5, "y": 18, "patrol_left": 3, "patrol_right": 6 },
+      { "type": "goomba", "x": 13, "y": 18, "patrol_left": 10, "patrol_right": 15 },
+      { "type": "koopa", "x": 23, "y": 18, "patrol_left": 19, "patrol_right": 24 },
+      { "type": "koopa", "x": 35, "y": 18, "patrol_left": 32, "patrol_right": 37 },
+      { "type": "koopa", "x": 47, "y": 18, "patrol_left": 44, "patrol_right": 49 }
+    ],
     "traps": [
       { "type": "spikes", "x": 11, "y": 18 },
       { "type": "spikes", "x": 27, "y": 18 },

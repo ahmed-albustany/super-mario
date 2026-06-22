@@ -4,6 +4,7 @@
 #include "core/Game.hpp"
 #include "core/GameConfig.hpp"
 #include "core/ResourceManager.hpp"
+#include "core/SaveManager.hpp"
 #include "audio/AudioManager.hpp"
 #include "utils/Logger.hpp"
 
@@ -16,7 +17,8 @@ void LevelSelectScene::onEnter() {
     m_selectedLevel = 0;
     m_elapsed = 0.0f;
     m_confirmed = false;
-    LOG_INFO("LevelSelectScene entered");
+    m_saveData = SaveManager::instance().load();
+    LOG_INFO("LevelSelectScene entered (highest=" << m_saveData.highestLevel << ")");
 }
 
 void LevelSelectScene::onExit() {}
@@ -109,30 +111,58 @@ void LevelSelectScene::render(IPlatform& platform) {
         float bx = startX + static_cast<float>(col) * 120.0f;
         float by = startY + static_cast<float>(row) * 120.0f;
         bool selected = (i == m_selectedLevel);
+        bool unlocked = (i == 0) || (i <= m_saveData.highestLevel);
+        bool completed = m_saveData.levelCompleted[static_cast<size_t>(i)];
 
-        // Background
-        Color bgColor = selected ? Color{78, 205, 196, 255} : Color{60, 64, 72, 220};
-        Color borderColor = selected ? Color{255, 255, 255, 255} : Color{100, 104, 112, 200};
-        float borderW = selected ? 3.0f : 1.0f;
+        // Background — locked levels are grayed out
+        Color bgColor, borderColor;
+        float borderW;
+        if (!unlocked) {
+            bgColor = Color{35, 35, 40, 180};
+            borderColor = Color{60, 60, 65, 150};
+            borderW = 1.0f;
+        } else if (selected) {
+            bgColor = Color{78, 205, 196, 255};
+            borderColor = Color{255, 255, 255, 255};
+            borderW = 3.0f;
+        } else {
+            bgColor = Color{60, 64, 72, 220};
+            borderColor = Color{100, 104, 112, 200};
+            borderW = 1.0f;
+        }
 
         platform.drawRect({bx, by, 100.0f, 100.0f}, bgColor, borderColor, borderW);
 
         if (font) {
-            // World name (e.g., "1-1")
-            Color textColor = selected ? Color{40, 44, 52, 255} : Color{200, 200, 210, 255};
             const auto& worldName = GameState::WORLD_NAMES[static_cast<size_t>(i)];
-            platform.drawText(*font, worldName,
-                              {bx + 30.0f, by + 25.0f}, 28, textColor);
 
-            // Level number
-            std::string levelNum = "Level " + std::to_string(i + 1);
-            Color subColor = selected ? Color{40, 44, 52, 180} : Color{150, 150, 160, 180};
-            platform.drawText(*font, levelNum,
-                              {bx + 18.0f, by + 70.0f}, 12, subColor);
+            if (!unlocked) {
+                // Locked: show lock icon and dimmed name
+                platform.drawText(*font, worldName,
+                                  {bx + 30.0f, by + 25.0f}, 28, Color{80, 80, 90, 150});
+                platform.drawText(*font, "LOCKED",
+                                  {bx + 22.0f, by + 70.0f}, 12, Color{120, 80, 80, 180});
+            } else {
+                // World name
+                Color textColor = selected ? Color{40, 44, 52, 255} : Color{200, 200, 210, 255};
+                platform.drawText(*font, worldName,
+                                  {bx + 30.0f, by + 25.0f}, 28, textColor);
+
+                // Completed checkmark or level number
+                if (completed) {
+                    platform.drawText(*font, "CLEAR",
+                                      {bx + 24.0f, by + 70.0f}, 12, Color{100, 255, 120, 220});
+                } else {
+                    std::string levelNum = "Level " + std::to_string(i + 1);
+                    Color subColor = selected ? Color{40, 44, 52, 180} : Color{150, 150, 160, 180};
+                    platform.drawText(*font, levelNum,
+                                      {bx + 18.0f, by + 70.0f}, 12, subColor);
+                }
+            }
         }
 
         // Selection indicator
-        if (selected && font) {
+        if (selected && unlocked && font) {
             float bob = std::sin(m_elapsed * 4.0f) * 4.0f;
             platform.drawText(*font, ">",
                               {bx - 18.0f + bob, by + 30.0f}, 24,
@@ -158,6 +188,11 @@ void LevelSelectScene::selectLevel(int index) {
 
 void LevelSelectScene::confirmSelection() {
     if (m_confirmed) return;
+
+    // Don't allow starting locked levels
+    bool unlocked = (m_selectedLevel == 0) || (m_selectedLevel <= m_saveData.highestLevel);
+    if (!unlocked) return;
+
     m_confirmed = true;
     AudioManager::instance().playSound("menu_confirm");
 

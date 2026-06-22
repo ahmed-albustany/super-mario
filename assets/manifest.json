@@ -90,7 +90,16 @@
 
         { "key": "tileset_mario",               "path": "textures/terrain/terrain.png"                  },
 
-        { "key": "start_idle",                  "path": "textures/items/start/idle.png"                 }
+        { "key": "start_idle",                  "path": "textures/items/start/idle.png"                 },
+
+        { "key": "goomba",                      "path": "textures/enemy_goomba.png"                     },
+        { "key": "koopa",                       "path": "textures/enemy_koopa.png"                      },
+        { "key": "piranha_plant",               "path": "textures/enemy_piranha.png"                    },
+        { "key": "bowser",                      "path": "textures/enemy_bowser.png"                     },
+        { "key": "enemy_walker",                "path": "textures/enemy_walker.png"                     },
+        { "key": "enemy_jumper",                "path": "textures/enemy_jumper.png"                     },
+        { "key": "enemy_guardian",              "path": "textures/enemy_guardian.png"                    },
+        { "key": "enemy_shooter",               "path": "textures/enemy_shooter.png"                    }
     ],
     "fonts": [
         { "key": "main",                        "path": "fonts/main.ttf"                                }

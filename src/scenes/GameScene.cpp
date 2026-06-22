@@ -2,6 +2,7 @@
 #include "scenes/PauseScene.hpp"
 #include "scenes/GameOverScene.hpp"
 #include "scenes/VictoryScene.hpp"
+#include "scenes/LevelCompleteScene.hpp"
 #include "scenes/HUDScene.hpp"
 #include "scenes/GetReadyScene.hpp"
 #include "core/Game.hpp"
@@ -9,6 +10,7 @@
 #include "core/InputManager.hpp"
 #include "core/ResourceManager.hpp"
 #include "audio/AudioManager.hpp"
+#include "core/SaveManager.hpp"
 #include "entities/EntityFactory.hpp"
 #include "ecs/Components.hpp"
 #include "utils/Logger.hpp"
@@ -99,6 +101,18 @@ void GameScene::onEnter() {
         });
     m_subPlayerHurt = bus.subscribe<PlayerHurtEvent>(
         [this](const PlayerHurtEvent&) { m_camera.addShake(6.0f); });
+    m_subPlayerLanded = bus.subscribe<PlayerLandedEvent>(
+        [this](const PlayerLandedEvent& e) {
+            // Spawn dust puff at player's feet on landing
+            int idx = e.playerIndex;
+            auto& player = m_players[static_cast<size_t>(idx)];
+            if (player.isValid(m_registry)) {
+                auto pos = m_registry.get<TransformComponent>(player.getEntity()).position;
+                pos.y += 24.0f; // feet position
+                EntityFactory::createParticleEffect(m_registry, pos,
+                    ParticleEmitterComponent::Effect::StompPoof);
+            }
+        });
 
     // Load current level
     const auto& levelPath = GameState::LEVEL_PATHS[static_cast<size_t>(m_state->currentLevel)];
@@ -142,6 +156,7 @@ void GameScene::onExit() {
     bus.unsubscribe<FlagPoleGrabbedEvent>(m_subFlagPole);
     bus.unsubscribe<PlayerPowerUpEvent>(m_subPowerUp);
     bus.unsubscribe<PlayerHurtEvent>(m_subPlayerHurt);
+    bus.unsubscribe<PlayerLandedEvent>(m_subPlayerLanded);
 
     m_registry.clear();
     LOG_INFO("GameScene: exited");
@@ -390,7 +405,7 @@ int GameScene::numSimultaneousPlayers() const {
 
 void GameScene::handleInput(const InputManager& input) {
     if (input.isJustPressed(Action::Pause)) {
-        m_game.scenes().push(std::make_unique<PauseScene>(m_game));
+        m_game.scenes().push(std::make_unique<PauseScene>(m_game, m_state->mode, m_state->currentLevel));
     }
 }
 
@@ -639,8 +654,6 @@ void GameScene::onLevelComplete(const LevelCompleteEvent& event) {
     int timeBonus = static_cast<int>(m_state->levelTimer) * 50;
 
     if (m_state->isSimultaneous()) {
-        // In co-op, the completing player gets the time bonus
-        // In VS, the first player to reach the trophy gets 2x score multiplier
         auto& ps = m_state->players[static_cast<size_t>(event.playerIndex)];
         ps.score = Math::safeAdd(ps.score, timeBonus);
 
@@ -653,7 +666,27 @@ void GameScene::onLevelComplete(const LevelCompleteEvent& event) {
     }
 
     m_state->levelWon = true;
-    advanceLevel();
+
+    // Persist progress
+    {
+        auto& sm = SaveManager::instance();
+        SaveData sd = sm.load();
+        int lvl = m_state->currentLevel;
+        if (lvl >= 0 && lvl < static_cast<int>(sd.levelCompleted.size())) {
+            sd.levelCompleted[static_cast<size_t>(lvl)] = true;
+        }
+        if (lvl + 1 > sd.highestLevel) sd.highestLevel = lvl + 1;
+        int totalScore = 0;
+        for (int i = 0; i < m_state->numActivePlayers(); ++i) {
+            totalScore += m_state->players[static_cast<size_t>(i)].score;
+        }
+        if (totalScore > sd.highScore) sd.highScore = totalScore;
+        sm.save(sd);
+    }
+
+    // Show level complete screen, then advance
+    m_game.scenes().push(std::make_unique<LevelCompleteScene>(
+        m_game, m_state, [this]() { advanceLevel(); }));
 }
 
 // =============================================================================

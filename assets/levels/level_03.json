@@ -121,6 +121,11 @@
       { "type": "apple", "x": 54, "y": 13 },
       { "type": "orange", "x": 57, "y": 17 }
     ],
+    "enemies": [
+      { "type": "goomba", "x": 8, "y": 18, "patrol_left": 5, "patrol_right": 10 },
+      { "type": "koopa", "x": 20, "y": 18, "patrol_left": 17, "patrol_right": 22 },
+      { "type": "goomba", "x": 42, "y": 18, "patrol_left": 39, "patrol_right": 44 }
+    ],
     "traps": [
       { "type": "spikes", "x": 10, "y": 18 },
       { "type": "spikes", "x": 11, "y": 18 },

@@ -171,7 +171,7 @@ if(MARIO_BUILD_WASM)
         "-sSDL2_MIXER_FORMATS=[\"ogg\"]"
         "-sALLOW_MEMORY_GROWTH=1"
         "-sINITIAL_MEMORY=67108864"
-        "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\"]"
+        "-sEXPORTED_FUNCTIONS=[\"_main\",\"_setTouchInput\",\"_malloc\",\"_free\"]"
         "-sEXPORTED_RUNTIME_METHODS=[\"ccall\",\"cwrap\",\"FS\"]"
         "SHELL:--preload-file ${CMAKE_SOURCE_DIR}/assets@/assets"
     )

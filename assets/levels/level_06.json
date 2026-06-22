@@ -133,7 +133,11 @@
       { "type": "rock_head",  "x": 36, "y": 14 },
       { "type": "rock_head",  "x": 47, "y": 13 },
       { "type": "spike_head", "x": 17, "y": 11 },
-      { "type": "spike_head", "x": 39, "y": 11, "direction": "left" }
+      { "type": "spike_head", "x": 39, "y": 11, "direction": "left" },
+      { "type": "goomba", "x": 6, "y": 18, "patrol_left": 4, "patrol_right": 7 },
+      { "type": "koopa", "x": 22, "y": 18, "patrol_left": 20, "patrol_right": 25 },
+      { "type": "goomba", "x": 35, "y": 18, "patrol_left": 33, "patrol_right": 38 },
+      { "type": "koopa", "x": 48, "y": 18, "patrol_left": 45, "patrol_right": 50 }
     ],
     "traps": [
       { "type": "spikes", "x": 8,  "y": 18 },

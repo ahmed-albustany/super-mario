@@ -125,6 +125,10 @@
       { "type": "cherry", "x": 46, "y": 11 },
       { "type": "apple", "x": 50, "y": 17 }
     ],
+    "enemies": [
+      { "type": "goomba", "x": 10, "y": 18, "patrol_left": 7, "patrol_right": 12 },
+      { "type": "goomba", "x": 22, "y": 18, "patrol_left": 19, "patrol_right": 24 }
+    ],
     "traps": [
       { "type": "spikes", "x": 15, "y": 18 },
       { "type": "spikes", "x": 16, "y": 18 },

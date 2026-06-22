@@ -122,6 +122,14 @@
       { "type": "kiwi",       "x": 48, "y": 14 },
       { "type": "orange",     "x": 53, "y": 12 }
     ],
+    "enemies": [
+      { "type": "goomba", "x": 11, "y": 18, "patrol_left": 9, "patrol_right": 13 },
+      { "type": "koopa", "x": 19, "y": 18, "patrol_left": 18, "patrol_right": 22 },
+      { "type": "goomba", "x": 29, "y": 18, "patrol_left": 27, "patrol_right": 31 },
+      { "type": "koopa", "x": 39, "y": 18, "patrol_left": 37, "patrol_right": 42 },
+      { "type": "koopa", "x": 48, "y": 18, "patrol_left": 46, "patrol_right": 50 },
+      { "type": "goomba", "x": 56, "y": 18, "patrol_left": 55, "patrol_right": 59 }
+    ],
     "traps": [
       { "type": "spikes",           "x": 9,  "y": 18 },
       { "type": "spikes",           "x": 10, "y": 18 },

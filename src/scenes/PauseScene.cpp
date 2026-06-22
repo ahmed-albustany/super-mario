@@ -1,5 +1,6 @@
 #include "scenes/PauseScene.hpp"
 #include "scenes/MenuScene.hpp"
+#include "scenes/GameScene.hpp"
 #include "core/Game.hpp"
 #include "core/GameConfig.hpp"
 #include "core/InputManager.hpp"
@@ -8,7 +9,8 @@
 
 #include <cmath>
 
-PauseScene::PauseScene(Game& game) : m_game(game) {}
+PauseScene::PauseScene(Game& game, GameMode mode, int currentLevel)
+    : m_game(game), m_restartMode(mode), m_restartLevel(currentLevel) {}
 
 void PauseScene::onEnter() {
     m_selectedItem = PAUSE_RESUME;
@@ -41,9 +43,9 @@ void PauseScene::handleInput(const InputManager& input) {
     if (input.isPointerDown()) {
         Vec2f pos = input.getPointerPosition();
         float screenW = static_cast<float>(Config::WINDOW_WIDTH);
-        float baseY = 340.0f;
+        float baseY = 320.0f;
         float itemH = 60.0f;
-        float btnW = 200.0f;
+        float btnW = 260.0f;
         float btnX = (screenW - btnW) * 0.5f;
 
         for (int i = 0; i < PAUSE_COUNT; ++i) {
@@ -78,10 +80,10 @@ void PauseScene::render(IPlatform& platform) {
     }
 
     // Buttons
-    const char* labels[PAUSE_COUNT] = {"Resume", "Quit to Menu"};
-    float baseY = 340.0f;
+    const char* labels[PAUSE_COUNT] = {"Resume", "Restart Level", "Quit to Menu"};
+    float baseY = 320.0f;
     float itemH = 60.0f;
-    float btnW = 200.0f;
+    float btnW = 260.0f;
     float btnX = (screenW - btnW) * 0.5f;
 
     for (int i = 0; i < PAUSE_COUNT; ++i) {
@@ -113,10 +115,22 @@ void PauseScene::selectItem(int index) {
 }
 
 void PauseScene::confirmSelection() {
+    AudioManager::instance().playSound("menu_confirm");
     switch (m_selectedItem) {
         case PAUSE_RESUME:
             m_game.scenes().pop();
             break;
+        case PAUSE_RESTART: {
+            // Pop pause + HUD, then replace GameScene with a fresh one at the same level
+            m_game.scenes().pop();  // pause
+            m_game.scenes().pop();  // HUD
+            // The current GameScene is now on top — replace it
+            auto scene = std::make_unique<GameScene>(m_game);
+            scene->setGameMode(m_restartMode);
+            scene->setStartLevel(m_restartLevel);
+            m_game.scenes().replace(std::move(scene));
+            break;
+        }
         case PAUSE_QUIT:
             // Pop pause + HUD + game scene, push menu
             m_game.scenes().pop();  // pause

@@ -110,4 +110,5 @@ private:
     SubscriberID m_subFlagPole         = 0;
     SubscriberID m_subPowerUp          = 0;
     SubscriberID m_subPlayerHurt       = 0;
+    SubscriberID m_subPlayerLanded    = 0;
 };
