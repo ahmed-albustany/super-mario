@@ -81,7 +81,11 @@
       "Bash(timeout 8 ./MarioGame.exe)",
       "Bash(timeout 6 ./MarioGame.exe)",
       "Bash(cmake --build .)",
-      "Bash(\"C:/Program Files/CMake/bin/cmake.exe\" --build .)"
+      "Bash(\"C:/Program Files/CMake/bin/cmake.exe\" --build .)",
+      "Bash(while read:*)",
+      "Bash(do if:*)",
+      "Bash(then echo:*)",
+      "Bash(fi)"
     ]
   }
 }
